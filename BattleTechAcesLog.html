@@ -418,8 +418,6 @@
         <tr>
           <th>Unit (and Variant)</th>
           <th>PV (at Skill 4)</th>
-          <th>Callsign</th>
-          <th>Total SP Earned</th>
           <th style="width:50px"></th>
         </tr>
       </thead>
@@ -691,15 +689,13 @@ function updateUnit(i, field, val) { data.units[i][field]=val; updateRosterStats
 function renderUnits() {
   const tbody = document.getElementById('unitRows');
   if (!data.units.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
     return;
   }
   tbody.innerHTML = data.units.map((u,i) => `
     <tr>
       <td><input type="text" value="${esc(u.unit)}" onchange="updateUnit(${i},'unit',this.value)" placeholder="Atlas AS7-D"></td>
       <td><input type="number" value="${u.pv||''}" onchange="updateUnit(${i},'pv',this.value)" placeholder="0"></td>
-      <td><input type="text" value="${esc(u.callsign)}" onchange="updateUnit(${i},'callsign',this.value)" placeholder="—"></td>
-      <td><input type="number" value="${u.sp||''}" onchange="updateUnit(${i},'sp',this.value)" placeholder="0"></td>
       <td><button class="btn btn-sm btn-danger" onclick="removeUnit(${i})">✕</button></td>
     </tr>`).join('');
 }
