@@ -46,7 +46,7 @@
     box-shadow: 0 4px 24px rgba(0,0,0,.8);
   }
   .header-inner {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -94,7 +94,7 @@
   .nav-tab.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
 
   /* ── LAYOUT ── */
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .container { max-width: 1600px; margin: 0 auto; padding: 24px 20px; }
   .page { display: none; }
   .page.active { display: block; }
 
@@ -705,7 +705,12 @@
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">
       <div class="field"><label>Scale</label>
-        <input type="text" id="force-scale" placeholder="e.g. 2" oninput="saveForce()">
+        <select id="force-scale" onchange="saveForce()">
+          <option value="">— Select —</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
       </div>
       <div class="field"><label id="lbl-bv-used">BV Used</label>
         <input type="number" id="force-bv-used" placeholder="0" oninput="updateForceCalc();saveForce()">
@@ -734,6 +739,33 @@
   <div id="force-formations"></div>
 
   <button class="btn btn-sm" onclick="addFormation()" style="margin-bottom:16px">+ Add Formation</button>
+
+  <!-- ── PILOT / CREW ROSTER ── -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
+    <div class="section-title" style="margin:0;flex:1">Pilot &amp; Crew Roster</div>
+    <button class="btn btn-sm" onclick="addPilotRow()">+ Add Pilot</button>
+  </div>
+
+  <div class="panel" style="padding:0;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Name</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Rank</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Callsign</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Assigned Unit</div>
+      <div id="pilot-skill-header" style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">G/P Skill</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">ADV</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">SPAs</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Wounds</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Status</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Notes</div>
+      <div style="padding:7px 8px"></div>
+    </div>
+    <div id="pilot-roster-rows"></div>
+    <div id="pilot-roster-empty" style="display:none;text-align:center;color:var(--text-dim);padding:16px;font-size:13px;letter-spacing:1px">
+      No pilots on roster. Add a pilot to begin.
+    </div>
+  </div>
 
 </div><!-- /page-force -->
 
@@ -807,8 +839,19 @@
     </div>
   </div>
 
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div class="section-title" style="margin-bottom:12px">Force Options</div>
+    <label class="check-label">
+      <input type="checkbox" id="no-bsp" onchange="toggleNoBsp(this.checked)">
+      <span class="checkmark"></span>
+      No Battlefield Support
+    </label>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      When checked, BSP is set to 0 and BV Available is increased by 500 per scale (500 / 1,000 / 1,500).
+    </div>
+  </div>
+
   <div class="panel panel-gold">
-    <div class="section-title" style="margin-bottom:12px">Data Management</div>
     <div class="btn-row">
       <button class="btn" onclick="saveAll()">💾 Save All Data</button>
       <button class="btn btn-danger" onclick="clearAll()">✕ Clear All Data</button>
@@ -853,7 +896,9 @@ let data = {
   repairRows:[],
   rearmRows:[],
   assetRows:[],
-  contractHistory:[]
+  contractHistory:[],
+  pilotRoster:[],
+  noBsp: false
 };
 
 // ─────────────────────────────────────────
@@ -914,7 +959,7 @@ function clearAll() {
   localStorage.removeItem('btMercContract');
   data = {unitName:'',contractName:'',actionType:'',contractLength:'',contractStatus:'active',
     scale:'',startWarchest:'',basePay:'',supportType:'none',supportPct:'',transportPct:'',salvagePct:'',
-    command:'',contactTerms:'',combatBonus:'0',ledger:[],repairRows:[],rearmRows:[],assetRows:[],contractHistory:[]};
+    command:'',contactTerms:'',combatBonus:'0',ledger:[],repairRows:[],rearmRows:[],assetRows:[],contractHistory:[],pilotRoster:[]};
   renderAll(); toast('All data cleared.');
 }
 
@@ -943,6 +988,9 @@ function renderAll() {
   renderContractHistory();
   renderForce();
   renderGameMode();
+  renderPilotRoster();
+  const noBspEl = document.getElementById('no-bsp');
+  if (noBspEl) noBspEl.checked = !!data.noBsp;
   recalc();
 }
 
@@ -1531,8 +1579,20 @@ function saveForce() {
   fd.co = v('force-co');
   fd.scale = v('force-scale');
   fd.bvUsed = v('force-bv-used');
-  fd.bvAvail = v('force-bv-avail');
-  fd.bsp = v('force-bsp');
+  // Auto-set BV Available and BSP based on scale
+  const scaleBvMap = {'1':3000,'2':6000,'3':9000};
+  const scaleBspMap = {'1':32,'2':64,'3':96};
+  const noBspBonus = {'1':500,'2':1000,'3':1500};
+  if (fd.scale && scaleBvMap[fd.scale]) {
+    const bonus = data.noBsp ? (noBspBonus[fd.scale] || 0) : 0;
+    fd.bvAvail = scaleBvMap[fd.scale] + bonus;
+    sv('force-bv-avail', fd.bvAvail);
+    fd.bsp = data.noBsp ? 0 : scaleBspMap[fd.scale];
+    sv('force-bsp', fd.bsp);
+  } else {
+    fd.bvAvail = v('force-bv-avail');
+    fd.bsp = v('force-bsp');
+  }
   fd.skillAdv = v('force-skill-adv');
   localStorage.setItem('btMercContract', JSON.stringify(data));
   updateForceCalc();
@@ -1591,6 +1651,17 @@ function removeFormationRow(fi, ri) {
 
 function updateFormationField(fi, ri, field, val) {
   data.forceData.formations[fi].rows[ri][field] = val;
+  // If the unit name changed, update the assigned pilot's Assigned Unit field
+  if (field === 'unit') {
+    const row = data.forceData.formations[fi].rows[ri];
+    if (typeof row.pilotIdx === 'number' && row.pilotIdx !== '') {
+      const p = (data.pilotRoster || [])[row.pilotIdx];
+      if (p) {
+        p.unit = val;
+        renderPilotRoster();
+      }
+    }
+  }
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
@@ -1607,10 +1678,72 @@ function removeFormation(fi) {
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
+function assignPilotToFormation(fi, ri, pilotIdx) {
+  const row = data.forceData.formations[fi].rows[ri];
+  if (pilotIdx === '' || pilotIdx === undefined) {
+    // Clear the Assigned Unit on the previously assigned pilot
+    if (row.pilotIdx !== '' && row.pilotIdx !== undefined) {
+      const prev = (data.pilotRoster || [])[row.pilotIdx];
+      if (prev) prev.unit = '';
+    }
+    row.pilotIdx = '';
+    row.pilot = '';
+    row.gp = '';
+    row.adv = '';
+    row.spa = '';
+  } else {
+    // Check if this pilot is already assigned elsewhere
+    const alreadyAssigned = data.forceData.formations.some((f, ffi) =>
+      f.rows.some((r, rri) =>
+        (ffi !== fi || rri !== ri) && String(r.pilotIdx) === String(pilotIdx)
+      )
+    );
+    if (alreadyAssigned) {
+      toast('Pilot already assigned to another unit.');
+      renderFormations();
+      return;
+    }
+    const p = (data.pilotRoster || [])[+pilotIdx];
+    if (p && p.status === 'KIA') {
+      toast('KIA pilots cannot be assigned to a unit.');
+      renderFormations();
+      return;
+    }
+    if (p) {
+      // Clear Assigned Unit on any previously assigned pilot for this row
+      if (row.pilotIdx !== '' && row.pilotIdx !== undefined) {
+        const prev = (data.pilotRoster || [])[row.pilotIdx];
+        if (prev) prev.unit = '';
+      }
+      row.pilotIdx = +pilotIdx;
+      row.pilot = p.name || '';
+      row.gp = p.skill || '';
+      row.adv = p.adv || '';
+      row.spa = p.spa || '';
+      // Sync Assigned Unit on the pilot roster entry
+      p.unit = row.unit || '';
+    }
+  }
+  renderFormations();
+  renderPilotRoster();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
 function renderFormations() {
   const cont = document.getElementById('force-formations');
   if (!cont) return;
   const classic = (data.gameMode || 'classic') === 'classic';
+  const roster = data.pilotRoster || [];
+
+  // Build pilot options list from roster
+  const pilotOptions = [
+    `<option value="">— Unassigned —</option>`,
+    ...roster.map((p, idx) => {
+      const label = [p.name, p.callsign ? `"${p.callsign}"` : '', p.rank].filter(Boolean).join(' ');
+      return `<option value="${idx}">${esc(label || `Pilot ${idx+1}`)}</option>`;
+    })
+  ].join('');
+
   cont.innerHTML = data.forceData.formations.map((f, fi) => `
     <div class="panel panel-gold" style="margin-bottom:16px;padding:0;overflow:hidden">
       <!-- Formation header -->
@@ -1623,13 +1756,35 @@ function renderFormations() {
       </div>
       <!-- Column headers -->
       <div style="display:grid;grid-template-columns:2fr 40px 80px 2fr 90px 80px 2fr 32px;gap:0;border-bottom:1px solid var(--border-gold)">
-        ${['Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV','MechWarrior', classic ? 'G/P Skill' : 'Skill','Adv','Special Pilot Abilities',''].map(h=>
+        ${['Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', ''].map(h=>
           `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05)">${h}</div>`
         ).join('')}
       </div>
       <!-- Rows -->
       <div>
-        ${f.rows.map((r,ri) => `
+        ${f.rows.map((r, ri) => {
+          const selIdx = (r.pilotIdx !== undefined && r.pilotIdx !== '') ? r.pilotIdx : '';
+          // Collect all assigned indices across ALL formations except this row
+          const assignedElsewhere = new Set();
+          data.forceData.formations.forEach((ff, ffi) => {
+            ff.rows.forEach((rr, rri) => {
+              if ((ffi !== fi || rri !== ri) && rr.pilotIdx !== '' && rr.pilotIdx !== undefined) {
+                assignedElsewhere.add(String(rr.pilotIdx));
+              }
+            });
+          });
+          const opts = [
+            `<option value="">— Unassigned —</option>`,
+            ...roster.map((p, idx) => {
+              const label = [p.name, p.callsign ? `"${p.callsign}"` : '', p.rank].filter(Boolean).join(' ');
+              const taken = assignedElsewhere.has(String(idx));
+              const kia = p.status === 'KIA';
+              const disabled = taken || kia;
+              const suffix = kia ? ' [KIA]' : taken ? ' ✕' : '';
+              return `<option value="${idx}" ${String(selIdx)===String(idx)?'selected':''} ${disabled?'disabled':''} style="background:var(--panel);color:${disabled?'var(--text-dim)':'inherit'}">${esc(label || `Pilot ${idx+1}`)}${suffix}</option>`;
+            })
+          ].join('');
+          return `
         <div style="display:grid;grid-template-columns:2fr 40px 80px 2fr 90px 80px 2fr 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)">
           <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="Atlas AS7-D"
             onchange="updateFormationField(${fi},${ri},'unit',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
@@ -1637,18 +1792,23 @@ function renderFormations() {
             onchange="updateFormationField(${fi},${ri},'tons',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
           <div style="padding:2px 4px"><input type="number" value="${r.bv||''}" placeholder="${classic?'BV':'PV'}"
             onchange="updateFormationField(${fi},${ri},'bv',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.pilot)}" placeholder="MechWarrior name"
-            onchange="updateFormationField(${fi},${ri},'pilot',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.gp)}" placeholder="${(data.gameMode||'classic')==='classic'?'4/5':'4'}"
-            onchange="updateFormationField(${fi},${ri},'gp',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center"></div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.adv)}" placeholder=""
-            onchange="updateFormationField(${fi},${ri},'adv',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center"></div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.spa)}" placeholder=""
-            onchange="updateFormationField(${fi},${ri},'spa',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
+          <div style="padding:2px 4px;display:flex;align-items:center">
+            <select onchange="assignPilotToFormation(${fi},${ri},this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text);cursor:pointer">
+              ${opts}
+            </select>
+          </div>
+          <div style="padding:2px 4px"><input type="text" value="${esc(r.gp)}" placeholder="${classic?'4/5':'4'}" readonly
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${selIdx!==''?'1':'0.4'}"></div>
+          <div style="padding:2px 4px"><input type="text" value="${esc(r.adv)}" placeholder="" readonly
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${selIdx!==''?'1':'0.4'}"></div>
+          <div style="padding:2px 4px"><input type="text" value="${esc(r.spa)}" placeholder="" readonly
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);opacity:${selIdx!==''?'1':'0.4'}"></div>
           <div style="display:flex;align-items:center;justify-content:center">
             <button class="btn btn-sm btn-danger" onclick="removeFormationRow(${fi},${ri})" style="padding:2px 6px;font-size:11px;clip-path:none;border:none;background:transparent;color:var(--red);cursor:pointer">&#10005;</button>
           </div>
-        </div>`).join('')}
+        </div>`;
+        }).join('')}
       </div>
     </div>`).join('');
 }
@@ -1656,6 +1816,12 @@ function renderFormations() {
 // ─────────────────────────────────────────
 // GAME MODE
 // ─────────────────────────────────────────
+function toggleNoBsp(checked) {
+  data.noBsp = checked;
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  saveForce();
+}
+
 function setGameMode(mode) {
   data.gameMode = mode;
   localStorage.setItem('btMercContract', JSON.stringify(data));
@@ -1702,11 +1868,206 @@ function renderGameMode() {
   // Re-render dynamic sections that embed BV/PV labels
   renderAssetRows();
   renderFormations();
+  renderPilotRoster();
+}
+
+// ─────────────────────────────────────────
+// PILOT / CREW ROSTER
+// ─────────────────────────────────────────
+const PILOT_STATUSES = ['Active','Wounded','MIA','KIA','Retired'];
+const PILOT_STATUS_COLORS = {
+  'Active':'var(--green-bright)',
+  'Wounded':'var(--gold)',
+  'MIA':'#a0aacc',
+  'KIA':'var(--red)',
+  'Retired':'var(--text-dim)'
+};
+
+function addPilotRow() {
+  if (!data.pilotRoster) data.pilotRoster = [];
+  data.pilotRoster.push({name:'',rank:'',callsign:'',unit:'',skill:'',status:'Active',spa:'',notes:''});
+  renderPilotRoster();
+  renderFormations();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function removePilotRow(i) {
+  data.pilotRoster.splice(i, 1);
+  // Clear or shift pilotIdx references in formations
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => {
+      if (r.pilotIdx === i) { r.pilotIdx = ''; r.pilot = ''; r.gp = ''; r.adv = ''; r.spa = ''; }
+      else if (typeof r.pilotIdx === 'number' && r.pilotIdx > i) { r.pilotIdx--; }
+    });
+  });
+  renderPilotRoster();
+  renderFormations();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function sortPilotRoster() {
+  // Build a mapping of old index → new index after sort
+  const roster = data.pilotRoster;
+  const nonKia = roster.map((p, i) => ({ p, i })).filter(e => e.p.status !== 'KIA');
+  const kia    = roster.map((p, i) => ({ p, i })).filter(e => e.p.status === 'KIA');
+  const sorted = [...nonKia, ...kia];
+  const oldToNew = {};
+  sorted.forEach((e, newIdx) => { oldToNew[e.i] = newIdx; });
+
+  // Reorder the array in place
+  data.pilotRoster = sorted.map(e => e.p);
+
+  // Fix up pilotIdx references in all formation rows
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => {
+      if (typeof r.pilotIdx === 'number' && r.pilotIdx !== '') {
+        r.pilotIdx = oldToNew[r.pilotIdx] ?? '';
+      }
+    });
+  });
+}
+
+function updatePilotWounds(i, val) {
+  const wounds = +val;
+  data.pilotRoster[i].wounds = wounds;
+  if (wounds >= 6) {
+    data.pilotRoster[i].status = 'KIA';
+    // Unassign from any formation
+    (data.forceData.formations || []).forEach(f => {
+      f.rows.forEach(r => {
+        if (typeof r.pilotIdx === 'number' && r.pilotIdx === i) {
+          r.pilotIdx = ''; r.pilot = ''; r.gp = ''; r.adv = ''; r.spa = '';
+        }
+      });
+    });
+    renderFormations();
+    sortPilotRoster();
+  } else if (wounds >= 1) {
+    data.pilotRoster[i].status = 'Wounded';
+  } else {
+    // Only revert to Active if currently Wounded/KIA (don't override MIA/Retired)
+    if (data.pilotRoster[i].status === 'Wounded' || data.pilotRoster[i].status === 'KIA') {
+      data.pilotRoster[i].status = 'Active';
+    }
+  }
+  renderPilotRoster();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updatePilotField(i, field, val) {
+  data.pilotRoster[i][field] = val;
+  // If status changed to KIA, unassign from formations then sort
+  if (field === 'status') {
+    if (val === 'KIA') {
+      (data.forceData.formations || []).forEach(f => {
+        f.rows.forEach(r => {
+          if (typeof r.pilotIdx === 'number' && r.pilotIdx === i) {
+            r.pilotIdx = ''; r.pilot = ''; r.gp = ''; r.adv = ''; r.spa = '';
+            const p = data.pilotRoster[i]; if (p) p.unit = '';
+          }
+        });
+      });
+      renderFormations();
+    }
+    sortPilotRoster();
+  }
+  // Sync formation rows that reference this pilot
+  if (['name','skill','adv','spa'].includes(field)) {
+    (data.forceData.formations || []).forEach(f => {
+      f.rows.forEach(r => {
+        if (typeof r.pilotIdx === 'number' && r.pilotIdx === i) {
+          if (field === 'name') r.pilot = val;
+          else if (field === 'skill') r.gp = val;
+          else if (field === 'adv') r.adv = val;
+          else if (field === 'spa') r.spa = val;
+        }
+      });
+    });
+    renderFormations();
+  }
+  renderPilotRoster();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function renderPilotRoster() {
+  if (!data.pilotRoster) data.pilotRoster = [];
+  const cont = document.getElementById('pilot-roster-rows');
+  const empty = document.getElementById('pilot-roster-empty');
+  if (!cont) return;
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const skillHeader = document.getElementById('pilot-skill-header');
+  if (skillHeader) skillHeader.textContent = classic ? 'G/P Skill' : 'Skill';
+
+  if (!data.pilotRoster.length) {
+    cont.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const statusOpts = PILOT_STATUSES.map(s => `<option value="${s}">${s}</option>`).join('');
+
+  cont.innerHTML = data.pilotRoster.map((p, i) => {
+    const statusColor = PILOT_STATUS_COLORS[p.status] || 'var(--text)';
+    const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06)' :
+                  p.status === 'Wounded' || (p.wounds && p.wounds > 0) ? 'background:rgba(201,162,39,.05)' : '';
+    return `<div style="display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);${rowBg}">
+      <div style="padding:2px 4px;display:flex;align-items:center">
+        <select onchange="updatePilotField(${i},'type',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:var(--text);cursor:pointer">
+          <option value="" style="background:var(--panel)">— Select —</option>
+          ${['MechWarrior','Vehicle Commander','Infantry Commander','Aerospace Pilot'].map(t =>
+            `<option value="${t}" ${p.type===t?'selected':''} style="background:var(--panel)">${t}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.name)}" placeholder="MechWarrior name"
+        onchange="updatePilotField(${i},'name',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.rank)}" placeholder="Cpl / Lt"
+        onchange="updatePilotField(${i},'rank',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text-dim)"></div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.callsign)}" placeholder='"Ironside"'
+        onchange="updatePilotField(${i},'callsign',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);font-style:italic"></div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.unit)}" placeholder="Atlas AS7-D"
+        onchange="updatePilotField(${i},'unit',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.skill)}" placeholder="${classic ? '4/5' : '4'}"
+        onchange="updatePilotField(${i},'skill',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center"></div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.adv||'')}" placeholder="0"
+        onchange="updatePilotField(${i},'adv',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center"></div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.spa)}" placeholder="e.g. Hot Dog"
+        onchange="updatePilotField(${i},'spa',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:var(--text-dim)"></div>
+      <div style="padding:2px 4px;display:flex;align-items:center">
+        <select onchange="updatePilotWounds(${i},this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;padding:4px 2px;cursor:pointer;text-align:center;color:${(p.wounds||0)==0?'var(--text-dim)':(p.wounds||0)>=6?'var(--red)':'var(--gold)'}">
+          ${[0,1,2,3,4,5,6].map(n=>`<option value="${n}" ${(p.wounds||0)==n?'selected':''} style="background:var(--panel);color:${n===0?'var(--text-dim)':n>=6?'var(--red)':'var(--gold)'}">${n}</option>`).join('')}
+        </select>
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center">
+        <select onchange="updatePilotField(${i},'status',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${statusColor};cursor:pointer;text-transform:uppercase">
+          ${PILOT_STATUSES.map(s=>`<option value="${s}" ${p.status===s?'selected':''} style="background:var(--panel);color:${PILOT_STATUS_COLORS[s]}">${s}</option>`).join('')}
+        </select>
+      </div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(p.notes)}" placeholder="Notes…"
+        onchange="updatePilotField(${i},'notes',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:var(--text-dim)"></div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <button onclick="removePilotRow(${i})" style="padding:2px 6px;font-size:11px;border:none;background:transparent;color:var(--red);cursor:pointer">&#10005;</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────
+if (!data.pilotRoster) data.pilotRoster = [];
 loadData();
 if (!data.forceData) {
   data.forceData = {
@@ -1719,6 +2080,7 @@ if (!data.repairRows.length) renderRepairRows();
 if (!data.rearmRows.length) renderRearmRows();
 if (!data.assetRows.length) renderAssetRows();
 renderForce();
+renderPilotRoster();
 </script>
 </body>
 </html>
