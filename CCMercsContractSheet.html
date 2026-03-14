@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BattleTech — Mercenary Contract Record Sheet</title>
+<title>BattleTech — Mercenary Unit Record Sheet</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
 
@@ -360,6 +360,27 @@
   input[type=checkbox]:checked + .checkmark { background: var(--gold); border-color: var(--gold); }
   input[type=checkbox]:checked + .checkmark::after { content: '✓'; color: #000; font-size: 13px; font-weight: 700; }
 
+  /* ── DATALIST ── */
+  input[list]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+  /* ── DRAG & DROP ── */
+  .drag-handle {
+    cursor: grab;
+    color: var(--border);
+    font-size: 16px;
+    padding: 0 6px;
+    user-select: none;
+    transition: color .15s;
+    display: flex; align-items: center;
+    flex-shrink: 0;
+  }
+  .drag-handle:hover { color: var(--gold); }
+  .drag-handle:active { cursor: grabbing; }
+  [draggable=true] { transition: opacity .15s; }
+  [draggable=true].dragging { opacity: 0.35; }
+  .drag-over-top { box-shadow: 0 -2px 0 var(--gold) !important; }
+  .drag-over-bottom { box-shadow: 0 2px 0 var(--gold) !important; }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 700px) {
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -376,7 +397,7 @@
   <div class="header-inner">
     <div>
       <div class="logo-text">BattleTech</div>
-      <div class="logo-sub">Mercenary Contract · Record Sheet</div>
+      <div class="logo-sub">Mercenary Unit Record Sheet</div>
     </div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('force',this)">Force Record</button>
@@ -419,10 +440,18 @@
     <div class="grid-2">
       <div class="field"><label>Mercenary Unit Name <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">(set on Force Record)</span></label>
         <input type="text" id="unitName" placeholder="Set Force Name on Force Record tab" readonly
-          style="cursor:default;opacity:0.7" tabindex="-1">
+          style="cursor:default;opacity:0.7;color:#fff" tabindex="-1">
       </div>
-      <div class="field"><label>Contract Name / Employer</label>
-        <input type="text" id="contractName" placeholder="e.g. Davion Strike Op — Hesperus II" oninput="save();updateLedgerBanner()">
+      <div class="field"><label>Contract Name</label>
+        <input type="text" id="contractName" placeholder="e.g. Operation Hesperus Strike" oninput="save();updateLedgerBanner()">
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:0">
+      <div class="field"><label>Employer</label>
+        <input type="text" id="employer" placeholder="e.g. Federated Suns — AFFS" oninput="save()">
+      </div>
+      <div class="field"><label>Planet</label>
+        <input type="text" id="planet" placeholder="e.g. Hesperus II" oninput="save()">
       </div>
     </div>
     <div class="grid-3">
@@ -450,20 +479,26 @@
         </select>
       </div>
     </div>
+    <div id="jump-field-row" style="display:none;margin-top:12px;max-width:200px">
+      <div class="field"><label>Number of Jumps</label>
+        <input type="number" id="numJumps" min="0" placeholder="0" oninput="recalc();save()">
+      </div>
+    </div>
   </div>
 
   <!-- Financial Terms -->
   <div class="section-title">Financial Terms</div>
   <div class="panel panel-gold">
     <div class="grid-2">
-      <div class="field"><label>Force Scale</label>
-        <input type="number" id="scale" min="1" placeholder="1" oninput="recalc();save()" title="Used for Travel & Maintenance calculation">
+      <div class="field"><label>Force Scale <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">(set on Force Record)</span></label>
+        <input type="number" id="scale" min="1" placeholder="Set Scale on Force Record" readonly
+          style="cursor:default;opacity:0.7" tabindex="-1">
       </div>
       <div class="field"><label>Starting Warchest (SP)</label>
         <input type="number" id="startWarchest" min="0" placeholder="0" oninput="recalc();save()">
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
       <div class="field">
         <label>Base Pay %</label>
         <input type="number" id="basePay" min="0" max="200" placeholder="50" oninput="recalc();save()">
@@ -487,6 +522,13 @@
       <div class="field">
         <label>Salvage %</label>
         <input type="number" id="salvagePct" min="0" max="100" placeholder="0" oninput="recalc();save()">
+      </div>
+      <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end">
+        <label class="check-label" style="margin-bottom:6px">
+          <input type="checkbox" id="exchangeSalvage" onchange="toggleExchangeSalvage(this.checked)">
+          <span class="checkmark"></span>
+          Exchange Salvage
+        </label>
       </div>
     </div>
     <div class="grid-2">
@@ -614,11 +656,12 @@
 ══════════════════════════════════════════════ -->
 <div id="page-support" class="page">
 
-  <div class="section-title">Support Costs Calculator</div>
-  <div style="margin-bottom:12px;font-size:12px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Enter tonnage to calculate repair, rearm, and salvage costs.</div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button class="btn btn-sm btn-danger" onclick="clearSupportCosts()">✕ Clear All</button>
+  </div>
 
   <!-- SECTION 1: Repair & Rearm -->
-  <div class="section-title">Repair &amp; Rearm</div>
+  <div class="section-title" style="font-size:15px;letter-spacing:4px">Repair &amp; Rearm</div>
 
   <!-- Repair Calculator -->
   <div class="panel panel-gold">
@@ -639,10 +682,10 @@
 
   <!-- Rearm Calculator -->
   <div class="panel">
-    <div class="ref-title">&#128295; Rearm Costs (10 SP/Ton)</div>
-    <div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;margin-bottom:6px">
+    <div class="ref-title" id="rearm-panel-title">&#128295; Rearm Costs (10 SP/Ton)</div>
+    <div id="rearm-col-headers" style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;margin-bottom:6px">
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
+      <div id="rearm-tons-header" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
     </div>
     <div id="rearm-rows"></div>
@@ -653,33 +696,146 @@
     </div>
   </div>
 
+  <!-- Reconfigure Omni Calculator -->
+  <div class="panel">
+    <div class="ref-title">&#9645; Reconfigure Omni Costs (Ton ÷ 4)</div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    </div>
+    <div id="omni-rows"></div>
+    <button class="btn btn-sm" onclick="addOmniRow()" style="margin-top:8px">+ Add Unit</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total Reconfigure Cost</span>
+      <span class="balance-bar-val" id="omni-total">0 SP</span>
+    </div>
+  </div>
+
   <!-- Repair & Rearm Total -->
   <div style="padding:14px 20px;border:2px solid var(--border-gold);background:rgba(201,162,39,.06);display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
-    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Repair &amp; Rearm</span>
+    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Repair, Rearm &amp; Omni</span>
     <div style="display:flex;align-items:center;gap:12px">
       <span style="font-family:'Share Tech Mono',monospace;font-size:26px;color:var(--gold);font-weight:700" id="support-repair-rearm-total">0 SP</span>
       <button class="btn btn-sm" onclick="sendRepairRearmToLedger()">&#8594; Send to Ledger</button>
     </div>
   </div>
 
-  <!-- SECTION 2: Salvage & Mech Transactions -->
-  <div class="section-title">Salvage &amp; Mech Transactions</div>
+  <!-- SECTION 2: Unit Purchase & Sale -->
+  <div class="section-title" style="font-size:15px;letter-spacing:4px">Unit Purchase &amp; Sale</div>
 
-  <!-- Salvage / Purchase / Sale -->
+  <!-- Purchase / Sale -->
   <div class="panel">
-    <div class="ref-title">&#128176; Salvage / Mech Purchase &amp; Sale</div>
+    <div class="ref-title">&#128176; Unit Purchase &amp; Sale</div>
     <div id="asset-rows"></div>
-    <button class="btn btn-sm" onclick="addAssetRow()" style="margin-top:8px">+ Add Asset</button>
+    <button class="btn btn-sm" onclick="addAssetRow()" style="margin-top:8px">+ Add Unit</button>
     <div class="balance-bar" id="asset-net-bar" style="margin-top:14px">
-      <span class="balance-bar-label">Net Asset SP</span>
+      <span class="balance-bar-label">Net SP</span>
       <span class="balance-bar-val" id="asset-net">0 SP</span>
     </div>
   </div>
 
-  <!-- Salvage Total -->
+  <!-- Purchase & Sale Total -->
   <div style="padding:14px 20px;border:2px solid var(--border-gold);background:rgba(201,162,39,.06);display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
-    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Salvage &amp; Transactions</span>
-    <span style="font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700" id="support-salvage-total">0 SP</span>
+    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Unit Purchases &amp; Sales</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700" id="support-salvage-total">0 SP</span>
+      <button class="btn btn-sm" onclick="sendAssetToLedger()">&#8594; Send to Ledger</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Salvage Calculator -->
+  <div class="section-title" style="font-size:15px;letter-spacing:4px">Salvage Calculator</div>
+
+  <div class="panel panel-gold">
+    <div class="ref-title">&#9876; Salvage Value <span id="salvage-calc-bv-label" style="color:var(--text-dim);font-size:11px">(BV ÷ 2)</span></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 120px 60px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit / Description</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right" id="salvage-bv-col-header">BV</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Salvage SP</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Claim</div>
+    </div>
+    <div id="salvage-rows"></div>
+    <button class="btn btn-sm" onclick="addSalvageRow()" style="margin-top:8px">+ Add Unit</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total Salvage Value</span>
+      <span class="balance-bar-val" id="salvage-total">0 SP</span>
+    </div>
+  </div>
+
+  <div style="padding:14px 20px;border:2px solid var(--border-gold);background:rgba(201,162,39,.06);display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:28px">
+    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Salvage</span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700;color:var(--gold)" id="salvage-grand-total">0 SP</span>
+    <div style="display:flex;flex-direction:column;gap:2px;margin-left:8px">
+      <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Contract Salvage %</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:var(--text-dim)" id="salvage-pct-display">0%</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Your Share</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--green-bright)" id="salvage-net-total">0 SP</span>
+    </div>
+    <div style="margin-left:auto">
+      <button class="btn btn-sm" onclick="sendSalvageToLedger()">&#8594; Send to Ledger</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Personnel & Training -->
+  <div class="section-title" style="font-size:15px;letter-spacing:4px">Personnel &amp; Training</div>
+
+  <!-- Hire Personnel -->
+  <div class="panel panel-gold">
+    <div class="ref-title">&#128101; Hire Personnel (100 SP each)</div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Description</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Count</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    </div>
+    <div id="hire-rows"></div>
+    <button class="btn btn-sm" onclick="addHireRow()" style="margin-top:8px">+ Add Entry</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total Hire Cost</span>
+      <span class="balance-bar-val" id="hire-total">0 SP</span>
+    </div>
+  </div>
+
+  <!-- Heal Wounds -->
+  <div class="panel">
+    <div class="ref-title">&#10084; Heal Wounds (30 SP per wound)</div>
+    <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Wounds</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    </div>
+    <div id="heal-rows"></div>
+    <button class="btn btn-sm" onclick="addHealRow()" style="margin-top:8px">+ Add Entry</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total Heal Cost</span>
+      <span class="balance-bar-val" id="heal-total">0 SP</span>
+    </div>
+  </div>
+
+  <!-- Skill Improvements -->
+  <div class="panel">
+    <div class="ref-title">&#11088; Training</div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 36px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Description</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+      <div></div>
+    </div>
+    <div id="skill-rows"></div>
+    <button class="btn btn-sm" onclick="addSkillRow()" style="margin-top:8px">+ Add Entry</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total Training Cost</span>
+      <span class="balance-bar-val" id="skill-total">0 SP</span>
+    </div>
+  </div>
+
+  <!-- Personnel & Training Total -->
+  <div style="padding:14px 20px;border:2px solid var(--border-gold);background:rgba(201,162,39,.06);display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Personnel &amp; Training</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700;color:var(--gold)" id="personnel-grand-total">0 SP</span>
+      <button class="btn btn-sm" onclick="sendPersonnelToLedger()">&#8594; Send to Ledger</button>
+    </div>
   </div>
 
 </div><!-- /page-support -->
@@ -700,7 +856,9 @@
         <input type="text" id="force-name" placeholder="e.g. Iron Panthers" oninput="syncForceName();saveForce()">
       </div>
       <div class="field"><label>Commanding Officer</label>
-        <input type="text" id="force-co" placeholder="e.g. Maj. Sarah Voss" oninput="saveForce()">
+        <select id="force-co" onchange="saveForce()">
+          <option value="">— Select CO —</option>
+        </select>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">
@@ -712,7 +870,7 @@
           <option value="3">3</option>
         </select>
       </div>
-      <div class="field"><label id="lbl-bv-used">BV Used</label>
+      <div class="field" style="display:none"><label id="lbl-bv-used">BV Used</label>
         <input type="number" id="force-bv-used" placeholder="0" oninput="updateForceCalc();saveForce()">
       </div>
       <div class="field"><label id="lbl-bv-avail">BV Available</label>
@@ -722,14 +880,20 @@
         <input type="number" id="force-bsp" placeholder="0" oninput="saveForce()">
       </div>
       <div class="field"><label>Skill ADV</label>
-        <input type="number" id="force-skill-adv" placeholder="0" oninput="saveForce()">
+        <input type="number" id="force-skill-adv" placeholder="0" readonly
+          style="cursor:default">
       </div>
     </div>
-    <!-- BV summary bar -->
+    <div class="field" style="margin-top:10px">
+      <label>Special Command Abilities</label>
+      <input type="text" id="force-sca" placeholder="e.g. Overrun Combat, Fire for Effect" oninput="saveForce()">
+    </div>
+    <!-- Warchest bar -->
     <div style="display:flex;align-items:center;gap:16px;padding:8px 12px;background:rgba(201,162,39,.06);border:1px solid var(--border-gold);margin-top:4px">
-      <span id="lbl-bv-remaining" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">BV Remaining</span>
-      <span id="force-bv-remaining" style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--gold)">—</span>
       <div style="flex:1"></div>
+      <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Reputation</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--gold)" id="force-rep-display">+0</span>
+      <div style="width:1px;height:20px;background:var(--border-gold)"></div>
       <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Warchest</span>
       <span style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--gold)" id="force-warchest-display">0 SP</span>
     </div>
@@ -747,7 +911,8 @@
   </div>
 
   <div class="panel" style="padding:0;margin-bottom:16px">
-    <div style="display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+    <div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="padding:7px 8px"></div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Name</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Rank</div>
@@ -767,6 +932,43 @@
     </div>
   </div>
 
+  <!-- ── DEPLOYMENT ── -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
+    <div class="section-title" style="margin:0;flex:1">Deployment</div>
+    <button class="btn btn-sm btn-danger" onclick="clearAllDeploy()">✕ Clear Deployment</button>
+  </div>
+
+  <div id="deployment-empty" style="text-align:center;color:var(--text-dim);padding:20px;font-size:13px;letter-spacing:1px;border:1px solid var(--border);background:var(--panel);margin-bottom:16px">
+    No units deployed. Check the <strong style="color:var(--text)">Deploy</strong> box on a formation row to stage a unit.
+  </div>
+
+  <div class="panel panel-gold" id="deployment-panel" style="padding:0;overflow-x:auto;margin-bottom:16px;display:none">
+    <div style="display:grid;grid-template-columns:32px 2fr 100px 140px 1fr;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">#</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:right" id="deploy-bv-header">BV</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Formation</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Crew</div>
+    </div>
+    <div id="deployment-rows"></div>
+    <div style="display:flex;align-items:center;padding:10px 14px;border-top:1px solid var(--border-gold);background:rgba(201,162,39,.04);gap:24px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Deployed <span id="deploy-bv-label">BV</span></span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)" id="deployment-total-bv">0</span>
+      </div>
+      <div style="width:1px;height:36px;background:var(--border-gold);flex-shrink:0"></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span id="lbl-bv-remaining" style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">BV Remaining</span>
+        <span id="force-bv-remaining" style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)">—</span>
+      </div>
+      <div style="width:1px;height:36px;background:var(--border-gold);flex-shrink:0"></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Deployable BSP</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)" id="deployment-bsp">—</span>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /page-force -->
 
 
@@ -783,15 +985,17 @@
       </div>
       <div class="ref-card">
         <div class="ref-title">Combat Bonus Pay</div>
-        <div class="ref-row"><span>No Obj / Units Lost</span><span class="ref-cost">0%</span></div>
-        <div class="ref-row"><span>1+ Objectives</span><span class="ref-cost">50% Base Pay</span></div>
+        <div class="ref-row"><span>Broke Contract</span><span class="ref-cost">0</span></div>
+        <div class="ref-row"><span>Unsuccessful</span><span class="ref-cost">50% Base Pay</span></div>
         <div class="ref-row"><span>Success</span><span class="ref-cost">100% Base Pay</span></div>
         <div class="ref-row"><span>All Objectives</span><span class="ref-cost">150% Base Pay</span></div>
       </div>
       <div class="ref-card">
         <div class="ref-title">Mech Purchase & Sale</div>
-        <div class="ref-row"><span>Purchase 'Mech</span><span class="ref-cost" id="ref-purchase">BV × 40</span></div>
-        <div class="ref-row"><span>Sell Repaired 'Mech</span><span class="ref-cost" id="ref-sell">BV/2 × 20</span></div>
+        <div class="ref-row"><span>Purchase Unit (Classic)</span><span class="ref-cost" id="ref-purchase">BV</span></div>
+        <div class="ref-row"><span>Sell Repaired Unit (Classic)</span><span class="ref-cost" id="ref-sell">BV ÷ 2</span></div>
+        <div class="ref-row"><span>Purchase Unit (Alpha Strike)</span><span class="ref-cost">PV × 40</span></div>
+        <div class="ref-row"><span>Sell Repaired Unit (Alpha Strike)</span><span class="ref-cost">PV × 20</span></div>
       </div>
     </div>
     <div>
@@ -801,18 +1005,101 @@
         <div class="ref-row"><span>Repair (Structure/Crit)</span><span class="ref-cost">Ton × 2</span></div>
         <div class="ref-row"><span>Repair (Crippled)</span><span class="ref-cost">Ton × 3</span></div>
         <div class="ref-row"><span>Repair (Destroyed)</span><span class="ref-cost">Ton × 5</span></div>
-        <div class="ref-row"><span>Rearm</span><span class="ref-cost">10 SP/Ton</span></div>
+        <div class="ref-row"><span>Rearm (Classic)</span><span class="ref-cost">10 SP/Ton</span></div>
+        <div class="ref-row"><span>Rearm (Alpha Strike)</span><span class="ref-cost">20 SP/unit</span></div>
+        <div class="ref-row"><span>Reconfigure Omni</span><span class="ref-cost">Ton ÷ 4</span></div>
       </div>
       <div class="ref-card">
         <div class="ref-title">Salvage</div>
-        <div class="ref-row"><span>Salvage Value</span><span class="ref-cost" id="ref-salvage">BV/2 × 20</span></div>
+        <div class="ref-row"><span>Salvage Value</span><span class="ref-cost" id="ref-salvage">BV ÷ 2</span></div>
       </div>
       <div class="ref-card">
         <div class="ref-title">Rep (Reputation Points)</div>
         <div class="ref-row"><span>Noted in monthly ledger</span><span class="ref-cost">+/- Rep</span></div>
       </div>
+      <div class="ref-card">
+        <div class="ref-title">Personnel &amp; Training</div>
+        <div class="ref-row"><span>Hire Personnel</span><span class="ref-cost">100 SP each</span></div>
+        <div class="ref-row"><span>Heal Wounds</span><span class="ref-cost">30 SP / wound</span></div>
+        <div class="ref-row"><span>Training</span><span class="ref-cost">See Table Below</span></div>
+      </div>
     </div>
   </div>
+
+  <!-- Unit & Force Training -->
+  <div class="section-title" style="margin-top:20px">Training Activities</div>
+
+  <div class="ref-card" style="margin-bottom:16px">
+    <div class="ref-title">Unit Training Activities — Skill Improvements</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-family:'Share Tech Mono',monospace;font-size:13px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border-gold)">
+            <th style="text-align:left;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600">Skill Improvement</th>
+            <th style="text-align:right;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600">Gunnery</th>
+            <th style="text-align:right;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600">Piloting</th>
+            <th style="text-align:right;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600">Skill (AS)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(42,48,64,.5)">
+            <td style="padding:6px 10px;color:var(--text)">6 to 5 †</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">50</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">25</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">50</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(42,48,64,.5);background:rgba(255,255,255,.02)">
+            <td style="padding:6px 10px;color:var(--text)">5 to 4</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">100</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">50</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">125</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(42,48,64,.5)">
+            <td style="padding:6px 10px;color:var(--text)">4 to 3</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">200</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">100</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">250</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(42,48,64,.5);background:rgba(255,255,255,.02)">
+            <td style="padding:6px 10px;color:var(--text)">3 to 2</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">400</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">200</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">500</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(42,48,64,.5)">
+            <td style="padding:6px 10px;color:var(--text)">2 to 1</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">800</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">500</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">1,000</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(42,48,64,.5);background:rgba(255,255,255,.02)">
+            <td style="padding:6px 10px;color:var(--text)">1 to 0</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">1,000</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">750</td>
+            <td style="padding:6px 10px;text-align:right;color:var(--gold)">1,500</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-dim);letter-spacing:0.5px">
+      Special Pilot Ability = SPA Point Cost × 200
+    </div>
+    <div style="margin-top:4px;font-size:11px;color:var(--text-dim);letter-spacing:0.5px">
+      † Same cost applies to improving any higher Skill by one step (e.g. 7 to 6, etc.)
+    </div>
+  </div>
+
+  <div class="ref-card">
+    <div class="ref-title">Force Training Activities</div>
+    <div class="ref-row"><span>Create a New Formation</span><span class="ref-cost">10 SP × units in Formation</span></div>
+    <div class="ref-row"><span>Change an Existing Formation</span><span class="ref-cost">5 SP × units in Formation</span></div>
+    <div style="margin-top:10px;margin-bottom:4px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600">Command Training Activity</div>
+    <div class="ref-row"><span>Learn First Special Command Ability</span><span class="ref-cost">250 SP</span></div>
+    <div class="ref-row"><span>Learn Second Special Command Ability</span><span class="ref-cost">500 SP</span></div>
+    <div class="ref-row"><span>Learn Third (or more) Special Command Ability</span><span class="ref-cost">750 SP</span></div>
+    <div class="ref-row"><span>Replace a Special Command Ability</span><span class="ref-cost">250 SP</span></div>
+  </div>
+
 </div><!-- /page-ref -->
 
 
@@ -848,6 +1135,14 @@
     </label>
     <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
       When checked, BSP is set to 0 and BV Available is increased by 500 per scale (500 / 1,000 / 1,500).
+    </div>
+    <label class="check-label" style="margin-top:14px">
+      <input type="checkbox" id="track-jumps" onchange="toggleTrackJumps(this.checked)">
+      <span class="checkmark"></span>
+      Track Jumps
+    </label>
+    <div style="margin-top:6px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      When checked, exposes a Number of Jumps field on the Contract tab. Travel cost becomes 50 + (50 × Jumps) instead of the flat 300 per scale.
     </div>
   </div>
 
@@ -891,7 +1186,7 @@ let data = {
   contractStatus:'active', scale:'', startWarchest:'',
   basePay:'', supportType:'none', supportPct:'', transportPct:'', salvagePct:'',
   command:'', contactTerms:'', combatBonus:'0',
-  gameMode:'classic',
+  gameMode:'classic', exchangeSalvage: false, trackJumps: false, numJumps: '',
   ledger:[],
   repairRows:[],
   rearmRows:[],
@@ -922,13 +1217,18 @@ function saveAll() { save(); toast('Data saved!'); }
 
 function collectFormValues() {
   const fields = ['unitName','contractName','actionType','contractLength','contractStatus',
-    'scale','startWarchest','basePay','supportType','supportPct','transportPct','salvagePct','command','contactTerms'];
+    'startWarchest','basePay','supportType','supportPct','transportPct','salvagePct','command','contactTerms','numJumps','employer','planet'];
   fields.forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
   });
   const radios = document.querySelectorAll('input[name=combatBonus]');
   radios.forEach(r => { if (r.checked) data.combatBonus = r.value; });
+  const exSalv = document.getElementById('exchangeSalvage');
+  if (exSalv) data.exchangeSalvage = exSalv.checked;
+  const trackJumpsEl = document.getElementById('track-jumps');
+  if (trackJumpsEl) data.trackJumps = trackJumpsEl.checked;
+  data.numJumps = v('numJumps') || '';
 }
 
 function exportData() {
@@ -974,6 +1274,14 @@ function renderAll() {
   sv('basePay', data.basePay); sv('supportType', data.supportType||'none'); sv('supportPct', data.supportPct);
   sv('transportPct', data.transportPct); sv('salvagePct', data.salvagePct);
   sv('command', data.command); sv('contactTerms', data.contactTerms);
+  sv('employer', data.employer || ''); sv('planet', data.planet || '');
+  const exSalvEl = document.getElementById('exchangeSalvage');
+  if (exSalvEl) { exSalvEl.checked = !!data.exchangeSalvage; applyExchangeSalvage(!!data.exchangeSalvage, false); }
+  const trackJumpsEl = document.getElementById('track-jumps');
+  if (trackJumpsEl) { trackJumpsEl.checked = !!data.trackJumps; }
+  const jumpRow = document.getElementById('jump-field-row');
+  if (jumpRow) jumpRow.style.display = data.trackJumps ? 'block' : 'none';
+  sv('numJumps', data.numJumps || '');
   // combat bonus radio
   document.querySelectorAll('input[name=combatBonus]').forEach(r => {
     r.checked = (r.value === (data.combatBonus||'0'));
@@ -985,10 +1293,16 @@ function renderAll() {
   renderRepairRows();
   renderRearmRows();
   renderAssetRows();
+  renderSalvageRows();
+  renderOmniRows();
+  renderHireRows();
+  renderHealRows();
+  renderSkillRows();
   renderContractHistory();
   renderForce();
   renderGameMode();
   renderPilotRoster();
+  renderDeployment();
   const noBspEl = document.getElementById('no-bsp');
   if (noBspEl) noBspEl.checked = !!data.noBsp;
   recalc();
@@ -1011,21 +1325,52 @@ function recalc() {
   collectFormValues();
   const scale = +data.scale || 0;
   const length = +data.contractLength || 0;
-  const basePay = +data.basePay || 0;
+  const basePayPct = +data.basePay || 0;
+  const basePayBase = 500 * scale;
+  const basePay = Math.round(basePayBase * (basePayPct / 100));
   const bonus = +data.combatBonus || 0;
 
-  const travel = 300 * scale;
-  const maintPerMonth = 500 * scale;
-  const totalMaint = maintPerMonth * length;
+  const numJumps = +data.numJumps || 0;
+  const travelGross = data.trackJumps
+    ? Math.ceil(50 + (50 * numJumps))
+    : 300 * scale;
+  const transportPct = Math.min(100, Math.max(0, +data.transportPct || 0));
+  const travelCovered = Math.round(travelGross * (transportPct / 100));
+  const travel = travelGross - travelCovered;
+  const maintGrossPerMonth = 500 * scale;
+  const supportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : supportPct;
+  const maintCoveredPerMonth = Math.round(maintGrossPerMonth * (effectiveSupportPct / 100));
+  const maintNetPerMonth = maintGrossPerMonth - maintCoveredPerMonth;
+  const totalMaint = maintNetPerMonth * length;
   const combatBonusPay = Math.round(basePay * (bonus / 100));
   const totalIncome = (basePay * length) + combatBonusPay;
   const totalCosts = travel + totalMaint;
   const net = totalIncome - totalCosts;
 
-  setText('sum-travel', travel ? `${fmt(travel)} SP` : '— SP');
-  setText('sum-maint', totalMaint ? `${fmt(totalMaint)} SP` : '— SP');
+  const travelEl = document.getElementById('sum-travel');
+  if (travelEl) {
+    if (!travelGross) {
+      travelEl.innerHTML = '— SP';
+    } else if (travelCovered) {
+      travelEl.innerHTML = `${fmt(travel)} SP <span style="font-size:11px;color:var(--green-bright)">(${transportPct}% covered)</span>`;
+    } else {
+      travelEl.innerHTML = `${fmt(travel)} SP`;
+    }
+  }
+  const maintEl = document.getElementById('sum-maint');
+  if (maintEl) {
+    if (!maintGrossPerMonth) {
+      maintEl.innerHTML = '— SP';
+    } else if (maintCoveredPerMonth) {
+      const coveredLabel = data.supportType === 'battle' ? 'Battle Support' : `${effectiveSupportPct}% covered`;
+      maintEl.innerHTML = `${fmt(maintNetPerMonth)} SP/mo <span style="font-size:11px;color:var(--green-bright)">(${coveredLabel})</span>`;
+    } else {
+      maintEl.innerHTML = `${fmt(maintNetPerMonth)} SP/mo`;
+    }
+  }
   setText('sum-bonus', `${fmt(combatBonusPay)} SP`);
-  setText('sum-basepay', basePay ? `${fmt(basePay)} SP/mo` : '— SP');
+  setText('sum-basepay', (scale && basePayPct) ? `${fmt(basePay)} SP/mo` : '— SP');
   setText('sum-income', totalIncome ? `${fmt(totalIncome)} SP` : '— SP');
   setText('sum-costs', totalCosts ? `${fmt(totalCosts)} SP` : '— SP');
 
@@ -1038,6 +1383,25 @@ function recalc() {
   updateBonusHighlight();
   updateLedgerBalance();
   updateSupportTotals();
+  updateSalvageTotals();
+}
+
+function toggleExchangeSalvage(checked) {
+  data.exchangeSalvage = checked;
+  applyExchangeSalvage(checked, true);
+  save();
+}
+
+function applyExchangeSalvage(checked, updatePct) {
+  const salvagePctEl = document.getElementById('salvagePct');
+  if (checked) {
+    if (updatePct && salvagePctEl) { salvagePctEl.value = 25; data.salvagePct = '25'; }
+    if (salvagePctEl) salvagePctEl.readOnly = true;
+  } else {
+    if (salvagePctEl) salvagePctEl.readOnly = false;
+  }
+  // Re-render salvage calculator to reflect claim block state
+  renderSalvageRows();
 }
 
 function updateStatus() {
@@ -1153,6 +1517,9 @@ function updateLedgerBalance() {
   (data.ledger||[]).forEach(row => { totalRep += +row.rep || 0; });
   const repEl = document.getElementById('ledger-rep');
   if (repEl) { repEl.textContent = (totalRep >= 0 ? '+' : '') + totalRep; repEl.style.color = totalRep >= 0 ? 'var(--gold)' : 'var(--red)'; }
+  const forceRepEl = document.getElementById('force-rep-display');
+  if (forceRepEl) { forceRepEl.textContent = (totalRep >= 0 ? '+' : '') + totalRep; forceRepEl.style.color = totalRep >= 0 ? 'var(--gold)' : 'var(--red)'; }
+  updateForceCalc();
 }
 
 // ─────────────────────────────────────────
@@ -1182,7 +1549,7 @@ function renderRepairRows() {
   cont.innerHTML = data.repairRows.map((r,i) => {
     const tons = +r.tons||0;
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
-    const cost = tons * mt.mult;
+    const cost = Math.ceil(tons * mt.mult);
     const unitOptions = forceUnits.length
       ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
       : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
@@ -1215,24 +1582,78 @@ function updateRearmRow(i, field, val) { data.rearmRows[i][field]=val; renderRea
 
 function renderRearmRows() {
   const cont = document.getElementById('rearm-rows');
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const rearmLabel = classic ? 'Rearm Costs (10 SP/Ton)' : 'Rearm Costs (20 SP/unit)';
+  const rearmHdr = document.getElementById('rearm-panel-title');
+  if (rearmHdr) rearmHdr.textContent = classic ? '🔧 Rearm Costs (10 SP/Ton)' : '🔧 Rearm Costs (20 SP/unit)';
+  const tonsHdr = document.getElementById('rearm-tons-header');
+  if (tonsHdr) tonsHdr.style.display = classic ? '' : 'none';
+  const colHdrs = document.getElementById('rearm-col-headers');
+  if (colHdrs) colHdrs.style.gridTemplateColumns = classic ? '2fr 1fr 120px' : '2fr 120px';
   if (!data.rearmRows.length) {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
     updateSupportTotals(); return;
   }
   const forceUnits = getForceUnits();
   cont.innerHTML = data.rearmRows.map((r,i) => {
-    const cost = (+r.tons||0) * 10;
+    const cost = classic ? Math.ceil((+r.tons||0) * 10) : 20;
+    const unitOptions = forceUnits.length
+      ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
+      : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
+    const cols = classic ? '2fr 1fr 120px' : '2fr 120px';
+    return `<div style="display:grid;grid-template-columns:${cols};gap:8px;align-items:center;margin-bottom:6px">
+      <select onchange="selectRearmUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
+        ${unitOptions}
+      </select>
+      ${classic ? `<input type="number" value="${r.tons||''}" onchange="updateRearmRow(${i},'tons',this.value)" placeholder="Tons" style="text-align:center">` : ''}
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
+        <button class="btn btn-sm btn-danger" onclick="removeRearmRow(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  updateSupportTotals();
+}
+
+// ─────────────────────────────────────────
+// OMNI RECONFIGURE ROWS
+// ─────────────────────────────────────────
+function addOmniRow() {
+  if (!data.omniRows) data.omniRows = [];
+  data.omniRows.push({unit:'', tons:''});
+  renderOmniRows(); save();
+}
+function removeOmniRow(i) { data.omniRows.splice(i,1); renderOmniRows(); save(); }
+function updateOmniRow(i, field, val) { data.omniRows[i][field]=val; renderOmniRows(); save(); }
+function selectOmniUnit(i, unitName) {
+  data.omniRows[i].unit = unitName;
+  const match = getForceUnits().find(u => u.unit === unitName);
+  if (match && match.tons) data.omniRows[i].tons = match.tons;
+  renderOmniRows(); save();
+}
+
+function renderOmniRows() {
+  if (!data.omniRows) data.omniRows = [];
+  const cont = document.getElementById('omni-rows');
+  if (!cont) { updateSupportTotals(); return; }
+  if (!data.omniRows.length) {
+    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
+    updateSupportTotals(); return;
+  }
+  const forceUnits = getForceUnits();
+  cont.innerHTML = data.omniRows.map((r,i) => {
+    const cost = Math.ceil((+r.tons||0) / 4);
     const unitOptions = forceUnits.length
       ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
       : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
     return `<div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
-      <select onchange="selectRearmUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
+      <select onchange="selectOmniUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
         ${unitOptions}
       </select>
-      <input type="number" value="${r.tons||''}" onchange="updateRearmRow(${i},'tons',this.value)" placeholder="Tons" style="text-align:center">
+      <input type="number" value="${r.tons||''}" onchange="updateOmniRow(${i},'tons',this.value)" placeholder="Tons" style="text-align:center">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
-        <button class="btn btn-sm btn-danger" onclick="removeRearmRow(${i})">✕</button>
+        <button class="btn btn-sm btn-danger" onclick="removeOmniRow(${i})">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -1249,7 +1670,7 @@ function getForceUnits() {
     (f.rows||[]).forEach(r => {
       if (r.unit && r.unit.trim() && !seen.has(r.unit.trim())) {
         seen.add(r.unit.trim());
-        units.push({unit: r.unit.trim(), tons: r.tons||''});
+        units.push({unit: r.unit.trim(), tons: r.tons||'', bv: r.bv||'', unitStatus: r.unitStatus||''});
       }
     });
   });
@@ -1275,16 +1696,14 @@ function selectRearmUnit(i, unitName) {
 function getAssetTypes() {
   const classic = (data.gameMode || 'classic') === 'classic';
   return classic ? [
-    {label:'Purchase Mech (BV×40)',     key:'buy',     sign:-1},
-    {label:'Sell Repaired Mech (BV/2×20)', key:'sell', sign:1},
-    {label:'Salvage Value (BV/2×20)',   key:'salvage', sign:1}
+    {label:'Purchase Unit (BV)',        key:'buy',     sign:-1},
+    {label:'Sell Repaired Unit (BV÷2)', key:'sell',    sign:1}
   ] : [
-    {label:'Purchase Mech (PV×40)',     key:'buy_pv',  sign:-1},
-    {label:'Sell Repaired Mech (PV×20)',key:'sell',    sign:1},
-    {label:'Salvage Value (PV×20)',     key:'salvage', sign:1}
+    {label:'Purchase Unit (PV×40)',     key:'buy_pv',  sign:-1},
+    {label:'Sell Repaired Unit (PV×20)',key:'sell_pv', sign:1}
   ];
 }
-const ASSET_MULT = {'buy':40,'buy_pv':40,'sell':10,'salvage':20};
+const ASSET_MULT = {'buy':1,'buy_pv':40,'sell':0.5,'sell_pv':20};
 
 function addAssetRow() {
   const types = getAssetTypes();
@@ -1294,6 +1713,21 @@ function addAssetRow() {
 function removeAssetRow(i) { data.assetRows.splice(i,1); renderAssetRows(); save(); }
 function updateAssetRow(i, field, val) { data.assetRows[i][field]=val; renderAssetRows(); save(); }
 
+function selectAssetUnit(i, val) {
+  data.assetRows[i].unit = val;
+  const match = getForceUnits().find(u => u.unit === val);
+  if (match && match.bv) data.assetRows[i].bv = match.bv;
+  // Warn if trying to sell a non-Operational unit
+  const isSell = data.assetRows[i].type === 'sell' || data.assetRows[i].type === 'sell_pv';
+  if (isSell && match && match.unitStatus && match.unitStatus !== 'operational' && match.unitStatus !== '') {
+    toast(`Cannot sell ${val} — status is ${match.unitStatus.replace('struct','Structure/Crit')}.`);
+    data.assetRows[i].unit = '';
+    data.assetRows[i].bv = '';
+  }
+  renderAssetRows();
+  save();
+}
+
 function renderAssetRows() {
   const ASSET_TYPES = getAssetTypes();
   const cont = document.getElementById('asset-rows');
@@ -1302,15 +1736,32 @@ function renderAssetRows() {
     updateSupportTotals(); return;
   }
   const classic = (data.gameMode || 'classic') === 'classic';
-  cont.innerHTML = data.assetRows.map((r,i) => {
+
+  // Build unit options from force roster (unique unit names, exclude empty)
+  const forceUnits = getForceUnits();
+  // Datalist for purchase (all units) and sell (operational only)
+  const datalistId = 'asset-unit-list';
+  const datalistSellId = 'asset-unit-list-sell';
+  const allUnitsHtml = `<datalist id="${datalistId}">${forceUnits.map(u => `<option value="${esc(u.unit)}">`).join('')}</datalist>`;
+  const sellUnitsHtml = `<datalist id="${datalistSellId}">${forceUnits.filter(u => !u.unitStatus || u.unitStatus === 'operational').map(u => `<option value="${esc(u.unit)}">`).join('')}</datalist>`;
+
+  cont.innerHTML = allUnitsHtml + sellUnitsHtml + data.assetRows.map((r,i) => {
     const mult = ASSET_MULT[r.type]||40;
     const bv = +r.bv||0;
     const at = ASSET_TYPES.find(t=>t.key===r.type)||ASSET_TYPES[0];
     const val = bv * mult;
     const sign = at.sign;
-    const color = sign > 0 ? 'var(--green-bright)' : 'var(--red)';
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 100px 130px;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="text" value="${esc(r.unit)}" onchange="updateAssetRow(${i},'unit',this.value)" placeholder="Unit name">
+    const isSellRow = r.type === 'sell';
+    // Check if selected unit is non-Operational on a sell row
+    const matchedUnit = forceUnits.find(u => u.unit === r.unit);
+    const nonOpSell = isSellRow && matchedUnit && matchedUnit.unitStatus && matchedUnit.unitStatus !== 'operational';
+    const color = nonOpSell ? 'var(--red)' : sign > 0 ? 'var(--green-bright)' : 'var(--red)';
+    const listId = isSellRow ? datalistSellId : datalistId;
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 180px 130px;gap:8px;align-items:center;margin-bottom:6px${nonOpSell?';opacity:0.6':''}">
+      <div style="position:relative">
+        <input type="text" list="${listId}" value="${esc(r.unit)}" onchange="selectAssetUnit(${i},this.value)" oninput="updateAssetRow(${i},'unit',this.value)" placeholder="Unit name or custom" style="width:100%${nonOpSell?';border-color:var(--red)':''}">
+        ${nonOpSell ? `<div style="font-size:10px;color:var(--red);letter-spacing:1px;margin-top:2px">Not Operational — cannot sell</div>` : ''}
+      </div>
       <input type="number" value="${r.bv||''}" onchange="updateAssetRow(${i},'bv',this.value)" placeholder="${classic ? 'BV' : 'PV'}" style="text-align:center">
       <select onchange="updateAssetRow(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
         ${ASSET_TYPES.map(t=>`<option value="${t.key}" ${r.type===t.key?'selected':''}>${t.label}</option>`).join('')}
@@ -1324,6 +1775,395 @@ function renderAssetRows() {
   updateSupportTotals();
 }
 
+// ─────────────────────────────────────────
+// SALVAGE CALCULATOR
+// ─────────────────────────────────────────
+function addSalvageRow() {
+  if (!data.salvageRows) data.salvageRows = [];
+  data.salvageRows.push({unit:'', bv:''});
+  renderSalvageRows(); save();
+}
+function removeSalvageRow(i) {
+  data.salvageRows.splice(i,1);
+  renderSalvageRows(); save();
+}
+function updateSalvageRow(i, field, val) {
+  data.salvageRows[i][field] = val;
+  renderSalvageRows(); save();
+}
+function selectSalvageUnit(i, val) {
+  data.salvageRows[i].unit = val;
+  const match = getForceUnits().find(u => u.unit === val);
+  if (match && match.bv) data.salvageRows[i].bv = match.bv;
+  renderSalvageRows(); save();
+}
+
+function renderSalvageRows() {
+  if (!data.salvageRows) data.salvageRows = [];
+  const cont = document.getElementById('salvage-rows');
+  if (!cont) return;
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const bvLabel = classic ? 'BV' : 'PV';
+
+  // Update column header label
+  const colHdr = document.getElementById('salvage-bv-col-header');
+  const formulaLbl = document.getElementById('salvage-calc-bv-label');
+  if (colHdr) colHdr.textContent = bvLabel;
+  if (formulaLbl) formulaLbl.textContent = classic ? '(BV \u00f7 2)' : '(PV \u00d7 20)';
+
+  const forceUnits = getForceUnits();
+  const datalistId = 'salvage-unit-list';
+  const datalistHtml = `<datalist id="${datalistId}">${forceUnits.map(u=>`<option value="${esc(u.unit)}">`).join('')}</datalist>`;
+
+  if (!data.salvageRows.length) {
+    cont.innerHTML = datalistHtml + `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
+    updateSalvageTotals(); return;
+  }
+
+  const exchangeSalvage = !!data.exchangeSalvage;
+
+  cont.innerHTML = datalistHtml + data.salvageRows.map((r,i) => {
+    const bv = +r.bv || 0;
+    const salvageVal = classic ? bv / 2 : bv * 20;
+    const claimed = !!r.claim && !exchangeSalvage;
+    const spColor = claimed ? 'var(--text-dim)' : 'var(--green-bright)';
+    const rowOpacity = claimed ? 'opacity:0.55;' : '';
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 120px 60px;gap:8px;align-items:center;margin-bottom:6px;${rowOpacity}">
+      <input type="text" list="${datalistId}" value="${esc(r.unit)}" placeholder="Unit name or custom"
+        onchange="selectSalvageUnit(${i},this.value)" oninput="updateSalvageRow(${i},'unit',this.value)">
+      <input type="number" value="${r.bv||''}" placeholder="${bvLabel}" style="text-align:right"
+        onchange="updateSalvageRow(${i},'bv',this.value)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;flex:1;text-align:right;color:${spColor};text-decoration:${claimed?'line-through':'none'}">${bv ? fmt(salvageVal)+' SP' : '—'}</span>
+        <button class="btn btn-sm btn-danger" onclick="removeSalvageRow(${i})">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        ${exchangeSalvage
+          ? `<span title="Claiming disabled — Exchange Salvage is active" style="width:20px;height:20px;border:2px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;opacity:0.3;cursor:not-allowed"></span>`
+          : `<label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0" title="Claim unit (deduct from Your Share)">
+          <input type="checkbox" ${claimed?'checked':''} onchange="toggleSalvageClaim(${i},this.checked)" style="display:none">
+          <span style="width:20px;height:20px;border:2px solid ${claimed?'var(--gold)':'var(--border)'};background:${claimed?'var(--gold)':'transparent'};display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0">
+            ${claimed?'<span style="color:#000;font-size:13px;font-weight:700;line-height:1">✓</span>':''}
+          </span>
+        </label>`}
+      </div>
+    </div>`;
+  }).join('');
+  updateSalvageTotals();
+}
+
+function toggleSalvageClaim(i, checked) {
+  data.salvageRows[i].claim = checked;
+  renderSalvageRows(); save();
+}
+
+function updateSalvageTotals() {
+  let rawTotal = 0;
+  let claimedTotal = 0;
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const exchangeSalvage = !!data.exchangeSalvage;
+  (data.salvageRows||[]).forEach(r => {
+    const val = classic ? (+r.bv||0) / 2 : (+r.bv||0) * 20;
+    rawTotal += val;
+    if (!exchangeSalvage && r.claim) claimedTotal += val;
+  });
+
+  const pct = Math.min(100, Math.max(0, +data.salvagePct || 0));
+  const shareBeforeClaim = rawTotal * (pct / 100);
+  const netTotal = shareBeforeClaim - claimedTotal;
+
+  const el = document.getElementById('salvage-total');
+  const grand = document.getElementById('salvage-grand-total');
+  const pctDisplay = document.getElementById('salvage-pct-display');
+  const netEl = document.getElementById('salvage-net-total');
+
+  if (el) el.textContent = `${fmt(rawTotal)} SP`;
+  if (grand) { grand.textContent = `${fmt(rawTotal)} SP`; grand.style.color = rawTotal ? 'var(--gold)' : 'var(--text-dim)'; }
+  if (pctDisplay) { pctDisplay.textContent = `${pct}%`; pctDisplay.style.color = pct > 0 ? 'var(--text)' : 'var(--text-dim)'; }
+  if (netEl) {
+    netEl.textContent = `${fmt(netTotal)} SP`;
+    netEl.style.color = netTotal < 0 ? 'var(--red)' : netTotal > 0 ? 'var(--green-bright)' : 'var(--text-dim)';
+  }
+}
+
+function sendSalvageToLedger() {
+  let rawTotal = 0, claimedTotal = 0;
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const exchangeSalvage = !!data.exchangeSalvage;
+  (data.salvageRows||[]).forEach(r => {
+    const val = classic ? (+r.bv||0) / 2 : (+r.bv||0) * 20;
+    rawTotal += val;
+    if (!exchangeSalvage && r.claim) claimedTotal += val;
+  });
+  const pct = Math.min(100, Math.max(0, +data.salvagePct || 0));
+  const netTotal = rawTotal * (pct / 100) - claimedTotal;
+  if (netTotal === 0) { toast(pct === 0 ? 'Salvage % is 0 on the Contract tab.' : 'No salvage value to send.'); return; }
+  const rounded = Math.round(netTotal);
+  if (rounded >= 0) {
+    data.ledger.push({month:'', event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
+  } else {
+    data.ledger.push({month:'', event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+  }
+  renderLedger(); save();
+  toast('Salvage added to Monthly Ledger.');
+}
+
+// ─────────────────────────────────────────
+// PERSONNEL & TRAINING
+// ─────────────────────────────────────────
+function addHireRow() {
+  if (!data.hireRows) data.hireRows = [];
+  data.hireRows.push({desc:'', count:''});
+  renderHireRows(); save();
+}
+function removeHireRow(i) { data.hireRows.splice(i,1); renderHireRows(); save(); }
+function updateHireRow(i, field, val) { data.hireRows[i][field]=val; renderHireRows(); save(); }
+
+function renderHireRows() {
+  if (!data.hireRows) data.hireRows = [];
+  const cont = document.getElementById('hire-rows');
+  if (!cont) { updatePersonnelTotals(); return; }
+  if (!data.hireRows.length) {
+    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
+    updatePersonnelTotals(); return;
+  }
+  cont.innerHTML = data.hireRows.map((r,i) => {
+    const cost = Math.ceil((+r.count||0) * 100);
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="text" value="${esc(r.desc)}" placeholder="e.g. MechWarriors" onchange="updateHireRow(${i},'desc',this.value)" style="width:100%">
+      <input type="number" value="${r.count||''}" placeholder="n" style="text-align:center" onchange="updateHireRow(${i},'count',this.value)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
+        <button class="btn btn-sm btn-danger" onclick="removeHireRow(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  updatePersonnelTotals();
+}
+
+function addHealRow() {
+  if (!data.healRows) data.healRows = [];
+  data.healRows.push({wounds:''});
+  renderHealRows(); save();
+}
+function removeHealRow(i) { data.healRows.splice(i,1); renderHealRows(); save(); }
+function updateHealRow(i, field, val) { data.healRows[i][field]=val; renderHealRows(); save(); }
+
+function renderHealRows() {
+  if (!data.healRows) data.healRows = [];
+  const cont = document.getElementById('heal-rows');
+  if (!cont) { updatePersonnelTotals(); return; }
+
+  if (!data.healRows.length) {
+    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
+    updatePersonnelTotals(); return;
+  }
+  cont.innerHTML = data.healRows.map((r,i) => {
+    const cost = Math.ceil((+r.wounds||0) * 30);
+    return `<div style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="number" value="${r.wounds||''}" placeholder="Number of wounds" style="text-align:center"
+        onchange="updateHealRow(${i},'wounds',this.value)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
+        <button class="btn btn-sm btn-danger" onclick="removeHealRow(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  updatePersonnelTotals();
+}
+
+function selectHealPilot(i, name) {
+  data.healRows[i].pilot = name;
+  const match = (data.pilotRoster||[]).find(p => p.name === name);
+  if (match && match.wounds) data.healRows[i].wounds = String(match.wounds);
+  renderHealRows(); save();
+}
+
+function addSkillRow() {
+  if (!data.skillRows) data.skillRows = [];
+  data.skillRows.push({desc:'', cost:''});
+  renderSkillRows(); save();
+}
+function removeSkillRow(i) { data.skillRows.splice(i,1); renderSkillRows(); save(); }
+function updateSkillRow(i, field, val) { data.skillRows[i][field]=val; renderSkillRows(); save(); }
+
+function renderSkillRows() {
+  if (!data.skillRows) data.skillRows = [];
+  const cont = document.getElementById('skill-rows');
+  if (!cont) { updatePersonnelTotals(); return; }
+
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const trainingOptions = [
+    // Unit Training — Gunnery (Classic only)
+    ...(classic ? [
+      'Gunnery 6 to 5 (50 SP)', 'Gunnery 5 to 4 (100 SP)', 'Gunnery 4 to 3 (200 SP)',
+      'Gunnery 3 to 2 (400 SP)', 'Gunnery 2 to 1 (800 SP)', 'Gunnery 1 to 0 (1000 SP)',
+    ] : []),
+    // Unit Training — Piloting (Classic only)
+    ...(classic ? [
+      'Piloting 6 to 5 (25 SP)', 'Piloting 5 to 4 (50 SP)', 'Piloting 4 to 3 (100 SP)',
+      'Piloting 3 to 2 (200 SP)', 'Piloting 2 to 1 (500 SP)', 'Piloting 1 to 0 (750 SP)',
+    ] : []),
+    // Unit Training — Alpha Strike Skill (Alpha Strike only)
+    ...(!classic ? [
+      'Skill AS 6 to 5 (50 SP)', 'Skill AS 5 to 4 (125 SP)', 'Skill AS 4 to 3 (250 SP)',
+      'Skill AS 3 to 2 (500 SP)', 'Skill AS 2 to 1 (1000 SP)', 'Skill AS 1 to 0 (1500 SP)',
+    ] : []),
+    // SPA
+    'Special Pilot Ability (SPA × 200)',
+    // Force Training
+    'Create New Formation (10 SP/unit)', 'Change Existing Formation (5 SP/unit)',
+    // Command Training
+    'Learn 1st Special Command Ability (250 SP)',
+    'Learn 2nd Special Command Ability (500 SP)',
+    'Learn 3rd+ Special Command Ability (750 SP)',
+    'Replace Special Command Ability (250 SP)',
+  ];
+  const datalistHtml = `<datalist id="skill-pilot-list">${trainingOptions.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+
+  if (!data.skillRows.length) {
+    cont.innerHTML = datalistHtml + `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
+    updatePersonnelTotals(); return;
+  }
+  cont.innerHTML = datalistHtml + data.skillRows.map((r,i) => {
+    const cost = Math.ceil(+r.cost||0);
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 36px;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="text" list="skill-pilot-list" value="${esc(r.desc||'')}" placeholder="Pilot / description"
+        onchange="updateSkillRow(${i},'desc',this.value)" style="width:100%">
+      <input type="number" value="${r.cost||''}" placeholder="SP cost" style="text-align:right;font-family:'Share Tech Mono',monospace;color:var(--gold)"
+        onchange="updateSkillRow(${i},'cost',this.value)">
+      <button class="btn btn-sm btn-danger" onclick="removeSkillRow(${i})">✕</button>
+    </div>`;
+  }).join('');
+  updatePersonnelTotals();
+}
+
+function updatePersonnelTotals() {
+  let hireTotal = 0;
+  (data.hireRows||[]).forEach(r => { hireTotal += Math.ceil((+r.count||0)*100); });
+  setText('hire-total', `${fmt(hireTotal)} SP`);
+
+  let healTotal = 0;
+  (data.healRows||[]).forEach(r => { healTotal += Math.ceil((+r.wounds||0)*30); });
+  setText('heal-total', `${fmt(healTotal)} SP`);
+
+  let skillTotal = 0;
+  (data.skillRows||[]).forEach(r => { skillTotal += Math.ceil(+r.cost||0); });
+  setText('skill-total', `${fmt(skillTotal)} SP`);
+
+  const grandTotal = hireTotal + healTotal + skillTotal;
+  const el = document.getElementById('personnel-grand-total');
+  if (el) { el.textContent = `${fmt(grandTotal)} SP`; el.style.color = grandTotal ? 'var(--gold)' : 'var(--text-dim)'; }
+}
+
+function sendPersonnelToLedger() {
+  let total = 0;
+  (data.hireRows||[]).forEach(r => { total += Math.ceil((+r.count||0)*100); });
+  (data.healRows||[]).forEach(r => { total += Math.ceil((+r.wounds||0)*30); });
+  (data.skillRows||[]).forEach(r => { total += Math.ceil(+r.cost||0); });
+  if (!total) { toast('No personnel costs to send.'); return; }
+  data.ledger.push({month:'', event:'Personnel & Training', cost: String(total), cover:'', paid:'', rep:''});
+  renderLedger(); save();
+  toast('Personnel costs added to Monthly Ledger.');
+}
+
+function sendAssetToLedger() {
+  const ASSET_TYPES_CUR = getAssetTypes();
+  const forceUnits = getForceUnits();
+
+  // Block if any sell row has a non-Operational roster unit
+  const badSell = (data.assetRows||[]).find(r => {
+    if (r.type !== 'sell') return false;
+    const match = forceUnits.find(u => u.unit === r.unit);
+    return match && match.unitStatus && match.unitStatus !== 'operational';
+  });
+  if (badSell) { toast(`Cannot sell "${badSell.unit}" — unit is not Operational.`); return; }
+
+  let net = 0;
+  (data.assetRows||[]).forEach(r => {
+    const mult = ASSET_MULT[r.type] || 1;
+    const at = ASSET_TYPES_CUR.find(t => t.key === r.type) || ASSET_TYPES_CUR[0];
+    net += at.sign * (+r.bv||0) * mult;
+  });
+  if (!net) { toast('No unit purchase/sale value to send.'); return; }
+
+  // Sync unit roster from asset rows
+  (data.assetRows||[]).forEach(r => {
+    const unitName = (r.unit || '').trim();
+    if (!unitName) return;
+
+    const isSell = r.type === 'sell';
+    const isBuy  = r.type === 'buy' || r.type === 'buy_pv';
+
+    if (isSell) {
+      // Remove matching unit rows from all formations
+      (data.forceData.formations || []).forEach(f => {
+        for (let ri = f.rows.length - 1; ri >= 0; ri--) {
+          if ((f.rows[ri].unit || '').trim() === unitName) {
+            // Unassign pilot if assigned
+            const row = f.rows[ri];
+            if (typeof row.pilotIdx === 'number' && row.pilotIdx !== '') {
+              const p = (data.pilotRoster || [])[row.pilotIdx];
+              if (p) p.unit = '';
+            }
+            f.rows.splice(ri, 1);
+          }
+        }
+        // Keep at least one blank row in a formation
+        if (!f.rows.length) f.rows.push({unit:'',pilot:'',tons:'',sz:'',bv:'',gp:'',adv:'',spa:''});
+      });
+    }
+
+    if (isBuy) {
+      // Add to top of first formation
+      if (!data.forceData.formations || !data.forceData.formations.length) return;
+      const firstFormation = data.forceData.formations[0];
+      firstFormation.rows.unshift({
+        unit: unitName,
+        pilot: '', pilotIdx: '',
+        tons: '', sz: '',
+        bv: r.bv || '',
+        gp: '', adv: '', spa: '',
+        unitStatus: ''
+      });
+    }
+  });
+
+  if (net > 0) {
+    data.ledger.push({month:'', event:'Unit Sales', cost:'', cover:'', paid: String(Math.round(net)), rep:''});
+  } else {
+    data.ledger.push({month:'', event:'Unit Purchases', cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
+  }
+  renderLedger();
+  renderFormations();
+  renderPilotRoster();
+  renderDeployment();
+  save();
+  toast('Unit transactions added to Monthly Ledger.');
+}
+
+function clearSupportCosts() {
+  if (!confirm('Clear all support cost calculations? This cannot be undone.')) return;
+  data.repairRows = [];
+  data.rearmRows = [];
+  data.assetRows = [];
+  data.salvageRows = [];
+  data.omniRows = [];
+  data.hireRows = [];
+  data.healRows = [];
+  data.skillRows = [];
+  renderRepairRows();
+  renderRearmRows();
+  renderAssetRows();
+  renderSalvageRows();
+  renderOmniRows();
+  renderHireRows();
+  renderHealRows();
+  renderSkillRows();
+  save();
+  toast('Support costs cleared.');
+}
+
 function sendRepairRearmToLedger() {
   let repairTotal = 0;
   (data.repairRows||[]).forEach(r => {
@@ -1331,10 +2171,13 @@ function sendRepairRearmToLedger() {
     repairTotal += (+r.tons||0) * mt.mult;
   });
   let rearmTotal = 0;
-  (data.rearmRows||[]).forEach(r => { rearmTotal += (+r.tons||0)*10; });
-  const total = repairTotal + rearmTotal;
+  const rearmLedgerClassic = (data.gameMode || 'classic') === 'classic';
+  (data.rearmRows||[]).forEach(r => { rearmTotal += rearmLedgerClassic ? (+r.tons||0)*10 : 20; });
+  let omniTotal = 0;
+  (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
+  const total = Math.ceil(repairTotal + rearmTotal + omniTotal);
   if (!total) { toast('No repair/rearm costs to send.'); return; }
-  data.ledger.push({month:'', event:'Repair & Rearm', cost: String(total), cover:'', paid:'', rep:''});
+  data.ledger.push({month:'', event:'Repair, Rearm & Omni', cost: String(Math.round(total)), cover:'', paid:'', rep:''});
   renderLedger(); save();
   toast('Added to Monthly Ledger.');
 }
@@ -1347,16 +2190,22 @@ function updateSupportTotals() {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
     repairTotal += (+r.tons||0) * mt.mult;
   });
-  setText('repair-total', `${fmt(repairTotal)} SP`);
+  setText('repair-total', `${fmt(Math.ceil(repairTotal))} SP`);
 
   // rearm
+  const rearmClassic = (data.gameMode || 'classic') === 'classic';
   let rearmTotal = 0;
-  (data.rearmRows||[]).forEach(r => { rearmTotal += (+r.tons||0)*10; });
-  setText('rearm-total', `${fmt(rearmTotal)} SP`);
+  (data.rearmRows||[]).forEach(r => { rearmTotal += rearmClassic ? (+r.tons||0)*10 : 20; });
+  setText('rearm-total', `${fmt(Math.ceil(rearmTotal))} SP`);
 
-  // repair & rearm section total
-  const repairRearmTotal = repairTotal + rearmTotal;
-  setText('support-repair-rearm-total', `${fmt(repairRearmTotal)} SP`);
+  // omni reconfigure
+  let omniTotal = 0;
+  (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
+  setText('omni-total', `${fmt(Math.ceil(omniTotal))} SP`);
+
+  // repair, rearm & omni section total
+  const repairRearmTotal = repairTotal + rearmTotal + omniTotal;
+  setText('support-repair-rearm-total', `${fmt(Math.ceil(repairRearmTotal))} SP`);
 
   // assets
   let assetNet = 0;
@@ -1412,6 +2261,15 @@ function newContract() {
   if (!data.contractHistory) data.contractHistory = [];
   data.contractHistory.unshift(snapshot);
 
+  // Calculate ending warchest and rep from current contract to carry forward
+  let endingBalance = +data.startWarchest || 0;
+  (data.ledger || []).forEach(row => {
+    const netCost = Math.max(0, (+row.cost||0) - (+row.cover||0));
+    endingBalance += (+row.paid||0) - netCost;
+  });
+  let endingRep = 0;
+  (data.ledger || []).forEach(row => { endingRep += +row.rep || 0; });
+
   // reset active contract fields
   data.unitName = data.unitName; // carry unit name forward
   data.contractName = '';
@@ -1419,7 +2277,7 @@ function newContract() {
   data.contractLength = '';
   data.contractStatus = 'active';
   data.scale = '';
-  data.startWarchest = '';
+  data.startWarchest = String(Math.round(endingBalance));
   data.basePay = '';
   data.supportType = 'none';
   data.supportPct = '';
@@ -1428,7 +2286,12 @@ function newContract() {
   data.command = '';
   data.contactTerms = '';
   data.combatBonus = '0';
-  data.ledger = [];
+  data.exchangeSalvage = false;
+  data.employer = '';
+  data.planet = '';
+  data.ledger = endingRep !== 0
+    ? [{month:'1', event:'Carried Rep', cost:'', cover:'', paid:'', rep: String(endingRep)}]
+    : [];
   data.repairRows = [];
   data.rearmRows = [];
   data.assetRows = [];
@@ -1578,11 +2441,15 @@ function saveForce() {
   fd.name = v('force-name');
   fd.co = v('force-co');
   fd.scale = v('force-scale');
+  // Mirror scale to Contract tab
+  data.scale = fd.scale;
+  sv('scale', fd.scale);
   fd.bvUsed = v('force-bv-used');
-  // Auto-set BV Available and BSP based on scale
-  const scaleBvMap = {'1':3000,'2':6000,'3':9000};
-  const scaleBspMap = {'1':32,'2':64,'3':96};
-  const noBspBonus = {'1':500,'2':1000,'3':1500};
+  // Auto-set BV/PV Available and BSP based on scale and game mode
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const scaleBvMap  = classic ? {'1':3000,'2':6000,'3':9000} : {'1':100,'2':200,'3':300};
+  const scaleBspMap = classic ? {'1':32,'2':64,'3':96} : {'1':5,'2':10,'3':15};
+  const noBspBonus  = classic ? {'1':500,'2':1000,'3':1500} : {'1':10,'2':20,'3':30};
   if (fd.scale && scaleBvMap[fd.scale]) {
     const bonus = data.noBsp ? (noBspBonus[fd.scale] || 0) : 0;
     fd.bvAvail = scaleBvMap[fd.scale] + bonus;
@@ -1593,9 +2460,11 @@ function saveForce() {
     fd.bvAvail = v('force-bv-avail');
     fd.bsp = v('force-bsp');
   }
-  fd.skillAdv = v('force-skill-adv');
+  fd.skillAdv = +(document.getElementById('force-skill-adv') && document.getElementById('force-skill-adv').value) || 0;
+  fd.sca = v('force-sca') || '';
   localStorage.setItem('btMercContract', JSON.stringify(data));
   updateForceCalc();
+  renderDeployment();
 }
 
 function updateForceCalc() {
@@ -1607,22 +2476,30 @@ function updateForceCalc() {
     remEl.textContent = avail ? `${fmt(rem)} / ${fmt(avail)}` : '—';
     remEl.style.color = rem < 0 ? 'var(--red)' : 'var(--gold)';
   }
-  // mirror warchest from ledger balance
+  // Compute warchest directly from ledger data for accuracy
+  let balance = +data.startWarchest || 0;
+  (data.ledger || []).forEach(row => {
+    const netCost = Math.max(0, (+row.cost||0) - (+row.cover||0));
+    balance += (+row.paid||0) - netCost;
+  });
   const wEl = document.getElementById('force-warchest-display');
-  const mainW = document.getElementById('display-warchest');
-  if (wEl && mainW) { wEl.textContent = mainW.textContent; wEl.style.color = mainW.style.color; }
+  if (wEl) {
+    wEl.textContent = `${fmt(balance)} SP`;
+    wEl.style.color = balance >= 0 ? 'var(--gold)' : 'var(--red)';
+  }
 }
 
 function renderForce() {
   sv('force-name', data.forceData.name);
   sv('unitName', data.forceData.name);
   data.unitName = data.forceData.name;
-  sv('force-co', data.forceData.co);
   sv('force-scale', data.forceData.scale);
   sv('force-bv-used', data.forceData.bvUsed);
   sv('force-bv-avail', data.forceData.bvAvail);
   sv('force-bsp', data.forceData.bsp);
   sv('force-skill-adv', data.forceData.skillAdv);
+  sv('force-sca', data.forceData.sca || '');
+  updateCoDropdown();
   renderFormations();
   updateForceCalc();
 }
@@ -1661,6 +2538,14 @@ function updateFormationField(fi, ri, field, val) {
         renderPilotRoster();
       }
     }
+  }
+  // If status changed to destroyed, force-clear deploy; re-render either way
+  if (field === 'unitStatus') {
+    if (val === 'destroyed') {
+      data.forceData.formations[fi].rows[ri].deploy = false;
+      renderDeployment();
+    }
+    renderFormations();
   }
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
@@ -1745,19 +2630,31 @@ function renderFormations() {
   ].join('');
 
   cont.innerHTML = data.forceData.formations.map((f, fi) => `
-    <div class="panel panel-gold" style="margin-bottom:16px;padding:0;overflow:hidden">
+    <div class="panel panel-gold" draggable="true" data-fi="${fi}"
+      style="margin-bottom:16px;padding:0;overflow:hidden"
+      ondragstart="dragFormationStart(event,${fi})"
+      ondragover="dragFormationOver(event)"
+      ondragleave="dragFormationLeave(event)"
+      ondrop="dragFormationDrop(event,${fi})"
+      ondragend="dragFormationEnd(event)">
       <!-- Formation header -->
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,162,39,.08);border-bottom:1px solid var(--border-gold)">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
         <input type="text" value="${esc(f.label)}" onchange="updateFormationLabel(${fi},this.value)"
           style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;width:200px;outline:none;padding:0">
         <div style="flex:1"></div>
+        <label onclick="event.stopPropagation()" title="Deploy entire formation" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--border)'};background:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'rgba(201,162,39,.18)' : 'transparent'};transition:all .15s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)">
+          <input type="checkbox" ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'checked' : ''} onchange="deployFormation(${fi},this.checked)" style="display:none">
+          <span style="width:16px;height:16px;border:2px solid ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--border)'};background:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? '<span style="color:#000;font-size:11px;font-weight:700;line-height:1">✓</span>' : ''}</span>
+          <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--text-dim)'}">Deploy All</span>
+        </label>
         <button class="btn btn-sm" onclick="addFormationRow(${fi})">+ Add Unit</button>
         <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">Remove Formation</button>
       </div>
       <!-- Column headers -->
-      <div style="display:grid;grid-template-columns:2fr 40px 80px 2fr 90px 80px 2fr 32px;gap:0;border-bottom:1px solid var(--border-gold)">
-        ${['Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', ''].map(h=>
-          `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05)">${h}</div>`
+      <div style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
+        ${['', 'Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Status', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', 'Deploy', ''].map(h=>
+          `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05);text-align:${h==='Deploy'?'center':'left'}">${h}</div>`
         ).join('')}
       </div>
       <!-- Rows -->
@@ -1785,13 +2682,40 @@ function renderFormations() {
             })
           ].join('');
           return `
-        <div style="display:grid;grid-template-columns:2fr 40px 80px 2fr 90px 80px 2fr 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)">
+        <div draggable="true" data-fi="${fi}" data-ri="${ri}"
+          style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
+          ondragstart="dragUnitStart(event,${fi},${ri})"
+          ondragover="dragUnitOver(event)"
+          ondragleave="dragUnitLeave(event)"
+          ondrop="dragUnitDrop(event,${fi},${ri})"
+          ondragend="dragUnitEnd(event)">
+          <div style="display:flex;align-items:center;justify-content:center">
+            <span class="drag-handle" title="Drag to reorder" ondragstart="event.stopPropagation()" style="font-size:13px;padding:0 3px" onclick="event.stopPropagation()">⠿</span>
+          </div>
           <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="Atlas AS7-D"
             onchange="updateFormationField(${fi},${ri},'unit',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
           <div style="padding:2px 4px"><input type="number" value="${r.tons||''}" placeholder="T"
             onchange="updateFormationField(${fi},${ri},'tons',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
           <div style="padding:2px 4px"><input type="number" value="${r.bv||''}" placeholder="${classic?'BV':'PV'}"
             onchange="updateFormationField(${fi},${ri},'bv',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
+          <div style="padding:2px 2px;display:flex;align-items:center">
+            ${(()=>{
+              const UNIT_STATUS_COLORS = {'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000'};
+              const statusVal = r.unitStatus||'';
+              const statusColor = UNIT_STATUS_COLORS[statusVal]||'var(--text-dim)';
+              const statusOpts = [
+                {key:'',label:'— Status —'},
+                {key:'operational',label:'Operational'},
+                ...REPAIR_TYPES.map(t=>({key:t.key,label:t.label}))
+              ];
+              return `<select
+                onchange="updateFormationField(${fi},${ri},'unitStatus',this.value)"
+                oninput="this.style.color=({'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000'}[this.value]||'var(--text-dim)')"
+                style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${statusColor};cursor:pointer;text-transform:uppercase">
+                ${statusOpts.map(o=>`<option value="${o.key}" ${statusVal===o.key?'selected':''} style="background:var(--panel);color:${UNIT_STATUS_COLORS[o.key]||'var(--text)'}">${o.label}</option>`).join('')}
+              </select>`;
+            })()}
+          </div>
           <div style="padding:2px 4px;display:flex;align-items:center">
             <select onchange="assignPilotToFormation(${fi},${ri},this.value)"
               style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text);cursor:pointer">
@@ -1805,6 +2729,17 @@ function renderFormations() {
           <div style="padding:2px 4px"><input type="text" value="${esc(r.spa)}" placeholder="" readonly
             style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);opacity:${selIdx!==''?'1':'0.4'}"></div>
           <div style="display:flex;align-items:center;justify-content:center">
+            ${r.unitStatus === 'destroyed'
+              ? `<span title="Destroyed units cannot be deployed" style="width:20px;height:20px;border:2px solid #440000;background:rgba(136,0,0,.2);display:flex;align-items:center;justify-content:center;cursor:not-allowed;opacity:0.5">✕</span>`
+              : `<label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0">
+              <input type="checkbox" ${r.deploy?'checked':''} onchange="toggleDeployUnit(${fi},${ri},this.checked)"
+                style="display:none">
+              <span style="width:20px;height:20px;border:2px solid ${r.deploy?'var(--gold)':'var(--border)'};background:${r.deploy?'var(--gold)':'transparent'};display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0">
+                ${r.deploy?'<span style="color:#000;font-size:13px;font-weight:700;line-height:1">✓</span>':''}
+              </span>
+            </label>`}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center">
             <button class="btn btn-sm btn-danger" onclick="removeFormationRow(${fi},${ri})" style="padding:2px 6px;font-size:11px;clip-path:none;border:none;background:transparent;color:var(--red);cursor:pointer">&#10005;</button>
           </div>
         </div>`;
@@ -1814,8 +2749,162 @@ function renderFormations() {
 }
 
 // ─────────────────────────────────────────
+// DEPLOYMENT
+// ─────────────────────────────────────────
+function toggleDeployUnit(fi, ri, checked) {
+  const row = data.forceData.formations[fi].rows[ri];
+  if (checked && row.unitStatus === 'destroyed') {
+    toast('Destroyed units cannot be deployed.');
+    renderFormations();
+    return;
+  }
+  row.deploy = checked;
+  renderFormations();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function deployFormation(fi, checked) {
+  data.forceData.formations[fi].rows.forEach(r => {
+    if (r.unit && r.unit.trim()) {
+      if (checked && r.unitStatus === 'destroyed') return; // skip destroyed
+      r.deploy = checked;
+    }
+  });
+  renderFormations();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function clearAllDeploy() {
+  if (!confirm('Clear all deployment selections?')) return;
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => { r.deploy = false; });
+  });
+  renderFormations();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  toast('Deployment cleared.');
+}
+
+function renderDeployment() {
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const bvLabel = classic ? 'BV' : 'PV';
+
+  // Update header labels
+  const hdr = document.getElementById('deploy-bv-header');
+  const lbl = document.getElementById('deploy-bv-label');
+  if (hdr) hdr.textContent = bvLabel;
+  if (lbl) lbl.textContent = bvLabel;
+
+  // BSP helper — always reflects current force settings
+  const bspEl = document.getElementById('deployment-bsp');
+  const totalBsp = +(data.forceData && data.forceData.bsp) || 0;
+  const noBsp = !!data.noBsp;
+
+  // Collect deployed units
+  const deployed = [];
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => {
+      if (r.deploy && r.unit && r.unit.trim()) {
+        deployed.push({ unit: r.unit, bv: r.bv || '', formation: f.label || '', pilot: r.pilot || '' });
+      }
+    });
+  });
+
+  const panel = document.getElementById('deployment-panel');
+  const empty = document.getElementById('deployment-empty');
+  const rowsCont = document.getElementById('deployment-rows');
+  const totalEl = document.getElementById('deployment-total-bv');
+
+  if (!deployed.length) {
+    if (panel) panel.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    if (totalEl) totalEl.textContent = '0';
+    if (bspEl) {
+      if (noBsp) {
+        bspEl.textContent = 'N/A'; bspEl.style.color = 'var(--text-dim)';
+      } else if (!totalBsp) {
+        bspEl.textContent = '—'; bspEl.style.color = 'var(--text-dim)';
+      } else if (!classic) {
+        // Alpha Strike — no bonus BSP, just show base
+        bspEl.textContent = fmt(totalBsp);
+        bspEl.style.color = 'var(--gold)';
+      } else {
+        // Classic — all BV unused → max bonus → show full cap
+        bspEl.textContent = fmt(totalBsp * 2);
+        bspEl.style.color = 'var(--green-bright)';
+      }
+    }
+    const bvUsedEl = document.getElementById('force-bv-used');
+    if (bvUsedEl) { bvUsedEl.value = 0; data.forceData.bvUsed = 0; }
+    updateForceCalc();
+    return;
+  }
+
+  if (panel) panel.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+
+  let totalBv = 0;
+  rowsCont.innerHTML = deployed.map((d, i) => {
+    const bv = +d.bv || 0;
+    totalBv += bv;
+    const rowBg = i % 2 === 1 ? 'background:rgba(255,255,255,.02)' : '';
+    return `<div style="display:grid;grid-template-columns:32px 2fr 100px 140px 1fr;gap:0;border-bottom:1px solid rgba(42,48,64,.4);${rowBg};transition:background .15s" onmouseover="this.style.background='rgba(201,162,39,.04)'" onmouseout="this.style.background='${rowBg?'rgba(255,255,255,.02)':'transparent'}'">
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);text-align:center">${i+1}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">${esc(d.unit)}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--gold);text-align:right;font-weight:700">${bv ? fmt(bv) : '—'}</div>
+      <div style="padding:8px;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;text-align:center">${esc(d.formation)}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">${esc(d.pilot) || '—'}</div>
+    </div>`;
+  }).join('');
+
+  if (totalEl) totalEl.textContent = fmt(totalBv);
+
+  // Deployable BSP: Classic gets bonus from unused BV; Alpha Strike gets base only
+  if (bspEl) {
+    if (noBsp) {
+      bspEl.textContent = 'N/A';
+      bspEl.style.color = 'var(--text-dim)';
+    } else if (!totalBsp) {
+      bspEl.textContent = '—';
+      bspEl.style.color = 'var(--text-dim)';
+    } else if (!classic) {
+      // Alpha Strike — no bonus BSP
+      bspEl.textContent = fmt(totalBsp);
+      bspEl.style.color = 'var(--gold)';
+    } else {
+      // Classic — base + bonus from unused BV (1 BSP per 20 unused BV), capped at base
+      const avail = +(data.forceData && data.forceData.bvAvail) || 0;
+      const unusedBv = Math.max(0, avail - totalBv);
+      const bonusBsp = Math.min(Math.floor(unusedBv / 20), totalBsp);
+      const deployableBsp = totalBsp + bonusBsp;
+      bspEl.textContent = fmt(deployableBsp);
+      bspEl.style.color = bonusBsp > 0 ? 'var(--green-bright)' : 'var(--gold)';
+    }
+  }
+
+  // Push total into BV Used and refresh the remaining bar
+  const bvUsedEl = document.getElementById('force-bv-used');
+  if (bvUsedEl) {
+    bvUsedEl.value = totalBv;
+    data.forceData.bvUsed = totalBv;
+    localStorage.setItem('btMercContract', JSON.stringify(data));
+  }
+  updateForceCalc();
+}
+
+// ─────────────────────────────────────────
 // GAME MODE
 // ─────────────────────────────────────────
+function toggleTrackJumps(checked) {
+  data.trackJumps = checked;
+  const row = document.getElementById('jump-field-row');
+  if (row) row.style.display = checked ? 'block' : 'none';
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  recalc();
+}
+
 function toggleNoBsp(checked) {
   data.noBsp = checked;
   localStorage.setItem('btMercContract', JSON.stringify(data));
@@ -1826,6 +2915,7 @@ function setGameMode(mode) {
   data.gameMode = mode;
   localStorage.setItem('btMercContract', JSON.stringify(data));
   renderGameMode();
+  saveForce(); // recalculate BV/PV Available for the new mode
   toast(mode === 'classic' ? 'Classic BattleTech mode.' : 'Alpha Strike mode.');
 }
 
@@ -1861,14 +2951,16 @@ function renderGameMode() {
   const refPurchase = document.getElementById('ref-purchase');
   const refSell     = document.getElementById('ref-sell');
   const refSalvage  = document.getElementById('ref-salvage');
-  if (refPurchase) refPurchase.textContent = classic ? 'BV \u00d7 40'   : 'PV \u00d7 40';
-  if (refSell)     refSell.textContent     = classic ? 'BV/2 \u00d7 20' : 'PV \u00d7 20';
-  if (refSalvage)  refSalvage.textContent  = classic ? 'BV/2 \u00d7 20' : 'PV \u00d7 20';
+  if (refPurchase) refPurchase.textContent = classic ? 'BV' : 'PV';
+  if (refSell)     refSell.textContent     = classic ? 'BV \u00f7 2' : 'PV \u00f7 2';
+  if (refSalvage)  refSalvage.textContent  = classic ? 'BV \u00f7 2' : 'PV \u00d7 20';
 
   // Re-render dynamic sections that embed BV/PV labels
   renderAssetRows();
   renderFormations();
   renderPilotRoster();
+  renderDeployment();
+  renderSalvageRows();
 }
 
 // ─────────────────────────────────────────
@@ -1989,6 +3081,34 @@ function updatePilotField(i, field, val) {
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
+function updateSkillAdv() {
+  const total = (data.pilotRoster || []).reduce((sum, p) => {
+    if (p.status === 'KIA') return sum;
+    return sum + (+p.adv || 0);
+  }, 0);
+  const el = document.getElementById('force-skill-adv');
+  if (el) el.value = total;
+  if (data.forceData) data.forceData.skillAdv = total;
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updateCoDropdown() {
+  const sel = document.getElementById('force-co');
+  if (!sel) return;
+  const current = sel.value || (data.forceData && data.forceData.co) || '';
+  const pilots = (data.pilotRoster || []).filter(p => p.status !== 'KIA');
+  sel.innerHTML = `<option value="">— Select CO —</option>` +
+    pilots.map(p => {
+      const label = [p.rank, p.name, p.callsign ? `"${p.callsign}"` : ''].filter(Boolean).join(' ');
+      const val = p.name || label;
+      return `<option value="${esc(val)}" ${current === val ? 'selected' : ''}>${esc(label || '(Unnamed)')}</option>`;
+    }).join('');
+  // If saved value no longer matches any option, keep it as a fallback option
+  if (current && !pilots.find(p => (p.name || '') === current)) {
+    sel.innerHTML += `<option value="${esc(current)}" selected>${esc(current)}</option>`;
+  }
+}
+
 function renderPilotRoster() {
   if (!data.pilotRoster) data.pilotRoster = [];
   const cont = document.getElementById('pilot-roster-rows');
@@ -2011,7 +3131,16 @@ function renderPilotRoster() {
     const statusColor = PILOT_STATUS_COLORS[p.status] || 'var(--text)';
     const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06)' :
                   p.status === 'Wounded' || (p.wounds && p.wounds > 0) ? 'background:rgba(201,162,39,.05)' : '';
-    return `<div style="display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);${rowBg}">
+    return `<div draggable="true" data-pi="${i}"
+      style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);${rowBg}"
+      ondragstart="dragPilotStart(event,${i})"
+      ondragover="dragPilotOver(event)"
+      ondragleave="dragPilotLeave(event)"
+      ondrop="dragPilotDrop(event,${i})"
+      ondragend="dragPilotEnd(event)">
+      <div style="display:flex;align-items:center;justify-content:center">
+        <span class="drag-handle" title="Drag to reorder" style="font-size:13px;padding:0 3px">⠿</span>
+      </div>
       <div style="padding:2px 4px;display:flex;align-items:center">
         <select onchange="updatePilotField(${i},'type',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:var(--text);cursor:pointer">
@@ -2026,7 +3155,7 @@ function renderPilotRoster() {
         style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
       <div style="padding:2px 4px"><input type="text" value="${esc(p.rank)}" placeholder="Cpl / Lt"
         onchange="updatePilotField(${i},'rank',this.value)"
-        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text-dim)"></div>
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:#fff"></div>
       <div style="padding:2px 4px"><input type="text" value="${esc(p.callsign)}" placeholder='"Ironside"'
         onchange="updatePilotField(${i},'callsign',this.value)"
         style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);font-style:italic"></div>
@@ -2041,7 +3170,7 @@ function renderPilotRoster() {
         style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center"></div>
       <div style="padding:2px 4px"><input type="text" value="${esc(p.spa)}" placeholder="e.g. Hot Dog"
         onchange="updatePilotField(${i},'spa',this.value)"
-        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:var(--text-dim)"></div>
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:#fff"></div>
       <div style="padding:2px 4px;display:flex;align-items:center">
         <select onchange="updatePilotWounds(${i},this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;padding:4px 2px;cursor:pointer;text-align:center;color:${(p.wounds||0)==0?'var(--text-dim)':(p.wounds||0)>=6?'var(--red)':'var(--gold)'}">
@@ -2062,6 +3191,186 @@ function renderPilotRoster() {
       </div>
     </div>`;
   }).join('');
+  updateSkillAdv();
+  updateCoDropdown();
+}
+
+// ─────────────────────────────────────────
+// DRAG & DROP — FORMATIONS
+// ─────────────────────────────────────────
+let dragFormationIdx = null;
+
+function dragFormationStart(e, fi) {
+  dragFormationIdx = fi;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragFormationOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  el.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+}
+function dragFormationLeave(e) {
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+function dragFormationDrop(e, targetFi) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+  if (dragFormationIdx === null || dragFormationIdx === targetFi) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const insertAfter = e.clientY >= rect.top + rect.height / 2;
+  const formations = data.forceData.formations;
+  const [moved] = formations.splice(dragFormationIdx, 1);
+  const newTarget = dragFormationIdx < targetFi ? (insertAfter ? targetFi : targetFi - 1) : (insertAfter ? targetFi + 1 : targetFi);
+  formations.splice(Math.max(0, newTarget), 0, moved);
+  // Fix up pilotIdx references — they don't depend on formation order so no update needed
+  dragFormationIdx = null;
+  renderFormations();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+function dragFormationEnd(e) {
+  e.currentTarget.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  dragFormationIdx = null;
+}
+
+// ─────────────────────────────────────────
+// DRAG & DROP — UNIT ROWS (within a formation)
+// ─────────────────────────────────────────
+let dragUnit = null; // {fi, ri}
+
+function dragUnitStart(e, fi, ri) {
+  dragUnit = { fi, ri };
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.stopPropagation(); // don't trigger formation drag
+}
+function dragUnitOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  el.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drag-over-top' : 'drag-over-bottom');
+}
+function dragUnitLeave(e) {
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+function dragUnitDrop(e, targetFi, targetRi) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+  if (!dragUnit || (dragUnit.fi === targetFi && dragUnit.ri === targetRi)) return;
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const insertAfter = e.clientY >= rect.top + rect.height / 2;
+
+  const srcRows = data.forceData.formations[dragUnit.fi].rows;
+  const tgtRows = data.forceData.formations[targetFi].rows;
+
+  if (dragUnit.fi === targetFi) {
+    // Same formation — reorder in place
+    const [moved] = srcRows.splice(dragUnit.ri, 1);
+    const adjustedTarget = dragUnit.ri < targetRi
+      ? (insertAfter ? targetRi : targetRi - 1)
+      : (insertAfter ? targetRi + 1 : targetRi);
+    srcRows.splice(Math.max(0, adjustedTarget), 0, moved);
+  } else {
+    // Cross-formation move
+    const [moved] = srcRows.splice(dragUnit.ri, 1);
+    // Keep source formation from going completely empty
+    if (!srcRows.length) srcRows.push({unit:'',pilot:'',tons:'',sz:'',bv:'',gp:'',adv:'',spa:''});
+    const insertIdx = insertAfter ? targetRi + 1 : targetRi;
+    tgtRows.splice(Math.max(0, insertIdx), 0, moved);
+  }
+
+  // Sync pilot Assigned Unit for all affected rows
+  [srcRows, tgtRows].forEach(rows => {
+    rows.forEach(r => {
+      if (typeof r.pilotIdx === 'number' && r.pilotIdx !== '') {
+        const p = (data.pilotRoster || [])[r.pilotIdx];
+        if (p) p.unit = r.unit || '';
+      }
+    });
+  });
+
+  dragUnit = null;
+  renderFormations();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+function dragUnitEnd(e) {
+  e.currentTarget.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  dragUnit = null;
+}
+
+// ─────────────────────────────────────────
+// DRAG & DROP — PILOT ROSTER
+// ─────────────────────────────────────────
+let dragPilotIdx = null;
+
+function dragPilotStart(e, pi) {
+  dragPilotIdx = pi;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragPilotOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  el.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drag-over-top' : 'drag-over-bottom');
+}
+function dragPilotLeave(e) {
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+function dragPilotDrop(e, targetPi) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+  if (dragPilotIdx === null || dragPilotIdx === targetPi) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const insertAfter = e.clientY >= rect.top + rect.height / 2;
+  const roster = data.pilotRoster;
+
+  // Build old→new index map before the move
+  const tempRoster = [...roster];
+  const [moved] = tempRoster.splice(dragPilotIdx, 1);
+  const adjustedTarget = dragPilotIdx < targetPi ? (insertAfter ? targetPi : targetPi - 1) : (insertAfter ? targetPi + 1 : targetPi);
+  tempRoster.splice(Math.max(0, adjustedTarget), 0, moved);
+
+  // Build oldIndex → newIndex map
+  const oldToNew = {};
+  tempRoster.forEach((p, newIdx) => {
+    const oldIdx = roster.indexOf(p);
+    oldToNew[oldIdx] = newIdx;
+  });
+
+  // Apply reorder
+  data.pilotRoster = tempRoster;
+
+  // Fix up formation pilotIdx references
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => {
+      if (typeof r.pilotIdx === 'number' && r.pilotIdx !== '') {
+        r.pilotIdx = oldToNew[r.pilotIdx] ?? r.pilotIdx;
+      }
+    });
+  });
+
+  dragPilotIdx = null;
+  renderPilotRoster();
+  renderFormations();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+function dragPilotEnd(e) {
+  e.currentTarget.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  dragPilotIdx = null;
 }
 
 // ─────────────────────────────────────────
@@ -2079,6 +3388,11 @@ if (!data.ledger.length) { data.ledger = [{month:'1',event:'Starting Warchest',c
 if (!data.repairRows.length) renderRepairRows();
 if (!data.rearmRows.length) renderRearmRows();
 if (!data.assetRows.length) renderAssetRows();
+if (!data.salvageRows) { data.salvageRows = []; renderSalvageRows(); }
+if (!data.omniRows) { data.omniRows = []; renderOmniRows(); }
+if (!data.hireRows) { data.hireRows = []; renderHireRows(); }
+if (!data.healRows) { data.healRows = []; renderHealRows(); }
+if (!data.skillRows) { data.skillRows = []; renderSkillRows(); }
 renderForce();
 renderPilotRoster();
 </script>
