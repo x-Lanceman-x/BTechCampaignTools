@@ -375,11 +375,11 @@
       <div class="logo-sub">Log Sheets</div>
     </div>
     <nav class="nav-tabs">
-      <button class="nav-tab active" onclick="showPage('roster')">Force Roster</button>
-      <button class="nav-tab" onclick="showPage('sortie')">Sortie Log</button>
-      <button class="nav-tab" onclick="showPage('campaign')">Campaign Log</button>
-      <button class="nav-tab" onclick="showPage('pilots')">Pilot Cards</button>
-      <button class="nav-tab" onclick="showPage('settings')">Settings</button>
+      <button class="nav-tab active" onclick="showPage('roster', this)">Force Roster</button>
+      <button class="nav-tab" onclick="showPage('sortie', this)">Sortie Log</button>
+      <button class="nav-tab" onclick="showPage('campaign', this)">Campaign Log</button>
+      <button class="nav-tab" onclick="showPage('pilots', this)">Pilot Cards</button>
+      <button class="nav-tab" onclick="showPage('settings', this)">Settings</button>
     </nav>
   </div>
 </header>
@@ -426,6 +426,7 @@
           <th style="width:60px">Omni</th>
           <th>PV (at Skill 4)</th>
           <th>Deploy</th>
+          <th style="width:90px">Total Loss</th>
           <th style="width:50px"></th>
         </tr>
       </thead>
@@ -474,7 +475,7 @@
   <div class="panel">
     <table id="namedPilotTable">
       <thead>
-        <tr><th>Callsign</th><th>Skill</th><th>Type</th><th>SP Earned</th><th>Wounded</th><th></th></tr>
+        <tr><th>Callsign</th><th>Skill</th><th>Type</th><th>SP Earned</th><th>Wounded</th><th>Edge Abilities</th></tr>
       </thead>
       <tbody id="namedPilotRows"></tbody>
     </table>
@@ -568,6 +569,64 @@
     </div>
   </div>
 
+  <!-- Named Pilot Payment Calculator -->
+  <div class="section-title">Named Pilot Payment Calculator</div>
+  <div class="panel panel-gold" style="margin-bottom:16px;padding:12px 16px">
+    <div style="display:grid;grid-template-columns:160px 24px 1fr 24px 1fr 24px 1fr 32px 1fr;align-items:center;gap:6px">
+
+      <!-- Max Pay input -->
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:600">Max Pilot Pay</div>
+        <input type="number" id="pilotPayMax" placeholder="0" min="0"
+          oninput="data.pilotPayMax=+this.value||0; updatePilotPayCalc(); saveData();"
+          style="width:100%;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:15px;font-weight:700;text-align:center;outline:none;">
+        <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:3px;text-align:center">SP per pilot</div>
+      </div>
+
+      <!-- × -->
+      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-dim);padding-top:4px">×</div>
+
+      <!-- Deployed count -->
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:600">Deployed</div>
+        <div class="calc-field" id="pilotPayDeployedCount" style="font-size:16px;padding:6px 8px">0</div>
+        <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:3px;text-align:center">Full pay ×1.0</div>
+      </div>
+
+      <!-- = -->
+      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-dim);padding-top:4px">=</div>
+
+      <!-- Deployed subtotal -->
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:600">Deployed Pay</div>
+        <div class="calc-field" id="pilotPayDeployedRate" style="font-size:16px;padding:6px 8px">0 SP</div>
+        <div style="font-size:10px;color:transparent;margin-top:3px">—</div>
+      </div>
+
+      <!-- + -->
+      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--text-dim);padding-top:4px">+</div>
+
+      <!-- Remaining subtotal -->
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:600">Remaining Pay</div>
+        <div class="calc-field" id="pilotPayRemainingRate" style="font-size:16px;padding:6px 8px">0 SP</div>
+        <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:3px;text-align:center"><span id="pilotPayRemainingCount">0</span> pilots × half pay</div>
+      </div>
+
+      <!-- = -->
+      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--gold);font-weight:700;padding-top:4px">=</div>
+
+      <!-- Total -->
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:600">Total Payroll</div>
+        <div class="calc-field" id="pilotPayTotal" style="font-size:16px;padding:6px 8px;border-color:var(--gold)">0 SP</div>
+        <div style="font-size:10px;color:transparent;margin-top:3px">—</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section-title">Sortie List</div>
   <div class="panel">
     <table id="campaignTable">
       <thead>
@@ -779,6 +838,7 @@ function renderAll() {
   sv('pvPercent', data.pvPercent||100); sv('spPercent', data.spPercent||100);
   sv('campaignName', data.campaignName); sv('startWarchest', data.startWarchest);
   sv('memorial', data.memorial); sv('maxDeployPV', data.maxDeployPV||0);
+  sv('pilotPayMax', data.pilotPayMax||'');
   const sortieCamp = document.getElementById('sortie_campaign');
   if (sortieCamp) sortieCamp.textContent = data.campaignName || '—';
   renderUnits(); renderNamedPilots(); renderCampaignRows();
@@ -787,16 +847,17 @@ function renderAll() {
   renderArchivedCampaigns();
   renderDeployment();
   renderMiscSpendLog();
+  updatePilotPayCalc();
 }
 
 // ─────────────────────────────────────────
 // PAGE SWITCHING
 // ─────────────────────────────────────────
-function showPage(id) {
+function showPage(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
-  event.target.classList.add('active');
+  if (el) el.classList.add('active');
 }
 
 function showPageById(id) {
@@ -814,6 +875,20 @@ function addUnit() {
   renderUnits(); saveData();
 }
 function removeUnit(i) { data.units.splice(i,1); renderUnits(); saveData(); }
+
+function destroyUnit(i) {
+  const u = data.units[i];
+  const name = u.unit || 'Unnamed Unit';
+  if (!confirm(`Mark "${name}" as DESTROYED?\n\nThis will remove it from the roster and record it in the Memorial.`)) return;
+  const date = new Date().toLocaleDateString();
+  const entry = `[${date}] ${name} (PV ${u.pv||'?'}) — DESTROYED`;
+  data.memorial = data.memorial ? data.memorial + '\n' + entry : entry;
+  sv('memorial', data.memorial);
+  data.units.splice(i, 1);
+  renderUnits();
+  saveData();
+  toast(`${name} recorded as destroyed in the Memorial.`);
+}
 function updateUnit(i, field, val) {
   if (field === 'forceCommander' && val) {
     // Clear force commander from all other units first
@@ -827,7 +902,7 @@ function updateUnit(i, field, val) {
 function renderUnits() {
   const tbody = document.getElementById('unitRows');
   if (!data.units.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
     return;
   }
   const typeOpts = ['BattleMech','Vehicle','Infantry Platoon','Battle Armor Squad'];
@@ -845,6 +920,7 @@ function renderUnits() {
       <td style="text-align:center"><label class="check-label" style="justify-content:center">
         <input type="checkbox" ${u.deploy?'checked':''} onchange="updateUnit(${i},'deploy',this.checked)">
         <span class="checkmark"></span></label></td>
+      <td style="text-align:center"><button class="btn btn-sm btn-danger" onclick="destroyUnit(${i})" style="letter-spacing:1px;font-size:11px">Destroyed</button></td>
       <td><button class="btn btn-sm btn-danger" onclick="removeUnit(${i})">✕</button></td>
     </tr>`).join('');
   renderOmniCalc();
@@ -883,7 +959,11 @@ function renderNamedPilots() {
       <td style="text-align:center"><label class="check-label" style="justify-content:center;pointer-events:none">
         <input type="checkbox" ${p.wounded?'checked':''} disabled>
         <span class="checkmark" style="opacity:0.6"></span></label></td>
-      <td style="font-size:11px;color:var(--text-dim);padding:4px 8px">Managed on Pilot Cards tab</td>
+      <td style="font-size:12px;padding:4px 8px">${
+        (p.abilities||[]).filter(a=>a).length
+          ? (p.abilities||[]).filter(a=>a).map(a=>`<span style="display:inline-block;background:rgba(201,162,39,.12);border:1px solid var(--border-gold);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:11px;padding:1px 6px;margin:1px 2px;letter-spacing:0.5px">${esc(a)}</span>`).join('')
+          : `<span style="color:var(--text-dim);font-size:11px;letter-spacing:1px">—</span>`
+      }</td>
     </tr>`;
   }).join('');
 }
@@ -1181,7 +1261,38 @@ function updateCampaignTotals() {
   renderCampaignRows();
   renderArchivedCampaigns();
   renderMiscSpendLog();
+  updatePilotPayCalc();
 }
+
+function updatePilotPayCalc() {
+  const maxPay = +data.pilotPayMax||0;
+
+  // Deployed = pilot cards whose callsign is assigned to any unit
+  const assignedCallsigns = new Set(
+    (data.units||[]).map(u => u.assignedPilot).filter(Boolean)
+  );
+  const allPilots = (data.pilotCards||[]).filter(p => p.callsign);
+  const deployed  = allPilots.filter(p => assignedCallsigns.has(p.callsign));
+  const remaining = allPilots.filter(p => !assignedCallsigns.has(p.callsign));
+
+  const deployedCount   = deployed.length;
+  const remainingCount  = remaining.length;
+  const deployedRate    = maxPay;
+  const remainingRate   = Math.floor(maxPay / 2);
+  const total           = (deployedCount * deployedRate) + (remainingCount * remainingRate);
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('pilotPayDeployedCount',  deployedCount);
+  set('pilotPayDeployedRate',   (deployedCount * deployedRate) + ' SP');
+  set('pilotPayRemainingCount', remainingCount);
+  set('pilotPayRemainingRate',  (remainingCount * remainingRate) + ' SP');
+  set('pilotPayTotal',          total + ' SP');
+
+  // Restore saved max pay input value if field exists and is empty
+  const input = document.getElementById('pilotPayMax');
+  if (input && !input.value && data.pilotPayMax) input.value = data.pilotPayMax;
+}
+
 
 function startNewCampaign() {
   // Calculate final warchest of current campaign
@@ -1481,6 +1592,26 @@ function addPilotCard() {
 
 function removePilotCard(i) { data.pilotCards.splice(i,1); renderPilotCards(); saveData(); }
 
+function killPilotCard(i) {
+  const p = data.pilotCards[i];
+  const name = p.callsign || 'Unknown Pilot';
+  if (!confirm(`Mark "${name}" as KIA?\n\nThis will remove the pilot card and record them in the Memorial.`)) return;
+  const date = new Date().toLocaleDateString();
+  const abilities = (p.abilities||[]).filter(a=>a).join(', ');
+  const entry = `[${date}] ${name} (${p.type||'MechWarrior'}, Skill ${(() => {
+    const spVal = +p.spSkill||0;
+    let skill = 4;
+    for (let idx = 3; idx >= 0; idx--) { if (spVal >= SP_CHART[idx].sp) skill = SP_CHART[idx].skill; }
+    return skill;
+  })()}) — KIA${abilities ? ' · Abilities: ' + abilities : ''}`;
+  data.memorial = data.memorial ? data.memorial + '\n' + entry : entry;
+  sv('memorial', data.memorial);
+  data.pilotCards.splice(i, 1);
+  renderPilotCards();
+  saveData();
+  toast(`${name} recorded as KIA in the Memorial.`);
+}
+
 function uploadPortrait(i, input) {
   const file = input.files[0];
   if (!file) return;
@@ -1551,7 +1682,10 @@ function renderPilotCards() {
             </div>
           </div>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="removePilotCard(${i})" style="align-self:flex-start">✕</button>
+        <div style="display:flex;flex-direction:column;gap:4px;align-self:flex-start">
+          <button class="btn btn-sm btn-danger" onclick="killPilotCard(${i})" title="Mark as KIA" style="font-size:14px;padding:5px 10px">🪦</button>
+          <button class="btn btn-sm btn-danger" onclick="removePilotCard(${i})" title="Remove card">✕</button>
+        </div>
       </div>
 
       <div class="grid-3" style="gap:8px;margin-bottom:14px">
