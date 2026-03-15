@@ -44,7 +44,7 @@
     box-shadow: 0 4px 24px rgba(0,0,0,.8);
   }
   .header-inner {
-    max-width: 1200px;
+    max-width: 1520px;
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -91,7 +91,7 @@
   .nav-tab.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
 
   /* ── LAYOUT ── */
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .container { max-width: 1520px; margin: 0 auto; padding: 24px 20px; }
   .page { display: none; }
   .page.active { display: block; }
 
@@ -328,11 +328,15 @@
   #toast.show { opacity: 1; transform: translateY(0); }
 
   /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) {
+    #pilotCardsContainer { grid-template-columns: repeat(2, 1fr) !important; }
+  }
   @media (max-width: 700px) {
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
     .nav-tabs { gap: 2px; }
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .logo-text { font-size: 20px; }
+    #pilotCardsContainer { grid-template-columns: 1fr !important; }
   }
 
   /* ── WARCHEST BAR ── */
@@ -349,6 +353,20 @@
     font-size: 28px; color: var(--gold); font-weight: 700;
   }
   .warchest-lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+
+  /* ── DRAG & DROP ── */
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-dim);
+    font-size: 16px;
+    padding: 0 6px;
+    user-select: none;
+    text-align: center;
+    transition: color .15s;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  tr.dragging { opacity: 0.4; }
+  tr.drag-over td { background: rgba(201,162,39,.18) !important; border-top: 2px solid var(--gold); }
 
   /* repair rows */
   .repair-row {
@@ -420,6 +438,7 @@
     <table id="unitTable">
       <thead>
         <tr>
+          <th style="width:32px"></th>
           <th>Unit (and Variant)</th>
           <th>Type</th>
           <th style="width:60px">SZ</th>
@@ -678,7 +697,7 @@
   <div class="btn-row" style="margin-bottom:16px">
     <button class="btn" onclick="addPilotCard()">+ Add Pilot Card</button>
   </div>
-  <div id="pilotCardsContainer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:16px;"></div>
+  <div id="pilotCardsContainer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:16px; grid-template-columns: repeat(4, 1fr);"></div>
 </div>
 
 <!-- ══════════════════════════════════════════════
@@ -699,7 +718,36 @@
   </div>
 
   <div class="panel">
-    <div class="section-title" style="margin-bottom:12px">Export &amp; Import</div>
+    <div class="section-title" style="margin-bottom:12px">Import Unit Roster from CSV</div>
+    <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.8;margin-bottom:12px">
+      Import a MekBay-format CSV to populate the Unit Roster. Columns used: <strong style="color:var(--text)">chassis</strong>, <strong style="color:var(--text)">model</strong>, <strong style="color:var(--text)">TP</strong>, <strong style="color:var(--text)">SZ</strong>, <strong style="color:var(--text)">PV</strong>. All other columns are ignored.<br>
+      Type mapping: <span style="font-family:'Share Tech Mono',monospace;font-size:11px">BM → BattleMech &nbsp; CV → Vehicle &nbsp; CI → Infantry Platoon &nbsp; BA → Battle Armor Squad</span>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="margin-bottom:6px">Import Mode</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <label class="check-label" style="cursor:pointer">
+          <input type="radio" name="csvImportMode" id="csvModeReplace" value="replace" checked style="display:none">
+          <span id="csvModeReplaceBox" class="checkmark" style="border-radius:50%;border-color:var(--gold);background:var(--gold)" onclick="setCsvMode('replace')">
+            <span style="display:block;width:8px;height:8px;background:#000;border-radius:50%;margin:auto"></span>
+          </span>
+          <span onclick="setCsvMode('replace')">Replace roster</span>
+        </label>
+        <label class="check-label" style="cursor:pointer">
+          <input type="radio" name="csvImportMode" id="csvModeAppend" value="append" style="display:none">
+          <span id="csvModeAppendBox" class="checkmark" style="border-radius:50%" onclick="setCsvMode('append')"></span>
+          <span onclick="setCsvMode('append')">Append to roster</span>
+        </label>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="document.getElementById('csvRosterFile').click()">⬆ Import CSV Roster</button>
+      <input type="file" id="csvRosterFile" accept=".csv" style="display:none" onchange="importCsvRoster(this)">
+    </div>
+    <div id="csvImportResult" style="display:none;margin-top:12px;padding:10px 14px;border:1px solid var(--border-gold);background:rgba(201,162,39,.06);font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--gold)"></div>
+  </div>
+
+
     <div class="btn-row">
       <button class="btn" onclick="exportData()">⬇ Export Data (JSON)</button>
       <button class="btn" onclick="document.getElementById('importFile').click()">⬆ Import Data (JSON)</button>
@@ -713,7 +761,7 @@
 
 </div><!-- /container -->
 
-<footer style="max-width:1200px;margin:0 auto;padding:12px 20px 24px;text-align:center;color:var(--text-dim);font-size:10px;letter-spacing:0.5px;line-height:1.6;border-top:1px solid var(--border);margin-top:8px;">
+<footer style="max-width:1520px;margin:0 auto;padding:12px 20px 24px;text-align:center;color:var(--text-dim);font-size:10px;letter-spacing:0.5px;line-height:1.6;border-top:1px solid var(--border);margin-top:8px;">
   BattleTech, 'Mech, BattleMech, MechWarrior, CityTech, BattleForce, and AeroTech are registered trademarks of The Topps Company, Inc. © 2026 The Topps Company, Inc., All rights reserved.
 </footer>
 
@@ -902,12 +950,20 @@ function updateUnit(i, field, val) {
 function renderUnits() {
   const tbody = document.getElementById('unitRows');
   if (!data.units.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
     return;
   }
   const typeOpts = ['BattleMech','Vehicle','Infantry Platoon','Battle Armor Squad'];
   tbody.innerHTML = data.units.map((u,i) => `
-    <tr>
+    <tr draggable="false" data-index="${i}"
+        ondragstart="unitDragStart(event,${i})"
+        ondragover="unitDragOver(event,${i})"
+        ondragleave="unitDragLeave(event)"
+        ondrop="unitDrop(event,${i})"
+        ondragend="unitDragEnd(event)">
+      <td class="drag-handle" title="Drag to reorder"
+          onmousedown="this.closest('tr').draggable=true"
+          onmouseup="this.closest('tr').draggable=false">⠿</td>
       <td><input type="text" value="${esc(u.unit)}" onchange="updateUnit(${i},'unit',this.value)" placeholder="Atlas AS7-D"></td>
       <td><select onchange="updateUnit(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:13px;width:100%">
         ${typeOpts.map(t => `<option value="${t}" ${(u.type||'BattleMech')===t?'selected':''}>${t}</option>`).join('')}
@@ -1824,6 +1880,161 @@ function renderPilotCards() {
     </div>`;
   }).join('');
   renderNamedPilots();
+}
+
+// ─────────────────────────────────────────
+// UNIT ROW DRAG & DROP
+// ─────────────────────────────────────────
+let _dragSrcIndex = null;
+
+function unitDragStart(e, i) {
+  _dragSrcIndex = i;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', i);
+  // Slight delay so the browser snapshot doesn't catch the class change
+  requestAnimationFrame(() => e.target.closest('tr').classList.add('dragging'));
+}
+
+function unitDragOver(e, i) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if (i === _dragSrcIndex) return;
+  // Highlight only this row
+  document.querySelectorAll('#unitRows tr').forEach(r => r.classList.remove('drag-over'));
+  e.target.closest('tr')?.classList.add('drag-over');
+}
+
+function unitDragLeave(e) {
+  e.target.closest('tr')?.classList.remove('drag-over');
+}
+
+function unitDrop(e, targetIndex) {
+  e.preventDefault();
+  if (_dragSrcIndex === null || _dragSrcIndex === targetIndex) return;
+  // Reorder array
+  const moved = data.units.splice(_dragSrcIndex, 1)[0];
+  data.units.splice(targetIndex, 0, moved);
+  _dragSrcIndex = null;
+  renderUnits();
+  updateRosterStats();
+  saveData();
+  toast('Unit order updated.');
+}
+
+function unitDragEnd(e) {
+  _dragSrcIndex = null;
+  document.querySelectorAll('#unitRows tr').forEach(r => {
+    r.draggable = false;
+    r.classList.remove('dragging');
+    r.classList.remove('drag-over');
+  });
+}
+
+// ─────────────────────────────────────────
+// CSV ROSTER IMPORT
+// ─────────────────────────────────────────
+const TP_MAP = { BM: 'BattleMech', CV: 'Vehicle', CI: 'Infantry Platoon', BA: 'Battle Armor Squad' };
+let _csvMode = 'replace';
+
+function setCsvMode(mode) {
+  _csvMode = mode;
+  const replaceBox = document.getElementById('csvModeReplaceBox');
+  const appendBox  = document.getElementById('csvModeAppendBox');
+  const dot = `<span style="display:block;width:8px;height:8px;background:#000;border-radius:50%;margin:auto"></span>`;
+  if (replaceBox) { replaceBox.style.background = mode==='replace' ? 'var(--gold)' : ''; replaceBox.style.borderColor = mode==='replace' ? 'var(--gold)' : 'var(--border)'; replaceBox.innerHTML = mode==='replace' ? dot : ''; }
+  if (appendBox)  { appendBox.style.background  = mode==='append'  ? 'var(--gold)' : ''; appendBox.style.borderColor  = mode==='append'  ? 'var(--gold)' : 'var(--border)'; appendBox.innerHTML  = mode==='append'  ? dot : ''; }
+}
+
+function parseCsvLine(line) {
+  // Handles quoted fields (including commas inside quotes)
+  const result = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuote = !inQuote; }
+    else if (ch === ',' && !inQuote) { result.push(cur.trim()); cur = ''; }
+    else { cur += ch; }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function importCsvRoster(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result.replace(/^\uFEFF/, ''); // strip BOM
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { toast('CSV appears empty.'); return; }
+
+      const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().trim());
+      const idx = {
+        chassis: headers.indexOf('chassis'),
+        model:   headers.indexOf('model'),
+        tp:      headers.indexOf('tp'),
+        sz:      headers.indexOf('sz'),
+        pv:      headers.indexOf('pv'),
+      };
+
+      const missing = Object.entries(idx).filter(([k,v]) => v === -1).map(([k]) => k);
+      if (missing.length) {
+        toast(`CSV missing columns: ${missing.join(', ')}`);
+        return;
+      }
+
+      const imported = [];
+      const skipped  = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i]);
+        if (cols.every(c => !c)) continue; // blank row
+
+        const chassis = cols[idx.chassis] || '';
+        const model   = cols[idx.model]   || '';
+        const tpRaw   = (cols[idx.tp]     || '').trim().toUpperCase();
+        const sz      = parseInt(cols[idx.sz]) || '';
+        const pv      = parseInt(cols[idx.pv]) || '';
+
+        const unitName = [chassis, model].filter(Boolean).join(' ').trim();
+        const type     = TP_MAP[tpRaw];
+
+        if (!unitName) { skipped.push(`Row ${i+1}: no unit name`); continue; }
+        if (!type)     { skipped.push(`Row ${i+1}: unknown TP "${tpRaw}" (${unitName})`); continue; }
+
+        imported.push({ unit: unitName, type, sz, pv, omni: false, deploy: false });
+      }
+
+      if (!imported.length) { toast('No valid units found in CSV.'); return; }
+
+      if (_csvMode === 'replace') {
+        data.units = imported;
+      } else {
+        data.units = [...data.units, ...imported];
+      }
+
+      renderUnits();
+      updateRosterStats();
+      saveData();
+
+      const resultEl = document.getElementById('csvImportResult');
+      if (resultEl) {
+        resultEl.style.display = 'block';
+        resultEl.innerHTML =
+          `✓ ${imported.length} unit${imported.length===1?'':'s'} imported` +
+          (_csvMode === 'replace' ? ' (roster replaced)' : ' (appended to roster)') +
+          (skipped.length ? `<br><span style="color:var(--text-dim);font-size:11px">Skipped ${skipped.length} row${skipped.length===1?'':'s'}: ${skipped.join('; ')}</span>` : '');
+        setTimeout(() => { if (resultEl) resultEl.style.display = 'none'; }, 6000);
+      }
+      toast(`${imported.length} units imported from CSV!`);
+    } catch(err) {
+      toast('CSV import failed — check file format.');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 
 // ─────────────────────────────────────────

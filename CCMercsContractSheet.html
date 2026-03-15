@@ -1169,6 +1169,21 @@
       Export your contract data as a JSON file to back it up or transfer it. Import a previously exported file to restore your data.
     </div>
   </div>
+
+  <div class="panel panel-gold">
+    <div class="section-title" style="margin-bottom:12px">Import Force from CSV</div>
+    <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
+      Upload a CSV file to populate formations on the Force Record tab. Each row becomes a unit entry.<br>
+      Supported columns (case-insensitive): <span style="color:var(--text);font-family:'Share Tech Mono',monospace">unit, tons, bv, status, omni, formation</span><br>
+      The <span style="color:var(--text);font-family:'Share Tech Mono',monospace">formation</span> column is optional — if present, rows are grouped by its value into separate formations. If absent, all rows go into one formation.<br>
+    </div>
+    <div class="btn-row" style="align-items:center;gap:12px">
+      <button class="btn" onclick="document.getElementById('csvImportFile').click()">⬆ Choose CSV File</button>
+      <span id="csv-filename" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">No file chosen</span>
+      <input type="file" id="csvImportFile" accept=".csv" style="display:none" onchange="previewCsvImport(this)">
+    </div>
+    <div id="csv-preview" style="margin-top:14px"></div>
+  </div>
 </div><!-- /page-settings -->
 
 </div><!-- /container -->
@@ -1263,6 +1278,178 @@ function clearAll() {
     scale:'',startWarchest:'',basePay:'',supportType:'none',supportPct:'',transportPct:'',salvagePct:'',
     command:'',contactTerms:'',combatBonus:'0',ledger:[],repairRows:[],rearmRows:[],assetRows:[],contractHistory:[],pilotRoster:[]};
   renderAll(); toast('All data cleared.');
+}
+
+// ─────────────────────────────────────────
+// CSV IMPORT
+// ─────────────────────────────────────────
+function previewCsvImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('csv-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const result = parseCsvForForce(e.target.result);
+    if (result.error) {
+      document.getElementById('csv-preview').innerHTML =
+        `<div style="color:var(--red);font-size:12px;padding:8px;letter-spacing:1px">${esc(result.error)}</div>`;
+      return;
+    }
+    renderCsvPreview(result.formations);
+  };
+  reader.readAsText(file);
+}
+
+function parseCsvForForce(text) {
+  // Strip BOM if present
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return {error: 'CSV must have a header row and at least one data row.'};
+
+  // CSV-aware split that respects quoted fields
+  function splitCsvLine(line) {
+    const result = [];
+    let cur = '', inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === ',' && !inQuote) { result.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase().replace(/['"]/g,''));
+  const col = k => headers.indexOf(k);
+
+  // Support both MekBay-style columns and generic column names
+  const iGroup   = col('group');
+  const iForm    = iGroup !== -1 ? iGroup : col('formation');
+  const iChassis = col('chassis');
+  const iModel   = col('model');
+  const iUnit    = col('unit');
+  // CBT: tonnage/tons → tons; BV → bv
+  // Alpha Strike: SZ → tons; PV (or adjustedPV) → bv
+  const iTons    = col('tonnage') !== -1 ? col('tonnage') : col('tons');
+  const iBv      = col('bv') !== -1 ? col('bv') : col('pv') !== -1 ? col('pv') : col('adjustedpv');
+  const iStatus  = col('status');
+  const iOmni    = col('omni');
+
+  // Need either (chassis) or (unit) column
+  if (iChassis === -1 && iUnit === -1) return {error: 'CSV must have a "unit" or "chassis" column.'};
+
+  const get = (row, i) => i === -1 ? '' : (row[i] || '').replace(/^["']|["']$/g,'').trim();
+
+  const formationMap = {};
+  const formationOrder = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const row = splitCsvLine(lines[i]);
+
+    // Build unit name: "Chassis Model" if both present, else just unit/chassis
+    let unitName = '';
+    if (iChassis !== -1) {
+      const chassis = get(row, iChassis);
+      const model   = iModel !== -1 ? get(row, iModel) : '';
+      unitName = model ? `${chassis} ${model}` : chassis;
+    } else {
+      unitName = get(row, iUnit);
+    }
+    if (!unitName) continue;
+
+    const formLabel = iForm !== -1 ? (get(row, iForm) || 'Formation 1') : 'Formation 1';
+    if (!formationMap[formLabel]) {
+      formationMap[formLabel] = [];
+      formationOrder.push(formLabel);
+    }
+
+    const statusRaw = get(row, iStatus).toLowerCase();
+    const statusMap = {'operational':'operational','armor':'armor','armor only':'armor',
+      'structure':'struct','struct':'struct','structure/crit':'struct',
+      'crippled':'crippled','destroyed':'destroyed'};
+    const unitStatus = statusMap[statusRaw] || '';
+
+    const omniRaw = get(row, iOmni).toLowerCase();
+    const omni = ['1','true','yes','x','✓'].includes(omniRaw);
+
+    formationMap[formLabel].push({
+      unit: unitName,
+      tons: get(row, iTons),
+      bv:   get(row, iBv),
+      sz: '', gp: '', adv: '', spa: '',
+      pilot: '', pilotIdx: '',
+      unitStatus,
+      omni,
+      deploy: false
+    });
+  }
+
+  if (!formationOrder.length) return {error: 'No valid unit rows found in CSV.'};
+
+  return {
+    formations: formationOrder.map(label => ({label, rows: formationMap[label]}))
+  };
+}
+
+function renderCsvPreview(formations) {
+  const totalUnits = formations.reduce((s, f) => s + f.rows.length, 0);
+  const previewRows = formations.map(f =>
+    `<div style="margin-bottom:10px">
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px">${esc(f.label)} — ${f.rows.length} unit${f.rows.length!==1?'s':''}</div>
+      ${f.rows.map(r =>
+        `<div style="display:flex;gap:12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);padding:3px 6px;border-left:2px solid var(--border-gold)">
+          <span style="flex:2;color:var(--text)">${esc(r.unit)}</span>
+          <span style="color:var(--text-dim)">${r.tons ? r.tons+'T' : '—'}</span>
+          <span style="color:var(--gold)">${r.bv ? 'BV '+r.bv : '—'}</span>
+          ${r.unitStatus ? `<span style="color:var(--text-dim);text-transform:uppercase;font-size:11px">${r.unitStatus}</span>` : ''}
+          ${r.omni ? `<span style="color:var(--gold);font-size:11px">OMNI</span>` : ''}
+        </div>`
+      ).join('')}
+    </div>`
+  ).join('');
+
+  document.getElementById('csv-preview').innerHTML = `
+    <div style="border:1px solid var(--border-gold);padding:14px;background:rgba(201,162,39,.04)">
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">
+        Preview — ${formations.length} formation${formations.length!==1?'s':''}, ${totalUnits} unit${totalUnits!==1?'s':''}
+      </div>
+      <div style="max-height:260px;overflow-y:auto;margin-bottom:12px">${previewRows}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="commitCsvImport('replace')" style="border-color:var(--green);color:var(--green-bright)">✓ Replace Formations</button>
+        <button class="btn" onclick="commitCsvImport('append')" style="border-color:var(--accent);color:#6ab0e8">+ Append to Force</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelCsvImport()">✕ Cancel</button>
+      </div>
+    </div>`;
+  document.getElementById('csv-preview')._pendingFormations = formations;
+}
+
+function commitCsvImport(mode) {
+  const preview = document.getElementById('csv-preview');
+  const formations = preview._pendingFormations;
+  if (!formations) return;
+  if (!data.forceData) data.forceData = {};
+
+  if (mode === 'replace') {
+    if (!confirm(`Replace all existing formations with ${formations.length} formation(s) from CSV?`)) return;
+    data.forceData.formations = formations;
+    toast('Force Record replaced from CSV.');
+  } else {
+    data.forceData.formations = [...(data.forceData.formations || []), ...formations];
+    toast(`${formations.length} formation(s) appended to Force Record.`);
+  }
+
+  save();
+  renderFormations();
+  cancelCsvImport();
+}
+
+function cancelCsvImport() {
+  document.getElementById('csv-preview').innerHTML = '';
+  document.getElementById('csv-preview')._pendingFormations = null;
+  document.getElementById('csv-filename').textContent = 'No file chosen';
+  document.getElementById('csvImportFile').value = '';
 }
 
 // ─────────────────────────────────────────
@@ -2656,16 +2843,17 @@ function renderFormations() {
   ].join('');
 
   cont.innerHTML = data.forceData.formations.map((f, fi) => `
-    <div class="panel panel-gold" draggable="true" data-fi="${fi}"
+    <div class="panel panel-gold" data-fi="${fi}"
       style="margin-bottom:16px;padding:0;overflow:hidden"
-      ondragstart="dragFormationStart(event,${fi})"
       ondragover="dragFormationOver(event)"
       ondragleave="dragFormationLeave(event)"
       ondrop="dragFormationDrop(event,${fi})"
       ondragend="dragFormationEnd(event)">
       <!-- Formation header -->
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,162,39,.08);border-bottom:1px solid var(--border-gold)">
-        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <span class="drag-handle" draggable="true" title="Drag to reorder"
+          ondragstart="dragFormationStart(event,${fi})"
+          ondragend="dragFormationEnd(event)">⠿</span>
         <input type="text" value="${esc(f.label)}" onchange="updateFormationLabel(${fi},this.value)"
           style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;width:200px;outline:none;padding:0">
         <div style="flex:1"></div>
@@ -2708,15 +2896,16 @@ function renderFormations() {
             })
           ].join('');
           return `
-        <div draggable="true" data-fi="${fi}" data-ri="${ri}"
+        <div data-fi="${fi}" data-ri="${ri}"
           style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
-          ondragstart="dragUnitStart(event,${fi},${ri})"
           ondragover="dragUnitOver(event)"
           ondragleave="dragUnitLeave(event)"
           ondrop="dragUnitDrop(event,${fi},${ri})"
           ondragend="dragUnitEnd(event)">
           <div style="display:flex;align-items:center;justify-content:center">
-            <span class="drag-handle" title="Drag to reorder" ondragstart="event.stopPropagation()" style="font-size:13px;padding:0 3px" onclick="event.stopPropagation()">⠿</span>
+            <span class="drag-handle" draggable="true" title="Drag to reorder" style="font-size:13px;padding:0 3px"
+              ondragstart="dragUnitStart(event,${fi},${ri})"
+              ondragend="dragUnitEnd(event)">⠿</span>
           </div>
           <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="Atlas AS7-D"
             onchange="updateFormationField(${fi},${ri},'unit',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
@@ -3237,7 +3426,9 @@ let dragFormationIdx = null;
 
 function dragFormationStart(e, fi) {
   dragFormationIdx = fi;
-  e.currentTarget.classList.add('dragging');
+  // Mark the parent panel as dragging, not just the handle
+  const panel = e.currentTarget.closest('.panel');
+  if (panel) panel.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
 }
 function dragFormationOver(e) {
@@ -3270,6 +3461,8 @@ function dragFormationDrop(e, targetFi) {
 }
 function dragFormationEnd(e) {
   e.currentTarget.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  const panel = e.currentTarget.closest('.panel');
+  if (panel) panel.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
   dragFormationIdx = null;
 }
 
@@ -3280,7 +3473,8 @@ let dragUnit = null; // {fi, ri}
 
 function dragUnitStart(e, fi, ri) {
   dragUnit = { fi, ri };
-  e.currentTarget.classList.add('dragging');
+  const row = e.currentTarget.closest('[data-fi]');
+  if (row) row.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
   e.stopPropagation(); // don't trigger formation drag
 }
@@ -3341,6 +3535,8 @@ function dragUnitDrop(e, targetFi, targetRi) {
 }
 function dragUnitEnd(e) {
   e.currentTarget.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  const row = e.currentTarget.closest('[data-fi]');
+  if (row) row.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
   dragUnit = null;
 }
 
