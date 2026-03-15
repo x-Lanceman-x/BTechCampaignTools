@@ -371,8 +371,8 @@
 <header>
   <div class="header-inner">
     <div>
-      <div class="logo-text">BattleTech</div>
-      <div class="logo-sub">Aces · Log Sheets</div>
+      <div class="logo-text">BattleTech Aces</div>
+      <div class="logo-sub">Log Sheets</div>
     </div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('roster')">Force Roster</button>
@@ -397,15 +397,19 @@
       <div class="field"><label>Force Name</label><input type="text" id="forceName" placeholder="e.g. Iron Panthers" oninput="saveData()"></div>
       <div class="field"><label>Commanding Officer</label><input type="text" id="forceCO" placeholder="Callsign" oninput="saveData()"></div>
       <div class="field"><label>Campaign Level</label>
-        <select id="forceLevel" onchange="saveData()">
+        <select id="forceLevel" onchange="onCampaignLevelChange()">
           <option value="">— Select —</option>
-          <option>Recruit</option><option>Regular</option><option>Veteran</option><option>Elite</option>
+          <option value="120">Rookie</option>
+          <option value="100">Standard</option>
+          <option value="90">Veteran</option>
+          <option value="80">Elite</option>
+          <option value="70">Legendary</option>
         </select>
       </div>
     </div>
     <div class="grid-3">
       <div class="field"><label>Total PV</label><input type="number" id="totalPV" placeholder="0" readonly style="color:var(--gold);cursor:default;opacity:0.9"></div>
-      <div class="field"><label>Player Force PV %</label><input type="number" id="pvPercent" placeholder="100" oninput="saveData()"></div>
+      <div class="field"><label>Player Force PV %</label><input type="number" id="pvPercent" placeholder="100" oninput="saveData();renderDeployment()"></div>
       <div class="field"><label>SP Earned %</label><input type="number" id="spPercent" placeholder="100" oninput="saveData()"></div>
     </div>
   </div>
@@ -417,7 +421,11 @@
       <thead>
         <tr>
           <th>Unit (and Variant)</th>
+          <th>Type</th>
+          <th style="width:60px">SZ</th>
+          <th style="width:60px">Omni</th>
           <th>PV (at Skill 4)</th>
+          <th>Deploy</th>
           <th style="width:50px"></th>
         </tr>
       </thead>
@@ -425,6 +433,39 @@
     </table>
     <div class="btn-row">
       <button class="btn btn-sm" onclick="addUnit()">+ Add Unit</button>
+    </div>
+  </div>
+
+  <!-- Omni Reconfiguration Calculator -->
+  <div class="section-title">Omni Reconfiguration Calculator</div>
+  <div class="panel panel-gold">
+    <div class="grid-3" style="margin-bottom:12px">
+      <div class="field">
+        <label>Omni Unit</label>
+        <select id="omniCalcUnit" onchange="updateOmniCalc()" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:14px;width:100%">
+          <option value="">— Select Omni Unit —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>New Configuration</label>
+        <input type="text" id="omniNewConfig" placeholder="e.g. Atlas AS7-K" oninput="saveData()" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:14px;width:100%;outline:none;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div class="field">
+        <label>New PV</label>
+        <input type="number" id="omniNewPV" placeholder="0" min="0" oninput="updateOmniCalc()" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:14px;width:100%;outline:none;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+    </div>
+    <div id="omniCalcResult" style="display:none">
+      <hr class="divider divider-gold" style="margin-bottom:12px">
+      <div class="grid-2" style="align-items:end;gap:12px">
+        <div>
+          <div class="calc-label" id="omniCalcCostLabel">Reconfiguration Cost (SP)</div>
+          <div class="calc-field" id="omniCalcTotal" style="font-size:24px">0</div>
+        </div>
+        <div>
+          <button class="btn" onclick="spendOmniSP()" style="width:100%">⚙ Spend SP</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -438,6 +479,36 @@
       <tbody id="namedPilotRows"></tbody>
     </table>
     <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px">⟶ Pilots are managed on the <strong style="color:var(--gold);cursor:pointer" onclick="showPageById('pilots')">Pilot Cards</strong> tab.</div>
+  </div>
+
+  <!-- Deployment -->
+  <div class="section-title">Deployment</div>
+  <div class="panel panel-gold">
+    <div class="grid-3" style="align-items:end;margin-bottom:14px">
+      <div class="field" style="margin:0"><label>Maximum Deployment PV</label>
+        <input type="number" id="maxDeployPV" placeholder="0" oninput="saveData();renderDeployment()">
+      </div>
+      <div>
+        <div class="calc-label">Max PV (Adjusted)</div>
+        <div class="calc-field" id="deployAdjustedPV" style="font-size:20px">0</div>
+      </div>
+      <div>
+        <div class="calc-label">Deployed PV / Remaining</div>
+        <div class="calc-field" id="deployPVDisplay" style="font-size:20px">0 / 0</div>
+      </div>
+    </div>
+    <table id="deployTable">
+      <thead>
+        <tr>
+          <th>Unit (and Variant)</th>
+          <th>Type</th>
+          <th>Assigned Pilot</th>
+          <th style="text-align:right">PV</th>
+          <th style="text-align:center">Force Cmdr</th>
+        </tr>
+      </thead>
+      <tbody id="deployRows"></tbody>
+    </table>
   </div>
 
   <!-- Memorial -->
@@ -459,6 +530,9 @@
       <div class="field"><label>Campaign Name</label><input type="text" id="campaignName" placeholder="Campaign name..." oninput="saveData()"></div>
       <div class="field"><label>Starting Warchest Balance (SP)</label><input type="number" id="startWarchest" placeholder="0" oninput="updateCampaignTotals()"></div>
     </div>
+    <div class="btn-row">
+      <button class="btn btn-sm" onclick="startNewCampaign()">⚑ Start New Campaign</button>
+    </div>
   </div>
 
   <div class="warchest-display">
@@ -467,9 +541,30 @@
       <div class="warchest-val" id="currentWarchest">0</div>
       <div class="warchest-lbl">Current Warchest Balance (SP)</div>
     </div>
-    <div style="margin-left:auto; text-align:right">
-      <div class="warchest-val" id="totalSortiesWon" style="font-size:20px; color:var(--text)">0 / 0</div>
-      <div class="warchest-lbl">Sorties Won / Played</div>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:10px">
+      <div>
+        <div class="warchest-val" id="totalSortiesWon" style="font-size:20px; color:var(--text)">0 / 0</div>
+        <div class="warchest-lbl">Sorties Won / Played</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; border-left:1px solid var(--border-gold); padding-left:16px; margin-left:6px">
+        <div style="display:flex; gap:6px; align-items:center">
+          <input type="number" id="manualSPAdjust" placeholder="± SP" style="width:100px; background:var(--darker); border:1px solid var(--border); color:var(--text); padding:6px 8px; font-family:'Share Tech Mono',monospace; font-size:14px; outline:none; text-align:center;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+          <button class="btn btn-sm" onclick="applyManualSPAdjust()">Apply</button>
+        </div>
+        <div style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim)">Manual SP Adjustment</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SP Adjustment Log (collapsible) -->
+  <div style="margin-bottom:16px">
+    <div onclick="toggleMiscLog()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--border-gold);user-select:none">
+      <span id="miscLogToggleIcon" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--gold)">▶</span>
+      <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold)">SP Adjustments Log</span>
+      <span id="miscLogCount" style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim)"></span>
+    </div>
+    <div id="miscLogBody" style="display:none;background:var(--panel);border:1px solid var(--border);border-top:none;padding:8px 14px;">
+      <div id="miscSpendLog"></div>
     </div>
   </div>
 
@@ -478,6 +573,7 @@
       <thead>
         <tr>
           <th>#</th>
+          <th>Sortie Name</th>
           <th>Date Played</th>
           <th>Earnings (SP)</th>
           <th>Win?</th>
@@ -491,6 +587,8 @@
     </table>
     <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px">⟶ Sortie entries are populated from the <strong style="color:var(--gold);cursor:pointer" onclick="showPageById('sortie')">Sortie Log</strong> tab.</div>
   </div>
+
+  <div id="archivedCampaignsContainer"></div>
 </div>
 
 
@@ -564,12 +662,40 @@
 
 <script>
 // ─────────────────────────────────────────
+// CAMPAIGN LEVEL
+// ─────────────────────────────────────────
+const CAMPAIGN_LEVEL_MAP = {
+  '120': { pvPercent: 120, spPercent: 120 },
+  '100': { pvPercent: 100, spPercent: 100 },
+  '90':  { pvPercent: 90,  spPercent: 90  },
+  '80':  { pvPercent: 80,  spPercent: 80  },
+  '70':  { pvPercent: 70,  spPercent: 70  },
+};
+
+function onCampaignLevelChange() {
+  const val = document.getElementById('forceLevel').value;
+  if (val && CAMPAIGN_LEVEL_MAP[val]) {
+    const m = CAMPAIGN_LEVEL_MAP[val];
+    sv('pvPercent', m.pvPercent);
+    sv('spPercent', m.spPercent);
+    data.pvPercent = m.pvPercent;
+    data.spPercent = m.spPercent;
+    // Sync all existing sortie logs' Difficulty Modifier to the new SP Earned %
+    (data.sortieLogs||[]).forEach(s => { s.diffMod = m.spPercent; });
+    renderSortieLogs();
+    updateCampaignTotals();
+  }
+  saveData();
+}
+
+// ─────────────────────────────────────────
 // DATA
 // ─────────────────────────────────────────
 let data = {
   forceName:'', forceCO:'', forceLevel:'', totalPV:0, pvPercent:100, spPercent:100,
-  campaignName:'', startWarchest:0, memorial:'',
-  units:[], namedPilots:[], campaignRows:[], sortieLogs:[], pilotCards:[]
+  campaignName:'', startWarchest:0, memorial:'', maxDeployPV:0, miscSpend:0, miscSpendLog:[],
+  units:[], namedPilots:[], campaignRows:[], sortieLogs:[], pilotCards:[],
+  archivedCampaigns:[]
 };
 
 function loadData() {
@@ -591,6 +717,7 @@ function saveData() {
   data.campaignName = v('campaignName');
   data.startWarchest = +v('startWarchest')||0;
   data.memorial = v('memorial');
+  data.maxDeployPV = +v('maxDeployPV')||0;
   const sortieCamp = document.getElementById('sortie_campaign');
   if (sortieCamp) sortieCamp.textContent = data.campaignName || '—';
   localStorage.setItem('btAcesData', JSON.stringify(data));
@@ -635,9 +762,9 @@ function clearAll() {
   localStorage.removeItem('btAcesData');
   data = {
     forceName:'', forceCO:'', forceLevel:'', totalPV:0, pvPercent:100, spPercent:100,
-    campaignName:'', startWarchest:0, memorial:'',
+    campaignName:'', startWarchest:0, memorial:'', maxDeployPV:0, miscSpend:0, miscSpendLog:[],
     units:[], namedPilots:[], campaignRows:[], sortieLogs:[], pilotCards:[],
-    campaignMeta:{}
+    campaignMeta:{}, archivedCampaigns:[]
   };
   renderAll();
   toast('All data cleared.');
@@ -651,12 +778,15 @@ function renderAll() {
   sv('forceLevel', data.forceLevel); sv('totalPV', data.totalPV);
   sv('pvPercent', data.pvPercent||100); sv('spPercent', data.spPercent||100);
   sv('campaignName', data.campaignName); sv('startWarchest', data.startWarchest);
-  sv('memorial', data.memorial);
+  sv('memorial', data.memorial); sv('maxDeployPV', data.maxDeployPV||0);
   const sortieCamp = document.getElementById('sortie_campaign');
   if (sortieCamp) sortieCamp.textContent = data.campaignName || '—';
   renderUnits(); renderNamedPilots(); renderCampaignRows();
   renderSortieLogs(); renderPilotCards();
   updateRosterStats(); updateCampaignTotals();
+  renderArchivedCampaigns();
+  renderDeployment();
+  renderMiscSpendLog();
 }
 
 // ─────────────────────────────────────────
@@ -680,24 +810,44 @@ function showPageById(id) {
 // UNITS
 // ─────────────────────────────────────────
 function addUnit() {
-  data.units.push({unit:'', pv:'', callsign:'', sp:''});
+  data.units.push({unit:'', type:'BattleMech', sz:'', omni:false, pv:'', callsign:'', sp:'', deploy:false});
   renderUnits(); saveData();
 }
 function removeUnit(i) { data.units.splice(i,1); renderUnits(); saveData(); }
-function updateUnit(i, field, val) { data.units[i][field]=val; updateRosterStats(); saveData(); }
+function updateUnit(i, field, val) {
+  if (field === 'forceCommander' && val) {
+    // Clear force commander from all other units first
+    (data.units||[]).forEach((u, idx) => { if (idx !== i) u.forceCommander = false; });
+  }
+  data.units[i][field] = val;
+  updateRosterStats();
+  saveData();
+}
 
 function renderUnits() {
   const tbody = document.getElementById('unitRows');
   if (!data.units.length) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
     return;
   }
+  const typeOpts = ['BattleMech','Vehicle','Infantry Platoon','Battle Armor Squad'];
   tbody.innerHTML = data.units.map((u,i) => `
     <tr>
       <td><input type="text" value="${esc(u.unit)}" onchange="updateUnit(${i},'unit',this.value)" placeholder="Atlas AS7-D"></td>
+      <td><select onchange="updateUnit(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:13px;width:100%">
+        ${typeOpts.map(t => `<option value="${t}" ${(u.type||'BattleMech')===t?'selected':''}>${t}</option>`).join('')}
+      </select></td>
+      <td><input type="number" value="${u.sz||''}" min="1" max="4" onchange="updateUnit(${i},'sz',Math.min(4,Math.max(1,+this.value||1)))" oninput="if(this.value>4)this.value=4;if(this.value<1&&this.value!=='')this.value=1" placeholder="1-4" style="text-align:center"></td>
+      <td style="text-align:center"><label class="check-label" style="justify-content:center">
+        <input type="checkbox" ${u.omni?'checked':''} onchange="updateUnit(${i},'omni',this.checked)">
+        <span class="checkmark"></span></label></td>
       <td><input type="number" value="${u.pv||''}" onchange="updateUnit(${i},'pv',this.value)" placeholder="0"></td>
+      <td style="text-align:center"><label class="check-label" style="justify-content:center">
+        <input type="checkbox" ${u.deploy?'checked':''} onchange="updateUnit(${i},'deploy',this.checked)">
+        <span class="checkmark"></span></label></td>
       <td><button class="btn btn-sm btn-danger" onclick="removeUnit(${i})">✕</button></td>
     </tr>`).join('');
+  renderOmniCalc();
 }
 
 // ─────────────────────────────────────────
@@ -744,13 +894,227 @@ function renderNamedPilots() {
 function updateRosterStats() {
   saveData();
   const totalPV = data.units.reduce((s,u)=>s+(+u.pv||0),0);
-  const totalSP = data.units.reduce((s,u)=>s+(+u.sp||0),0)
-                + data.namedPilots.reduce((s,p)=>s+(+p.sp||0),0);
-  // Write sum back into the Total PV input
   const pvInput = document.getElementById('totalPV');
   if (pvInput) pvInput.value = totalPV || '';
   data.totalPV = totalPV;
+  renderDeployment();
+  renderOmniCalc();
+}
 
+function updateUnitPilot(unitIndex, pilotCallsign) {
+  data.units[unitIndex].assignedPilot = pilotCallsign;
+  if (!pilotCallsign) data.units[unitIndex].forceCommander = false;
+  saveData();
+  renderDeployment();
+}
+
+function renderOmniCalc() {
+  const sel = document.getElementById('omniCalcUnit');
+  if (!sel) return;
+  const current = sel.value;
+  const omniUnits = (data.units||[]).filter(u => u.omni && u.unit);
+  sel.innerHTML = '<option value="">— Select Omni Unit —</option>' +
+    omniUnits.map(u => `<option value="${esc(u.unit)}" ${current === u.unit ? 'selected' : ''}>${esc(u.unit)}${u.pv ? ' (PV '+u.pv+')' : ''}</option>`).join('');
+  updateOmniCalc();
+}
+
+function updateOmniCalc() {
+  const unitName  = document.getElementById('omniCalcUnit')?.value;
+  const newPV     = +(document.getElementById('omniNewPV')?.value);
+  const result    = document.getElementById('omniCalcResult');
+  const total     = document.getElementById('omniCalcTotal');
+  const costLabel = document.getElementById('omniCalcCostLabel');
+  if (!result || !total) return;
+
+  const unit = (data.units||[]).find(u => u.unit === unitName && u.omni);
+
+  if (unitName && unit && document.getElementById('omniNewPV')?.value !== '') {
+    const oldPV = +(unit.pv)||0;
+    let cost, label;
+    if (newPV > oldPV) {
+      // Higher: difference × 40
+      cost  = (newPV - oldPV) * 40;
+      label = `Reconfiguration Cost — Higher (Diff × 40)`;
+    } else {
+      // Lower or equal: SZ × 5
+      cost  = (+(unit.sz)||0) * 5;
+      label = `Reconfiguration Cost — Lower (SZ × 5)`;
+    }
+    total.textContent = cost;
+    if (costLabel) costLabel.textContent = label;
+    result.style.display = 'block';
+  } else {
+    result.style.display = 'none';
+  }
+}
+
+function spendOmniSP() {
+  const cost = +(document.getElementById('omniCalcTotal')?.textContent)||0;
+  if (!cost) { toast('No SP cost to spend.'); return; }
+  const unitName  = document.getElementById('omniCalcUnit')?.value || 'unit';
+  const newConfig = document.getElementById('omniNewConfig')?.value?.trim();
+  const newPV     = +(document.getElementById('omniNewPV')?.value)||0;
+  const unit      = (data.units||[]).find(u => u.unit === unitName && u.omni);
+  const oldPV     = +(unit?.pv)||0;
+  const direction = newPV > oldPV ? 'Higher' : 'Lower';
+  const configLabel = newConfig ? ` → ${newConfig}` : '';
+
+  // Update the unit in the roster
+  if (unit) {
+    if (newConfig) unit.unit = newConfig;
+    if (newPV)     unit.pv   = newPV;
+  }
+
+  data.miscSpend = (data.miscSpend||0) + cost;
+  if (!data.miscSpendLog) data.miscSpendLog = [];
+  data.miscSpendLog.push({
+    type: 'omni',
+    label: `Omni Reconfig — ${unitName}${configLabel} (${direction})`,
+    amount: -cost,
+    date: new Date().toLocaleDateString()
+  });
+
+  // Clear calc fields
+  const newConfigEl = document.getElementById('omniNewConfig');
+  const newPVEl     = document.getElementById('omniNewPV');
+  if (newConfigEl) newConfigEl.value = '';
+  if (newPVEl)     newPVEl.value = '';
+
+  saveData();
+  renderUnits();
+  updateCampaignTotals();
+  toast(`${unitName} reconfigured${newConfig ? ' to ' + newConfig : ''}. ${cost} SP spent.`);
+}
+
+function applyManualSPAdjust() {
+  const input = document.getElementById('manualSPAdjust');
+  const val = +input?.value;
+  if (!val || isNaN(val)) { toast('Enter a value to adjust.'); return; }
+  data.miscSpend = (data.miscSpend||0) - val;
+  if (!data.miscSpendLog) data.miscSpendLog = [];
+  data.miscSpendLog.push({
+    type: 'manual',
+    label: 'Manual Adjustment',
+    amount: val,
+    date: new Date().toLocaleDateString()
+  });
+  saveData();
+  updateCampaignTotals();
+  input.value = '';
+  toast(`${val > 0 ? '+' : ''}${val} SP applied to Warchest.`);
+}
+
+function toggleMiscLog() {
+  const body = document.getElementById('miscLogBody');
+  const icon = document.getElementById('miscLogToggleIcon');
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (icon) icon.textContent = open ? '▼' : '▶';
+}
+
+function renderMiscSpendLog() {
+  const container = document.getElementById('miscSpendLog');
+  const countEl   = document.getElementById('miscLogCount');
+  if (!container) return;
+  const log = (data.miscSpendLog||[]);
+  if (countEl) countEl.textContent = log.length ? `${log.length} entr${log.length===1?'y':'ies'}` : '';
+  if (!log.length) {
+    container.innerHTML = `<div style="color:var(--text-dim);font-size:12px;padding:8px 0;letter-spacing:1px">No adjustments recorded yet.</div>`;
+    return;
+  }
+  container.innerHTML = [...log].reverse().map((entry) => {
+    const isPos = entry.amount >= 0;
+    const icon = entry.type === 'omni' ? '⚙' : '✎';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text-dim);font-size:14px">${icon}</span>
+      <span style="flex:1;font-size:13px;font-family:'Rajdhani',sans-serif;font-weight:600">${esc(entry.label)}</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:${isPos?'var(--gold)':'var(--red)'};">${isPos?'+':''}${entry.amount} SP</span>
+      <span style="font-size:11px;color:var(--text-dim);min-width:70px;text-align:right">${esc(entry.date)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDeployment() {
+  const tbody = document.getElementById('deployRows');
+  if (!tbody) return;
+  const deployed = (data.units||[]).filter(u => u.deploy);
+  const deployedPV = deployed.reduce((s,u) => s + (+u.pv||0), 0);
+  const maxPV = +v('maxDeployPV') || +data.maxDeployPV || 0;
+  const pvPercent = +data.pvPercent || 100;
+  const adjustedMaxPV = Math.round(maxPV * pvPercent / 100);
+  const remaining = adjustedMaxPV - deployedPV;
+  const over = remaining < 0;
+
+  // Adjusted max PV display
+  const adjDisplay = document.getElementById('deployAdjustedPV');
+  if (adjDisplay) {
+    adjDisplay.textContent = maxPV > 0 ? adjustedMaxPV : '—';
+    adjDisplay.style.color = 'var(--gold)';
+  }
+
+  // Deployed / Remaining display
+  const display = document.getElementById('deployPVDisplay');
+  if (display) {
+    display.textContent = maxPV > 0 ? `${deployedPV} / ${remaining}` : `${deployedPV}`;
+    display.style.color = over ? 'var(--red)' : 'var(--gold)';
+  }
+
+  if (!deployed.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:16px;">No units marked for deployment. Check the Deploy box on the Unit Roster.</td></tr>`;
+    return;
+  }
+
+  // Map unit type → required pilot type
+  const UNIT_PILOT_TYPE = {
+    'BattleMech':        'MechWarrior',
+    'Vehicle':           'Vehicle Crew',
+    'Infantry Platoon':  'Infantry',
+    'Battle Armor Squad':'Battle Armor',
+  };
+
+  tbody.innerHTML = deployed.map(u => {
+    const unitIndex = data.units.indexOf(u);
+    const requiredType = UNIT_PILOT_TYPE[u.type||'BattleMech'];
+    // Build set of pilots assigned to OTHER units
+    const assignedElsewhere = new Set(
+      (data.units||[])
+        .filter((other, idx) => idx !== unitIndex && other.assignedPilot)
+        .map(other => other.assignedPilot)
+    );
+    const availableForUnit = (data.pilotCards||[]).filter(p =>
+      !p.wounded &&
+      p.callsign &&
+      p.type === requiredType &&
+      !assignedElsewhere.has(p.callsign)
+    );
+    const pilotOptions = availableForUnit.map(p =>
+      `<option value="${esc(p.callsign)}" ${u.assignedPilot === p.callsign ? 'selected' : ''}>${esc(p.callsign)}</option>`
+    ).join('');
+    const hasPilot = !!u.assignedPilot;
+    return `<tr>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px">${esc(u.unit)||'—'}</td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 8px;color:var(--text-dim)">${esc(u.type||'BattleMech')}</td>
+      <td style="padding:4px 6px">
+        <select onchange="updateUnitPilot(${unitIndex}, this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
+          <option value="">— Unassigned —</option>
+          ${pilotOptions}
+        </select>
+      </td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:14px;padding:6px 8px;text-align:right;color:var(--gold);font-weight:700">${+u.pv||0}</td>
+      <td style="text-align:center;padding:6px 8px">
+        ${hasPilot
+          ? `<label class="check-label" style="justify-content:center">
+               <input type="checkbox" ${u.forceCommander?'checked':''} onchange="updateUnit(${unitIndex},'forceCommander',this.checked)">
+               <span class="checkmark"></span>
+             </label>`
+          : `<label class="check-label" style="justify-content:center;opacity:0.3;pointer-events:none">
+               <input type="checkbox" disabled>
+               <span class="checkmark"></span>
+             </label>`}
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────
@@ -786,6 +1150,7 @@ function renderCampaignRows() {
     running += meta.win ? (calc.earnings - (+meta.pilots||0) - (+meta.purchases||0)) : 0;
     return `<tr>
       <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:var(--gold)">${esc(s.num)}</td>
+      <td style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;padding:6px 8px">${esc(s.name)||'—'}</td>
       <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px">${esc(s.datePlayed)||'—'}</td>
       <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:${calc.earnings>=0?'var(--gold)':'var(--red)'};text-align:right">${calc.earnings}</td>
       <td style="text-align:center"><label class="check-label" style="justify-content:center">
@@ -810,10 +1175,97 @@ function updateCampaignTotals() {
     running += meta.win ? (calc.earnings - (+meta.pilots||0) - (+meta.purchases||0)) : 0;
     if (meta.win) wins++;
   });
-  document.getElementById('currentWarchest').textContent = running;
-  document.getElementById('currentWarchest').style.color = running>=0?'var(--gold)':'var(--red)';
+  document.getElementById('currentWarchest').textContent = running - (data.miscSpend||0);
+  document.getElementById('currentWarchest').style.color = (running - (data.miscSpend||0))>=0?'var(--gold)':'var(--red)';
   document.getElementById('totalSortiesWon').textContent = `${wins} / ${logs.length}`;
   renderCampaignRows();
+  renderArchivedCampaigns();
+  renderMiscSpendLog();
+}
+
+function startNewCampaign() {
+  // Calculate final warchest of current campaign
+  const logs = (data.sortieLogs||[]).filter(s => s.num);
+  let finalBalance = +data.startWarchest||0;
+  logs.forEach(s => {
+    const calc = calcSortie(s);
+    const meta = getCampaignMeta(s.num);
+    finalBalance += meta.win ? (calc.earnings - (+meta.pilots||0) - (+meta.purchases||0)) : 0;
+  });
+
+  if (!confirm(`Archive "${data.campaignName||'Current Campaign'}" and start a new campaign?\n\nFinal balance: ${finalBalance} SP → New starting balance: ${Math.max(finalBalance, 400)} SP`)) return;
+
+  // Archive current campaign
+  if (!data.archivedCampaigns) data.archivedCampaigns = [];
+  data.archivedCampaigns.unshift({
+    name: data.campaignName || 'Unnamed Campaign',
+    startWarchest: data.startWarchest,
+    finalBalance: finalBalance,
+    sortieLogs: JSON.parse(JSON.stringify(data.sortieLogs)),
+    campaignMeta: JSON.parse(JSON.stringify(data.campaignMeta||{})),
+    archivedAt: new Date().toLocaleDateString()
+  });
+
+  // Start fresh — carry over warchest (min 400)
+  const newStart = Math.max(finalBalance, 400);
+  data.campaignName = '';
+  data.startWarchest = newStart;
+  data.sortieLogs = [];
+  data.campaignMeta = {};
+  data.miscSpend = 0;
+  data.miscSpendLog = [];
+
+  renderAll();
+  saveData();
+  toast(`Campaign archived! New starting balance: ${newStart} SP`);
+}
+
+function renderArchivedCampaigns() {
+  const container = document.getElementById('archivedCampaignsContainer');
+  if (!container) return;
+  const archives = data.archivedCampaigns||[];
+  if (!archives.length) { container.innerHTML = ''; return; }
+
+  container.innerHTML = archives.map((arc, ai) => `
+    <div style="margin-top:24px">
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;padding-right:8px">
+        <span>⟨ Archived ⟩ ${esc(arc.name)}</span>
+        <span style="font-size:10px;color:var(--text-dim);letter-spacing:1px">${esc(arc.archivedAt)} · Final Balance: <span style="color:${arc.finalBalance>=0?'var(--gold)':'var(--red)'}">${arc.finalBalance} SP</span></span>
+      </div>
+      <div class="panel" style="opacity:0.75">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Sortie Name</th><th>Date Played</th><th>Earnings (SP)</th>
+              <th>Win?</th><th>Named Pilots</th><th>Purchases</th><th>Balance</th><th>Keywords Gained</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              const logs = (arc.sortieLogs||[]).filter(s => s.num);
+              if (!logs.length) return `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:12px;">No sorties recorded.</td></tr>`;
+              let running = +arc.startWarchest||0;
+              return logs.map(s => {
+                const calc = calcSortie(s);
+                const meta = (arc.campaignMeta||{})[s.num] || {win:false,pilots:0,purchases:0,keywords:''};
+                running += meta.win ? (calc.earnings - (+meta.pilots||0) - (+meta.purchases||0)) : 0;
+                return `<tr>
+                  <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:var(--gold)">${esc(s.num)}</td>
+                  <td style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;padding:6px 8px">${esc(s.name)||'—'}</td>
+                  <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px">${esc(s.datePlayed)||'—'}</td>
+                  <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:${calc.earnings>=0?'var(--gold)':'var(--red)'};text-align:right">${calc.earnings}</td>
+                  <td style="text-align:center;padding:6px 8px">${meta.win?'<span style="color:var(--gold);font-weight:700">✓</span>':'<span style="color:var(--text-dim)">✕</span>'}</td>
+                  <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;text-align:right">${meta.pilots||'—'}</td>
+                  <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;text-align:right">${meta.purchases||'—'}</td>
+                  <td style="font-family:'Share Tech Mono',monospace;color:${running>=0?'var(--gold)':'var(--red)'};text-align:right;padding:6px 8px">${running}</td>
+                  <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;text-transform:uppercase;font-weight:700">${esc(meta.keywords)||'—'}</td>
+                </tr>`;
+              }).join('');
+            })()}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
 }
 
 // ─────────────────────────────────────────
@@ -821,9 +1273,9 @@ function updateCampaignTotals() {
 // ─────────────────────────────────────────
 function addSortieLog() {
   data.sortieLogs.push({
-    num:'', datePlayed:'',
+    num:'', name:'', datePlayed:'',
     primaryObj:0, otherObj:0,
-    waypoints:0, diffMod:100,
+    waypoints:0, diffMod: data.spPercent||100,
     recon:0,
     rearmCount:0,
     woundedCount:0, newPilotsCount:0,
@@ -929,7 +1381,7 @@ function renderSortieLogs() {
     <div class="sortie-card">
       <div class="sortie-card-header" onclick="toggleSortie(${i})">
         <div class="sortie-num">${s.num ? '##'+s.num : ''}</div>
-        <div class="sortie-name">${esc(s.datePlayed)||''}</div>
+        <input type="text" value="${esc(s.name)}" onclick="event.stopPropagation()" onchange="updateSL(${i},'name',this.value)" placeholder="Sortie Name..." style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(201,162,39,0.3);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;padding:2px 6px;outline:none;" onfocus="this.style.borderBottomColor='var(--gold)'" onblur="this.style.borderBottomColor='rgba(201,162,39,0.3)'">
         <div class="sortie-earning" id="sl_${i}_headEarning" style="color:${calc.earnings>=0?'var(--gold)':'var(--red)'}">${(calc.earnings>=0?'+':'')+calc.earnings} SP</div>
         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeSortieLog(${i})" style="margin-left:8px">✕</button>
       </div>
@@ -949,7 +1401,7 @@ function renderSortieLogs() {
             <div class="calc-field" id="sl_${i}_totalIncome">${calc.income}</div>
             <hr class="divider" style="margin:12px 0">
             <div class="field"><label>Waypoints SP (from waypoint text)</label><input type="number" value="${s.waypoints||''}" onchange="updateSL(${i},'waypoints',this.value)" placeholder="0"></div>
-            <div class="field"><label>Difficulty Modifier (%)</label><input type="number" value="${s.diffMod||100}" onchange="updateSL(${i},'diffMod',this.value)" placeholder="100"></div>
+            <div class="field"><label>Difficulty Modifier (%)</label><input type="number" value="${s.diffMod||data.spPercent||100}" readonly></div>
             <div class="calc-label">Total SP (Income + Waypoints × Diff%)</div>
             <div class="calc-field" id="sl_${i}_totalSP">${calc.totalSP}</div>
           </div>
@@ -1020,7 +1472,7 @@ function addPilotCard() {
   data.pilotCards.push({
     callsign:'', type:'MechWarrior', skill:4, edgeTokens:0, edgeAbilities:0,
     totalSP:0, mvpCount:0, wounded:false,
-    campaigns:'', abilities:['','','','',''],
+    campaigns:'', abilities:[],
     spSkill:'', spEdgeTokens:'', spEdgeAbilities:'', portrait:''
   });
   renderPilotCards(); saveData();
@@ -1038,7 +1490,7 @@ function uploadPortrait(i, input) {
   };
   reader.readAsDataURL(file);
 }
-function updatePC(i,field,val) { data.pilotCards[i][field]=val; saveData(); renderPilotCards(); }
+function updatePC(i,field,val) { data.pilotCards[i][field]=val; saveData(); renderPilotCards(); renderDeployment(); }
 function updatePCSP(i,field,val) {
   data.pilotCards[i][field] = +val||'';
   saveData(); renderPilotCards();
