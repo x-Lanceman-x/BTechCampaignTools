@@ -1331,7 +1331,7 @@ function removeRepairRow(si, ri) {
 
 function updateRepairRow(si,ri,field,val) {
   data.sortieLogs[si].repairRows[ri][field]=val;
-  renderSortieCalc(si);
+  renderSortieLogs();
   syncSortieEarningsToCampaign(si);
   saveData();
 }
@@ -1340,8 +1340,8 @@ const REPAIR_COSTS = {destroyed:100, crippled:60, structure:40, armor:20};
 
 function calcSortie(s) {
   const income = (+s.primaryObj||0) + (+s.otherObj||0);
+  const totalSP = Math.round(income * (+s.diffMod||100) / 100);
   const waypointSP = +s.waypoints||0;
-  const totalSP = Math.round((waypointSP + income) * (+s.diffMod||100) / 100);
   const recon = +s.recon||0;
   const rearm = (+s.rearmCount||0) * 20;
   const wounded = (+s.woundedCount||0) * 100;
@@ -1350,7 +1350,7 @@ function calcSortie(s) {
   (s.repairRows||[]).forEach(r => {
     repairTotal += (+r.size||0) * (REPAIR_COSTS[r.type]||0);
   });
-  const totalExpenses = recon + rearm + wounded + newPilots + repairTotal;
+  const totalExpenses = waypointSP + recon + rearm + wounded + newPilots + repairTotal;
   const earnings = totalSP - totalExpenses;
   return {income, waypointSP, totalSP, recon, rearm, wounded, newPilots, repairTotal, totalExpenses, earnings};
 }
@@ -1400,15 +1400,16 @@ function renderSortieLogs() {
             <div class="calc-label">Total Income</div>
             <div class="calc-field" id="sl_${i}_totalIncome">${calc.income}</div>
             <hr class="divider" style="margin:12px 0">
-            <div class="field"><label>Waypoints SP (from waypoint text)</label><input type="number" value="${s.waypoints||''}" onchange="updateSL(${i},'waypoints',this.value)" placeholder="0"></div>
             <div class="field"><label>Difficulty Modifier (%)</label><input type="number" value="${s.diffMod||data.spPercent||100}" readonly></div>
-            <div class="calc-label">Total SP (Income + Waypoints × Diff%)</div>
+            <div class="calc-label">Total SP (Income × Diff%)</div>
             <div class="calc-field" id="sl_${i}_totalSP">${calc.totalSP}</div>
           </div>
 
           <!-- EXPENSES -->
           <div>
             <div class="section-title" style="margin-bottom:10px">Expenses</div>
+            <div class="field"><label>Waypoints Cost (SP)</label><input type="number" value="${s.waypoints||''}" onchange="updateSL(${i},'waypoints',this.value)" placeholder="0"></div>
+            <hr class="divider">
             <div class="field"><label>Reconnaissance Cost (SP)</label><input type="number" value="${s.recon||''}" onchange="updateSL(${i},'recon',this.value)" placeholder="0"></div>
             <hr class="divider">
             <div class="field"><label># Units Rearming (× 20 SP)</label><input type="number" value="${s.rearmCount||''}" onchange="updateSL(${i},'rearmCount',this.value)" placeholder="0"></div>
