@@ -699,9 +699,11 @@
   <!-- Reconfigure Omni Calculator -->
   <div class="panel">
     <div class="ref-title">&#9645; Reconfigure Omni Costs (Ton ÷ 4)</div>
-    <div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 120px;gap:8px;margin-bottom:6px">
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">New Configuration</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">New BV</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
     </div>
     <div id="omni-rows"></div>
@@ -1620,7 +1622,7 @@ function renderRearmRows() {
 // ─────────────────────────────────────────
 function addOmniRow() {
   if (!data.omniRows) data.omniRows = [];
-  data.omniRows.push({unit:'', tons:''});
+  data.omniRows.push({unit:'', tons:'', newConfig:'', newBv:''});
   renderOmniRows(); save();
 }
 function removeOmniRow(i) { data.omniRows.splice(i,1); renderOmniRows(); save(); }
@@ -1640,17 +1642,19 @@ function renderOmniRows() {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
     updateSupportTotals(); return;
   }
-  const forceUnits = getForceUnits();
+  const forceUnits = getForceUnits().filter(u => u.omni);
   cont.innerHTML = data.omniRows.map((r,i) => {
     const cost = Math.ceil((+r.tons||0) / 4);
     const unitOptions = forceUnits.length
       ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
-      : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
+      : `<option value="">— No Omni units in roster —</option>`;
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
       <select onchange="selectOmniUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
         ${unitOptions}
       </select>
       <input type="number" value="${r.tons||''}" onchange="updateOmniRow(${i},'tons',this.value)" placeholder="Tons" style="text-align:center">
+      <input type="text" value="${esc(r.newConfig||'')}" onchange="updateOmniRow(${i},'newConfig',this.value)" placeholder="e.g. Atlas AS7-K" style="width:100%">
+      <input type="number" value="${r.newBv||''}" onchange="updateOmniRow(${i},'newBv',this.value)" placeholder="BV" style="text-align:center">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
         <button class="btn btn-sm btn-danger" onclick="removeOmniRow(${i})">✕</button>
@@ -1670,7 +1674,7 @@ function getForceUnits() {
     (f.rows||[]).forEach(r => {
       if (r.unit && r.unit.trim() && !seen.has(r.unit.trim())) {
         seen.add(r.unit.trim());
-        units.push({unit: r.unit.trim(), tons: r.tons||'', bv: r.bv||'', unitStatus: r.unitStatus||''});
+        units.push({unit: r.unit.trim(), tons: r.tons||'', bv: r.bv||'', unitStatus: r.unitStatus||'', omni: !!r.omni});
       }
     });
   });
@@ -1759,7 +1763,7 @@ function renderAssetRows() {
     const listId = isSellRow ? datalistSellId : datalistId;
     return `<div style="display:grid;grid-template-columns:2fr 1fr 180px 130px;gap:8px;align-items:center;margin-bottom:6px${nonOpSell?';opacity:0.6':''}">
       <div style="position:relative">
-        <input type="text" list="${listId}" value="${esc(r.unit)}" onchange="selectAssetUnit(${i},this.value)" oninput="updateAssetRow(${i},'unit',this.value)" placeholder="Unit name or custom" style="width:100%${nonOpSell?';border-color:var(--red)':''}">
+        <input type="text" list="${listId}" value="${esc(r.unit)}" onchange="selectAssetUnit(${i},this.value)" placeholder="Unit name or custom" style="width:100%${nonOpSell?';border-color:var(--red)':''}">
         ${nonOpSell ? `<div style="font-size:10px;color:var(--red);letter-spacing:1px;margin-top:2px">Not Operational — cannot sell</div>` : ''}
       </div>
       <input type="number" value="${r.bv||''}" onchange="updateAssetRow(${i},'bv',this.value)" placeholder="${classic ? 'BV' : 'PV'}" style="text-align:center">
@@ -1830,7 +1834,7 @@ function renderSalvageRows() {
     const rowOpacity = claimed ? 'opacity:0.55;' : '';
     return `<div style="display:grid;grid-template-columns:2fr 1fr 120px 60px;gap:8px;align-items:center;margin-bottom:6px;${rowOpacity}">
       <input type="text" list="${datalistId}" value="${esc(r.unit)}" placeholder="Unit name or custom"
-        onchange="selectSalvageUnit(${i},this.value)" oninput="updateSalvageRow(${i},'unit',this.value)">
+        onchange="selectSalvageUnit(${i},this.value)">
       <input type="number" value="${r.bv||''}" placeholder="${bvLabel}" style="text-align:right"
         onchange="updateSalvageRow(${i},'bv',this.value)">
       <div style="display:flex;align-items:center;gap:6px">
@@ -2177,8 +2181,27 @@ function sendRepairRearmToLedger() {
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
   const total = Math.ceil(repairTotal + rearmTotal + omniTotal);
   if (!total) { toast('No repair/rearm costs to send.'); return; }
+
+  // Update unit roster for any omni rows with new config/BV
+  (data.omniRows||[]).forEach(r => {
+    if (!r.unit) return;
+    const newConfig = (r.newConfig||'').trim();
+    const newBv = r.newBv !== '' && r.newBv !== undefined ? r.newBv : null;
+    if (!newConfig && newBv === null) return;
+    (data.forceData.formations||[]).forEach(f => {
+      f.rows.forEach(row => {
+        if ((row.unit||'').trim() === r.unit.trim()) {
+          if (newConfig) row.unit = newConfig;
+          if (newBv !== null) row.bv = String(newBv);
+        }
+      });
+    });
+  });
+
   data.ledger.push({month:'', event:'Repair, Rearm & Omni', cost: String(Math.round(total)), cover:'', paid:'', rep:''});
-  renderLedger(); save();
+  renderLedger();
+  renderFormations();
+  save();
   toast('Added to Monthly Ledger.');
 }
 
@@ -2547,6 +2570,9 @@ function updateFormationField(fi, ri, field, val) {
     }
     renderFormations();
   }
+  if (field === 'omni') {
+    renderFormations();
+  }
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
@@ -2652,9 +2678,9 @@ function renderFormations() {
         <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">Remove Formation</button>
       </div>
       <!-- Column headers -->
-      <div style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
-        ${['', 'Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Status', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', 'Deploy', ''].map(h=>
-          `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05);text-align:${h==='Deploy'?'center':'left'}">${h}</div>`
+      <div style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
+        ${['', 'Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Status', 'Omni', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', 'Deploy', ''].map(h=>
+          `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05);text-align:${h==='Deploy'||h==='Omni'?'center':'left'}">${h}</div>`
         ).join('')}
       </div>
       <!-- Rows -->
@@ -2683,7 +2709,7 @@ function renderFormations() {
           ].join('');
           return `
         <div draggable="true" data-fi="${fi}" data-ri="${ri}"
-          style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
+          style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
           ondragstart="dragUnitStart(event,${fi},${ri})"
           ondragover="dragUnitOver(event)"
           ondragleave="dragUnitLeave(event)"
@@ -2715,6 +2741,15 @@ function renderFormations() {
                 ${statusOpts.map(o=>`<option value="${o.key}" ${statusVal===o.key?'selected':''} style="background:var(--panel);color:${UNIT_STATUS_COLORS[o.key]||'var(--text)'}">${o.label}</option>`).join('')}
               </select>`;
             })()}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center">
+            <label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0" title="OmniMech">
+              <input type="checkbox" ${r.omni?'checked':''} onchange="updateFormationField(${fi},${ri},'omni',this.checked)"
+                style="display:none">
+              <span style="width:16px;height:16px;border:2px solid ${r.omni?'var(--gold)':'var(--border)'};background:${r.omni?'var(--gold)':'transparent'};display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0">
+                ${r.omni?'<span style="color:#000;font-size:11px;font-weight:700;line-height:1">✓</span>':''}
+              </span>
+            </label>
           </div>
           <div style="padding:2px 4px;display:flex;align-items:center">
             <select onchange="assignPilotToFormation(${fi},${ri},this.value)"
