@@ -328,6 +328,7 @@
   #toast.show { opacity: 1; transform: translateY(0); }
 
   /* ── RESPONSIVE ── */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   @media (max-width: 1100px) {
     #pilotCardsContainer { grid-template-columns: repeat(2, 1fr) !important; }
   }
@@ -337,6 +338,13 @@
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .logo-text { font-size: 20px; }
     #pilotCardsContainer { grid-template-columns: 1fr !important; }
+    /* Unit roster: hide drag handle and shrink columns */
+    #unitTable .drag-handle { display: none; }
+    #unitTable th:first-child { display: none; }
+    #unitTable input[type=text], #unitTable select { font-size: 12px; }
+    #unitTable .btn-sm { padding: 4px 6px; font-size: 10px; letter-spacing: 0.5px; }
+    /* Make Type column a bit narrower */
+    #unitTable td:nth-child(3) select { min-width: 0; }
   }
 
   /* ── WARCHEST BAR ── */
@@ -435,6 +443,7 @@
   <!-- Unit Roster -->
   <div class="section-title">Unit Roster</div>
   <div class="panel">
+    <div class="table-scroll">
     <table id="unitTable">
       <thead>
         <tr>
@@ -451,6 +460,7 @@
       </thead>
       <tbody id="unitRows"></tbody>
     </table>
+    </div><!-- /table-scroll -->
     <div class="btn-row">
       <button class="btn btn-sm" onclick="addUnit()">+ Add Unit</button>
     </div>
