@@ -1146,6 +1146,21 @@
     <div style="margin-top:6px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
       When checked, exposes a Number of Jumps field on the Contract tab. Travel cost becomes 50 + (50 × Jumps) instead of the flat 300 per scale.
     </div>
+    <hr class="divider" style="margin:16px 0">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:0">Clan / Mixed Tech Repair Multiplier</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="clan-tech-mult" min="1" max="5" step="0.1" value="1.5"
+            onchange="setClanTechMult(this.value)"
+            style="width:90px;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:7px 10px;font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;text-align:center">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim)">× base repair cost</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      Applied to Repair Costs on the Support Costs tab when a unit's Tech Base is set to <strong style="color:var(--gold)">Clan</strong> or <strong style="color:#6ab0e8">Mixed</strong>. Default is <strong style="color:var(--text)">1.5×</strong>. <em style="color:rgba(122,132,153,.7)">This is a house rule — not an official BattleTech rule.</em>
+    </div>
   </div>
 
   <div class="panel panel-gold">
@@ -1174,7 +1189,7 @@
     <div class="section-title" style="margin-bottom:12px">Import Force from CSV</div>
     <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
       Upload a CSV file to populate formations on the Force Record tab. Each row becomes a unit entry.<br>
-      Supported columns (case-insensitive): <span style="color:var(--text);font-family:'Share Tech Mono',monospace">unit, tons, bv, status, omni, formation</span><br>
+      Supported columns (case-insensitive): <span style="color:var(--text);font-family:'Share Tech Mono',monospace">unit, tons, bv, status, omni, techbase, formation</span><br>
       The <span style="color:var(--text);font-family:'Share Tech Mono',monospace">formation</span> column is optional — if present, rows are grouped by its value into separate formations. If absent, all rows go into one formation.<br>
     </div>
     <div class="btn-row" style="align-items:center;gap:12px">
@@ -1210,7 +1225,8 @@ let data = {
   assetRows:[],
   contractHistory:[],
   pilotRoster:[],
-  noBsp: false
+  noBsp: false,
+  clanTechMult: 1.5
 };
 
 // ─────────────────────────────────────────
@@ -1335,6 +1351,7 @@ function parseCsvForForce(text) {
   const iBv      = col('bv') !== -1 ? col('bv') : col('pv') !== -1 ? col('pv') : col('adjustedpv');
   const iStatus  = col('status');
   const iOmni    = col('omni');
+  const iTechBase = col('techbase') !== -1 ? col('techbase') : col('tech base') !== -1 ? col('tech base') : col('tech');
 
   // Need either (chassis) or (unit) column
   if (iChassis === -1 && iUnit === -1) return {error: 'CSV must have a "unit" or "chassis" column.'};
@@ -1374,6 +1391,10 @@ function parseCsvForForce(text) {
     const omniRaw = get(row, iOmni).toLowerCase();
     const omni = ['1','true','yes','x','✓'].includes(omniRaw);
 
+    const techBaseRaw = get(row, iTechBase);
+    const techBaseMap = {'inner sphere':'IS','is':'IS','clan':'Clan','mixed':'Mixed'};
+    const techBase = techBaseMap[techBaseRaw.toLowerCase()] || '';
+
     formationMap[formLabel].push({
       unit: unitName,
       tons: get(row, iTons),
@@ -1382,6 +1403,7 @@ function parseCsvForForce(text) {
       pilot: '', pilotIdx: '',
       unitStatus,
       omni,
+      techBase,
       deploy: false
     });
   }
@@ -1405,6 +1427,7 @@ function renderCsvPreview(formations) {
           <span style="color:var(--gold)">${r.bv ? 'BV '+r.bv : '—'}</span>
           ${r.unitStatus ? `<span style="color:var(--text-dim);text-transform:uppercase;font-size:11px">${r.unitStatus}</span>` : ''}
           ${r.omni ? `<span style="color:var(--gold);font-size:11px">OMNI</span>` : ''}
+          ${r.techBase ? `<span style="color:${r.techBase==='Clan'?'var(--gold)':r.techBase==='Mixed'?'#6ab0e8':'var(--text-dim)'};font-size:11px">${r.techBase}</span>` : ''}
         </div>`
       ).join('')}
     </div>`
@@ -1494,6 +1517,8 @@ function renderAll() {
   renderDeployment();
   const noBspEl = document.getElementById('no-bsp');
   if (noBspEl) noBspEl.checked = !!data.noBsp;
+  const clanMultEl = document.getElementById('clan-tech-mult');
+  if (clanMultEl) clanMultEl.value = data.clanTechMult !== undefined ? data.clanTechMult : 1.5;
   recalc();
 }
 
@@ -1738,7 +1763,12 @@ function renderRepairRows() {
   cont.innerHTML = data.repairRows.map((r,i) => {
     const tons = +r.tons||0;
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
-    const cost = Math.ceil(tons * mt.mult);
+    const isClanTech = r.techBase === 'Clan' || r.techBase === 'Mixed';
+    const techMult = isClanTech ? (data.clanTechMult !== undefined ? data.clanTechMult : 1.5) : 1;
+    const cost = Math.ceil(tons * mt.mult * techMult);
+    const techBadge = isClanTech
+      ? `<span title="${r.techBase} tech — ×${techMult} repair multiplier" style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border:1px solid var(--gold);color:var(--gold);background:rgba(201,162,39,.12);white-space:nowrap">${r.techBase} ×${techMult}</span>`
+      : '';
     const unitOptions = forceUnits.length
       ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
       : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
@@ -1750,8 +1780,9 @@ function renderRepairRows() {
       <select onchange="updateRepairRow(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
         ${REPAIR_TYPES.map(t=>`<option value="${t.key}" ${r.type===t.key?'selected':''}>${t.label}</option>`).join('')}
       </select>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;text-align:right;flex:1">${fmt(cost)} SP</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        ${techBadge}
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;text-align:right">${fmt(cost)} SP</span>
         <button class="btn btn-sm btn-danger" onclick="removeRepairRow(${i})">✕</button>
       </div>
     </div>`;
@@ -1861,7 +1892,7 @@ function getForceUnits() {
     (f.rows||[]).forEach(r => {
       if (r.unit && r.unit.trim() && !seen.has(r.unit.trim())) {
         seen.add(r.unit.trim());
-        units.push({unit: r.unit.trim(), tons: r.tons||'', bv: r.bv||'', unitStatus: r.unitStatus||'', omni: !!r.omni});
+        units.push({unit: r.unit.trim(), tons: r.tons||'', bv: r.bv||'', unitStatus: r.unitStatus||'', omni: !!r.omni, techBase: r.techBase||''});
       }
     });
   });
@@ -1873,6 +1904,7 @@ function selectRepairUnit(i, unitName) {
   const match = forceUnits.find(u => u.unit === unitName);
   data.repairRows[i].unit = unitName;
   if (match && match.tons) data.repairRows[i].tons = match.tons;
+  if (match) data.repairRows[i].techBase = match.techBase || '';
   renderRepairRows(); save();
 }
 
@@ -2359,7 +2391,8 @@ function sendRepairRearmToLedger() {
   let repairTotal = 0;
   (data.repairRows||[]).forEach(r => {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
-    repairTotal += (+r.tons||0) * mt.mult;
+    const techMult = (r.techBase === 'Clan' || r.techBase === 'Mixed') ? (data.clanTechMult !== undefined ? data.clanTechMult : 1.5) : 1;
+    repairTotal += (+r.tons||0) * mt.mult * techMult;
   });
   let rearmTotal = 0;
   const rearmLedgerClassic = (data.gameMode || 'classic') === 'classic';
@@ -2398,7 +2431,8 @@ function updateSupportTotals() {
   let repairTotal = 0;
   (data.repairRows||[]).forEach(r => {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
-    repairTotal += (+r.tons||0) * mt.mult;
+    const techMult = (r.techBase === 'Clan' || r.techBase === 'Mixed') ? (data.clanTechMult !== undefined ? data.clanTechMult : 1.5) : 1;
+    repairTotal += (+r.tons||0) * mt.mult * techMult;
   });
   setText('repair-total', `${fmt(Math.ceil(repairTotal))} SP`);
 
@@ -2866,8 +2900,8 @@ function renderFormations() {
         <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">Remove Formation</button>
       </div>
       <!-- Column headers -->
-      <div style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
-        ${['', 'Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Status', 'Omni', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', 'Deploy', ''].map(h=>
+      <div style="display:grid;grid-template-columns:20px 2fr 40px 80px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
+        ${['', 'Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Tech Base', 'Status', 'Omni', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', 'Deploy', ''].map(h=>
           `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05);text-align:${h==='Deploy'||h==='Omni'?'center':'left'}">${h}</div>`
         ).join('')}
       </div>
@@ -2897,7 +2931,7 @@ function renderFormations() {
           ].join('');
           return `
         <div data-fi="${fi}" data-ri="${ri}"
-          style="display:grid;grid-template-columns:20px 2fr 40px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
+          style="display:grid;grid-template-columns:20px 2fr 40px 80px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
           ondragover="dragUnitOver(event)"
           ondragleave="dragUnitLeave(event)"
           ondrop="dragUnitDrop(event,${fi},${ri})"
@@ -2913,6 +2947,22 @@ function renderFormations() {
             onchange="updateFormationField(${fi},${ri},'tons',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
           <div style="padding:2px 4px"><input type="number" value="${r.bv||''}" placeholder="${classic?'BV':'PV'}"
             onchange="updateFormationField(${fi},${ri},'bv',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
+          <div style="padding:2px 2px;display:flex;align-items:center">
+            ${(()=>{
+              const TECH_BASE_COLORS = {'':'var(--text-dim)','IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'};
+              const tbVal = r.techBase||'';
+              const tbColor = TECH_BASE_COLORS[tbVal]||'var(--text-dim)';
+              return `<select
+                onchange="updateFormationField(${fi},${ri},'techBase',this.value)"
+                oninput="this.style.color=({'':'var(--text-dim)','IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'}[this.value]||'var(--text-dim)')"
+                style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${tbColor};cursor:pointer">
+                <option value="" style="background:var(--panel);color:var(--text-dim)">— Tech —</option>
+                <option value="IS" ${tbVal==='IS'?'selected':''} style="background:var(--panel);color:var(--text)">Inner Sphere</option>
+                <option value="Clan" ${tbVal==='Clan'?'selected':''} style="background:var(--panel);color:var(--gold)">Clan</option>
+                <option value="Mixed" ${tbVal==='Mixed'?'selected':''} style="background:var(--panel);color:#6ab0e8">Mixed</option>
+              </select>`;
+            })()}
+          </div>
           <div style="padding:2px 2px;display:flex;align-items:center">
             ${(()=>{
               const UNIT_STATUS_COLORS = {'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000'};
@@ -3133,6 +3183,16 @@ function toggleNoBsp(checked) {
   data.noBsp = checked;
   localStorage.setItem('btMercContract', JSON.stringify(data));
   saveForce();
+}
+
+function setClanTechMult(val) {
+  const n = parseFloat(val);
+  data.clanTechMult = (!isNaN(n) && n >= 1) ? n : 1.5;
+  const el = document.getElementById('clan-tech-mult');
+  if (el) el.value = data.clanTechMult;
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderRepairRows();
+  toast(`Clan/Mixed repair multiplier set to ×${data.clanTechMult}`);
 }
 
 function setGameMode(mode) {
