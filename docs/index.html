@@ -1,13 +1,316 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Lanceman's BattleTech Campaign Tools</title>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="styles.css">
-    <script src="script.js"></script>
-  </head>
-  <body>
-    <h1>Welcome to my web page!</h1>
-    <p>This is the content of my web page.</p>
-  </body>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lanceman's BattleTech Campaign Tools</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+ 
+  :root {
+    --gold: #c9a227;
+    --gold-light: #e8c84a;
+    --darker: #080909;
+    --panel: #13161a;
+    --panel2: #1a1e24;
+    --border: #2a3040;
+    --border-gold: #4a3a10;
+    --text: #cdd4e0;
+    --text-dim: #7a8499;
+    --red: #cc2233;
+  }
+ 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+  body {
+    background: var(--darker);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+ 
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(180deg, #000 0%, #0d0e10 100%);
+    border-bottom: 2px solid var(--gold);
+    box-shadow: 0 4px 24px rgba(0,0,0,.8);
+    padding: 0;
+  }
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+  .logo-text {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 36px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(201,162,39,.35);
+    line-height: 1;
+  }
+  .logo-sub {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 8px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+ 
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    gap: 0;
+  }
+ 
+  .eyebrow {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 40px;
+    text-align: center;
+  }
+ 
+  /* ── NAV CARDS ── */
+  .nav-cards {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 720px;
+  }
+ 
+  .nav-card {
+    flex: 1;
+    min-width: 260px;
+    max-width: 320px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--gold);
+    padding: 32px 28px;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, background .2s, transform .15s;
+  }
+  .nav-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,162,39,.07) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .nav-card:hover {
+    border-color: var(--gold);
+    background: var(--panel2);
+    transform: translateY(-2px);
+  }
+  .nav-card:hover::before { opacity: 1; }
+  .nav-card:active { transform: translateY(0); }
+ 
+  .nav-card-icon {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 28px;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .nav-card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text);
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .nav-card-desc {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .nav-card-arrow {
+    margin-top: auto;
+    padding-top: 16px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity .2s, transform .2s;
+  }
+  .nav-card:hover .nav-card-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .arrow-line {
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    position: relative;
+  }
+  .arrow-line::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -3px;
+    width: 6px;
+    height: 6px;
+    border-top: 1px solid var(--gold);
+    border-right: 1px solid var(--gold);
+    transform: rotate(45deg);
+  }
+ 
+  /* ── DIVIDER BETWEEN CARDS ── */
+  .nav-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 4px;
+    color: var(--border-gold);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .nav-divider-line {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+  }
+ 
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 12px 24px 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+ 
+  /* ── BOTTOM RULE ── */
+  .bottom-rule {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 40px 0 0;
+    width: 100%;
+    max-width: 720px;
+    opacity: 0.35;
+  }
+  .bottom-rule-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-gold);
+  }
+  .bottom-rule-pip {
+    width: 6px;
+    height: 6px;
+    background: var(--border-gold);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+ 
+  @media (max-width: 600px) {
+    .nav-cards { flex-direction: column; align-items: center; }
+    .nav-divider { flex-direction: row; padding: 4px 0; }
+    .nav-divider-line { width: 40px; height: 1px; }
+    .logo-text { font-size: 26px; }
+    .nav-card { min-width: 0; width: 100%; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+ 
+<header>
+  <div class="header-inner">
+    <div class="logo-text">Lanceman's BattleTech</div>
+    <div class="logo-sub">Campaign Tools</div>
+  </div>
+</header>
+ 
+<main>
+  <div class="eyebrow">Select a tool to continue</div>
+ 
+  <div class="nav-cards">
+ 
+    <a class="nav-card" href="log-sheets.html">
+      <div class="nav-card-icon">⌘</div>
+      <div class="nav-card-title">Aces Campaign Tool</div>
+      <div class="nav-card-desc">An electronic automated companion for your BattleTech Aces campaigns.</div>
+      <div class="nav-card-arrow">
+        <span class="arrow-line"></span>
+        Open
+      </div>
+    </a>
+ 
+    <div class="nav-divider">
+      <div class="nav-divider-line"></div>
+      <span>or</span>
+      <div class="nav-divider-line"></div>
+    </div>
+ 
+    <a class="nav-card" href="">
+      <div class="nav-card-icon">◈</div>
+      <div class="nav-card-title">Chaos Campaign Mercenaries Tracker</div>
+      <div class="nav-card-desc">An app for tracking your mercenary unit through a CC Mercenaries campaign</div>
+      <div class="nav-card-arrow">
+        <span class="arrow-line"></span>
+        Open
+      </div>
+    </a>
+ 
+  </div>
+ 
+  <div class="bottom-rule">
+    <div class="bottom-rule-line"></div>
+    <div class="bottom-rule-pip"></div>
+    <div class="bottom-rule-line"></div>
+  </div>
+</main>
+ 
+<footer>
+  BattleTech, 'Mech, BattleMech, MechWarrior, CityTech, BattleForce, and AeroTech are registered trademarks of The Topps Company, Inc. © 2026 The Topps Company, Inc., All rights reserved.
+</footer>
+ 
+</body>
 </html>
