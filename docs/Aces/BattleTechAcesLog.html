@@ -2789,6 +2789,35 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.warn('BT Aces SW registration failed:', err));
   });
 }
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+
+      // Check for updates every time the app is focused
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update();
+      });
+
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // A new version is waiting — prompt the user
+            if (confirm('A new version is available. Reload to update?')) {
+              newSW.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            }
+          }
+        });
+      });
+    });
+
+    // Reload when the new SW takes control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  });
+}
 </script>
 
 </body>
