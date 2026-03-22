@@ -1,0 +1,15 @@
+{
+  "name": "BattleTech: Aces — Log Sheets",
+  "short_name": "BT Aces",
+  "description": "Campaign log sheets for BattleTech: Aces",
+  "start_url": "./BattleTechAcesLog.html",
+  "display": "standalone",
+  "background_color": "#080909",
+  "theme_color": "#c9a227",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icons/Aces16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "/icons/Aces192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/Aces512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
