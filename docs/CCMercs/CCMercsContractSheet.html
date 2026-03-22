@@ -1324,6 +1324,52 @@
     </div>
   </div>
 
+  <!-- ── GITHUB GIST SYNC ── -->
+  <div class="panel panel-gold">
+    <div class="section-title" style="margin-bottom:12px">GitHub Gist Sync</div>
+    <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
+      Sync all your data (active contract + all unit profiles) to a private GitHub Gist — useful for sharing between devices or browsers.
+      Create a <a href="https://github.com/settings/tokens/new?scopes=gist" target="_blank"
+        style="color:var(--gold);text-decoration:underline">GitHub PAT</a>
+      with the <code style="color:var(--text);background:rgba(255,255,255,.06);padding:1px 6px;font-family:'Share Tech Mono',monospace">gist</code> scope.
+      Your token is stored only in this browser and never sent anywhere except GitHub's API.
+    </div>
+
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Personal Access Token</label>
+        <div style="position:relative">
+          <input type="password" id="gist-token" placeholder="ghp_…"
+            oninput="gistSaveConfig()" autocomplete="off"
+            style="font-family:'Share Tech Mono',monospace;padding-right:40px">
+          <button onclick="gistToggleTokenVis()" title="Show / hide token"
+            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:15px;line-height:1;padding:0"
+            id="gist-token-eye">👁</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Gist ID <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">(auto-filled after first push)</span></label>
+        <input type="text" id="gist-id" placeholder="Leave blank to create a new Gist"
+          oninput="gistSaveConfig()"
+          style="font-family:'Share Tech Mono',monospace">
+      </div>
+    </div>
+
+    <label class="check-label" style="margin-bottom:14px">
+      <input type="checkbox" id="gist-auto-pull" onchange="gistSaveConfig()">
+      <span class="checkmark"></span>
+      Auto-pull on page load (requires Gist ID &amp; token)
+    </label>
+
+    <div class="btn-row">
+      <button class="btn" onclick="gistPush()" style="border-color:var(--green);color:var(--green-bright)">⬆ Push to Gist</button>
+      <button class="btn" onclick="gistPull()">⬇ Pull from Gist</button>
+      <button class="btn btn-sm" onclick="gistOpenInBrowser()" style="border-color:var(--border);color:var(--text-dim)">↗ View on GitHub</button>
+    </div>
+
+    <div id="gist-status" style="display:none;margin-top:14px;font-size:12px;letter-spacing:1px;padding:9px 14px;border-left:3px solid var(--gold);background:rgba(201,162,39,.05)"></div>
+  </div>
+
   <div class="panel panel-gold">
     <div class="section-title" style="margin-bottom:12px">Import Force from CSV</div>
     <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
@@ -4252,6 +4298,164 @@ showPage = function(id, btn) {
 
 updateActiveUnitLabel();
 
+// ─────────────────────────────────────────
+// GITHUB GIST SYNC
+// ─────────────────────────────────────────
+const GIST_CONFIG_KEY = 'btMercGistConfig';
+
+function gistLoadConfig() {
+  try { return JSON.parse(localStorage.getItem(GIST_CONFIG_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+
+function gistSaveConfig() {
+  const cfg = {
+    token:    (document.getElementById('gist-token')?.value   || ''),
+    gistId:   (document.getElementById('gist-id')?.value      || ''),
+    autoPull: !!(document.getElementById('gist-auto-pull')?.checked)
+  };
+  localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+function gistApplyConfig() {
+  const cfg = gistLoadConfig();
+  const t = document.getElementById('gist-token');
+  const g = document.getElementById('gist-id');
+  const a = document.getElementById('gist-auto-pull');
+  if (t) t.value   = cfg.token   || '';
+  if (g) g.value   = cfg.gistId  || '';
+  if (a) a.checked = !!cfg.autoPull;
+  if (cfg.autoPull && cfg.gistId && cfg.token) gistPull(true);
+}
+
+function gistToggleTokenVis() {
+  const inp = document.getElementById('gist-token');
+  const eye = document.getElementById('gist-token-eye');
+  if (!inp) return;
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  if (eye) eye.textContent = show ? '🙈' : '👁';
+}
+
+function gistSetStatus(msg, state) {
+  // state: 'ok' | 'err' | 'busy' | null
+  const el = document.getElementById('gist-status');
+  if (!el) return;
+  el.style.display = 'block';
+  const colors = { ok:'var(--green-bright)', err:'var(--red)', busy:'var(--gold)' };
+  const bgs    = { ok:'rgba(42,122,74,.08)', err:'rgba(204,34,51,.07)', busy:'rgba(201,162,39,.05)' };
+  el.style.borderColor     = colors[state] || 'var(--gold)';
+  el.style.color           = colors[state] || 'var(--text)';
+  el.style.backgroundColor = bgs[state]    || 'rgba(201,162,39,.05)';
+  el.textContent = msg;
+}
+
+function gistBuildPayload() {
+  save();
+  return {
+    btMercContract:      localStorage.getItem('btMercContract')      || '{}',
+    btMercUnitProfiles:  localStorage.getItem('btMercUnitProfiles')  || '[]',
+    btMercActiveUnit:    localStorage.getItem('btMercActiveUnit')     || '',
+    _savedAt: new Date().toISOString()
+  };
+}
+
+async function gistPush() {
+  const cfg = gistLoadConfig();
+  if (!cfg.token)  { gistSetStatus('⚠ Enter a GitHub Personal Access Token first.', 'err'); return; }
+  gistSetStatus('⏳ Pushing data to GitHub…', 'busy');
+
+  const files = { 'btmerc-data.json': { content: JSON.stringify(gistBuildPayload(), null, 2) } };
+
+  try {
+    let res;
+    if (cfg.gistId) {
+      res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+        body: JSON.stringify({ description: 'BattleTech CC Mercs Companion Data', files })
+      });
+    } else {
+      res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+        body: JSON.stringify({ description: 'BattleTech CC Mercs Companion Data', public: false, files })
+      });
+    }
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`GitHub API error ${res.status}: ${errBody}`);
+    }
+
+    const body = await res.json();
+    // Persist the Gist ID back into the form + config
+    const idEl = document.getElementById('gist-id');
+    if (idEl) idEl.value = body.id;
+    gistSaveConfig();
+
+    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    gistSetStatus(`✓ Pushed at ${ts}  ·  Gist ID: ${body.id}`, 'ok');
+    toast('Data pushed to GitHub Gist!');
+  } catch(err) {
+    gistSetStatus(`✕ Push failed — ${err.message}`, 'err');
+  }
+}
+
+async function gistPull(silent = false) {
+  const cfg = gistLoadConfig();
+  if (!cfg.token)  { if (!silent) gistSetStatus('⚠ Enter a GitHub Personal Access Token first.', 'err'); return; }
+  if (!cfg.gistId) { if (!silent) gistSetStatus('⚠ Enter a Gist ID (or Push to create one).', 'err'); return; }
+
+  if (!silent) gistSetStatus('⏳ Pulling data from GitHub…', 'busy');
+
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { Authorization: `Bearer ${cfg.token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+    });
+    if (!res.ok) throw new Error(`GitHub API error ${res.status}`);
+
+    const body = await res.json();
+    const fileContent = body.files?.['btmerc-data.json']?.content;
+    if (!fileContent) throw new Error('"btmerc-data.json" not found in this Gist.');
+
+    const payload = JSON.parse(fileContent);
+
+    // Confirm before overwriting (skip in silent/auto-pull mode)
+    if (!silent) {
+      const savedAt = payload._savedAt ? `\n\nGist was last pushed: ${new Date(payload._savedAt).toLocaleString()}` : '';
+      if (!confirm(`Pull from Gist? This will overwrite your current local data.${savedAt}`)) return;
+    }
+
+    if (payload.btMercContract)    localStorage.setItem('btMercContract',     payload.btMercContract);
+    if (payload.btMercUnitProfiles) localStorage.setItem('btMercUnitProfiles', payload.btMercUnitProfiles);
+    if (payload.btMercActiveUnit !== undefined) {
+      payload.btMercActiveUnit
+        ? localStorage.setItem('btMercActiveUnit', payload.btMercActiveUnit)
+        : localStorage.removeItem('btMercActiveUnit');
+    }
+
+    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!silent) gistSetStatus(`✓ Pulled at ${ts}`, 'ok');
+
+    loadData();
+    renderUnitsPage();
+    updateActiveUnitLabel();
+    if (!silent) toast('Data pulled from GitHub Gist!');
+  } catch(err) {
+    if (!silent) gistSetStatus(`✕ Pull failed — ${err.message}`, 'err');
+  }
+}
+
+function gistOpenInBrowser() {
+  const cfg = gistLoadConfig();
+  if (!cfg.gistId) { gistSetStatus('⚠ No Gist ID set — Push first to create one.', 'err'); return; }
+  window.open(`https://gist.github.com/${cfg.gistId}`, '_blank');
+}
+
+// Apply saved config to form fields on startup
+gistApplyConfig();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js');
@@ -4271,7 +4475,7 @@ if ('serviceWorker' in navigator) {
         newSW.addEventListener('statechange', () => {
           if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
             // A new version is waiting — prompt the user
-            if (confirm('A new version of BattleTech Aces is available. Reload to update?')) {
+            if (confirm('A new version is available. Reload to update?')) {
               newSW.postMessage({ type: 'SKIP_WAITING' });
               window.location.reload();
             }
