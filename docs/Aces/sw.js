@@ -1,12 +1,7 @@
-const CACHE_NAME = 'bt-aces-v5'; // bump this
+const CACHE_NAME = 'bt-aces-v6';
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.addAll(['./', './BattleTechAcesLog.html'])
-    )
-  );
-  self.skipWaiting();
+  self.skipWaiting(); // no pre-caching, let fetch handler build cache naturally
 });
 
 self.addEventListener('activate', event => {
@@ -19,11 +14,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  const isHTML = event.request.destination === 'document';
-
-  if (isHTML) {
-    // Network-first for HTML: always try to get the fresh page,
-    // fall back to cache only if offline
+  if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -33,12 +24,11 @@ self.addEventListener('fetch', event => {
         })
         .catch(() => caches.match(event.request))
     );
-  } else {
-    // Cache-first for everything else (fonts, icons, etc.)
-    event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
-    );
+    return;
   }
+  event.respondWith(
+    caches.match(event.request).then(cached => cached || fetch(event.request))
+  );
 });
 
 self.addEventListener('message', event => {
