@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bt-aces-v4'; // bump this
+const CACHE_NAME = 'bt-aces-v7'; // bump this
 
 self.addEventListener('install', event => {
   event.waitUntil(
