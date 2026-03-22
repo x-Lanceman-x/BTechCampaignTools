@@ -513,6 +513,68 @@
     text-transform: uppercase; color: var(--gold);
   }
 
+  /* ── JOURNAL ── */
+  .journal-entry {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-gold);
+    margin-bottom: 20px;
+    transition: border-color .2s, box-shadow .2s;
+    position: relative;
+  }
+  .journal-entry:hover { border-left-color: var(--gold); box-shadow: 0 0 16px rgba(201,162,39,.07); }
+  .journal-entry.type-ic { border-left-color: var(--gold); }
+  .journal-entry.type-gm { border-left-color: #2a6aaa; }
+  .journal-entry-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px 10px; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.018); flex-wrap: wrap;
+  }
+  .journal-type-badge {
+    font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; padding: 3px 10px; flex-shrink: 0;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .badge-ic { background: rgba(201,162,39,.18); border: 1px solid var(--border-gold); color: var(--gold); }
+  .badge-gm { background: rgba(30,74,110,.35); border: 1px solid #2a5a8a; color: #6ab0e8; }
+  .journal-entry-title-display {
+    font-family: 'Oswald', sans-serif; font-size: 17px; font-weight: 600;
+    letter-spacing: 1px; color: var(--text); flex: 1; min-width: 0;
+  }
+  .journal-entry-date-display {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); flex-shrink: 0;
+  }
+  .journal-body { padding: 12px 16px 0; }
+  .journal-body textarea {
+    min-height: 160px; background: rgba(0,0,0,.25); border-color: var(--border);
+    font-size: 14px; line-height: 1.75; letter-spacing: 0.3px; color: var(--text); resize: vertical;
+  }
+  .journal-body textarea:focus { border-color: var(--gold); background: rgba(0,0,0,.35); }
+  .journal-entry-fields {
+    display: grid; grid-template-columns: 1fr 180px 160px auto;
+    gap: 10px; align-items: end; padding: 10px 16px 14px;
+  }
+  .journal-empty {
+    text-align: center; padding: 60px 20px; color: var(--text-dim);
+    border: 1px dashed var(--border); background: var(--panel);
+  }
+  .journal-empty-icon { font-size: 40px; margin-bottom: 14px; }
+  .journal-empty-title {
+    font-family: 'Oswald', sans-serif; font-size: 18px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .journal-empty-sub { font-size: 13px; color: var(--text-dim); letter-spacing: 0.5px; }
+  .journal-filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .journal-filter-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 6px 16px; font-family: 'Oswald', sans-serif; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .journal-filter-btn:hover { border-color: var(--gold); color: var(--text); }
+  .journal-filter-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+  .journal-count { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 1px; margin-left: auto; }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 700px) {
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -520,6 +582,7 @@
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .logo-text { font-size: 20px; }
     .warchest-display { gap: 12px; }
+    .journal-entry-fields { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -544,6 +607,7 @@
       <button class="nav-tab" onclick="showPage('support',this)">Support Costs</button>
       <button class="nav-tab" onclick="showPage('ref',this)">Reference</button>
       <button class="nav-tab" onclick="showPage('units',this)">Forces</button>
+      <button class="nav-tab" onclick="showPage('journal',this)">Journal</button>
       <button class="nav-tab" onclick="showPage('settings',this)">Settings</button>
     </nav>
   </div>
@@ -1324,56 +1388,6 @@
     </div>
   </div>
 
-  <!-- ── GITHUB GIST SYNC ── -->
-  <div class="panel panel-gold">
-    <div class="section-title" style="margin-bottom:12px">GitHub Gist Sync</div>
-    <div style="font-size:12px;color:var(--text-dim);letter-spacing:0.5px;line-height:1.9;margin-bottom:16px">
-      Sync your data to a private GitHub Gist so it's accessible across browsers and devices. Requires a GitHub
-      <strong style="color:var(--text)">Personal Access Token</strong> with
-      <code style="color:var(--text);background:rgba(255,255,255,.06);padding:1px 6px;font-family:'Share Tech Mono',monospace;font-size:11px">gist</code> scope.<br>
-      Generate one at <strong style="color:var(--gold)">github.com → Settings → Developer settings → Personal access tokens</strong>
-      <span style="color:var(--text-dim)">(fine-grained: enable <em>Gists</em> read+write; or classic: enable <em>gist</em> scope).</span>
-    </div>
-
-    <div class="grid-2" style="margin-bottom:14px">
-      <div class="field">
-        <label>Personal Access Token</label>
-        <div style="position:relative">
-          <input type="password" id="gist-token" placeholder="ghp_… or github_pat_…"
-            oninput="gistSaveConfig()" autocomplete="off"
-            style="font-family:'Share Tech Mono',monospace;padding-right:40px">
-          <button onclick="gistToggleTokenVis()" title="Show / hide token" id="gist-token-eye"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;padding:0;transition:color .2s"
-            onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">👁</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Gist ID <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">(auto-filled after first save)</span></label>
-        <input type="text" id="gist-id" placeholder="Leave blank to create a new Gist on first save"
-          oninput="gistSaveConfig()"
-          style="font-family:'Share Tech Mono',monospace">
-      </div>
-    </div>
-
-    <div class="btn-row" style="margin-bottom:14px">
-      <button class="btn" onclick="gistPush()">☁ Save to Gist</button>
-      <button class="btn" onclick="gistPull()">↓ Load from Gist</button>
-      <button class="btn" onclick="gistOpenInBrowser()">↗ Open Gist</button>
-      <button class="btn btn-danger" onclick="gistClearCredentials()">✕ Clear Credentials</button>
-    </div>
-
-    <div id="gist-status" style="display:none;margin-bottom:14px;font-size:12px;letter-spacing:1px;padding:9px 14px;border-left:3px solid var(--gold);background:rgba(201,162,39,.05)"></div>
-
-    <!-- Security note -->
-    <div style="padding:10px 14px;border:1px solid var(--border-gold);background:rgba(201,162,39,.04)">
-      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:5px">Security Note</div>
-      <div style="font-size:11px;color:var(--text-dim);letter-spacing:0.5px;line-height:1.8">
-        Your token is stored in <strong style="color:var(--text)">localStorage</strong> on this device only and is never transmitted anywhere except directly to
-        <strong style="color:var(--text)">api.github.com</strong>. Use a fine-grained token scoped only to Gists to minimise risk. Revoke it from GitHub at any time.
-      </div>
-    </div>
-  </div>
-
   <div class="panel panel-gold">
     <div class="section-title" style="margin-bottom:12px">Import Force from CSV</div>
     <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
@@ -1423,6 +1437,29 @@
   <div id="unitsListContainer"></div>
 </div><!-- /page-units -->
 
+<!-- ══════════════════════════════════════════════
+     PAGE · JOURNAL
+══════════════════════════════════════════════ -->
+<div id="page-journal" class="page">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="section-title" style="margin:0;flex:1">Campaign Journal</div>
+    <button class="btn" onclick="addJournalEntry()" style="border-color:var(--green);color:var(--green-bright)">✦ New Entry</button>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="journal-filter-bar">
+    <button class="journal-filter-btn active" onclick="setJournalFilter('all',this)">All</button>
+    <button class="journal-filter-btn" onclick="setJournalFilter('ic',this)">In Character</button>
+    <button class="journal-filter-btn" onclick="setJournalFilter('gm',this)">GM / Notes</button>
+    <span class="journal-count" id="journal-count"></span>
+  </div>
+
+  <!-- Entries -->
+  <div id="journal-entries-list"></div>
+
+</div><!-- /page-journal -->
+
 <!-- SAVE UNIT MODAL -->
 <div class="modal-backdrop" id="saveUnitModal">
   <div class="modal">
@@ -1454,6 +1491,8 @@
 // ─────────────────────────────────────────
 // DATA MODEL
 // ─────────────────────────────────────────
+let journalFilter = 'all';
+
 let data = {
   unitName:'', contractName:'', actionType:'', contractLength:'',
   contractStatus:'active', scale:'', startWarchest:'',
@@ -1466,6 +1505,7 @@ let data = {
   assetRows:[],
   contractHistory:[],
   pilotRoster:[],
+  journalEntries:[],
   noBsp: false,
   clanTechMult: 1.5
 };
@@ -1533,7 +1573,7 @@ function clearAll() {
   localStorage.removeItem('btMercContract');
   data = {unitName:'',contractName:'',actionType:'',contractLength:'',contractStatus:'active',
     scale:'',startWarchest:'',basePay:'',supportType:'none',supportPct:'',transportPct:'',salvagePct:'',
-    command:'',contactTerms:'',combatBonus:'0',ledger:[],repairRows:[],rearmRows:[],assetRows:[],contractHistory:[],pilotRoster:[]};
+    command:'',contactTerms:'',combatBonus:'0',ledger:[],repairRows:[],rearmRows:[],assetRows:[],contractHistory:[],pilotRoster:[],journalEntries:[]};
   renderAll(); toast('All data cleared.');
 }
 
@@ -1756,6 +1796,7 @@ function renderAll() {
   renderGameMode();
   renderPilotRoster();
   renderDeployment();
+  renderJournal();
   const noBspEl = document.getElementById('no-bsp');
   if (noBspEl) noBspEl.checked = !!data.noBsp;
   const clanMultEl = document.getElementById('clan-tech-mult');
@@ -4302,173 +4343,6 @@ showPage = function(id, btn) {
 
 updateActiveUnitLabel();
 
-// ─────────────────────────────────────────
-// GITHUB GIST SYNC
-// ─────────────────────────────────────────
-const GIST_CONFIG_KEY = 'btMercGistConfig';
-
-function gistLoadConfig() {
-  try { return JSON.parse(localStorage.getItem(GIST_CONFIG_KEY)) || {}; }
-  catch(e) { return {}; }
-}
-
-function gistSaveConfig() {
-  const cfg = {
-    token:  (document.getElementById('gist-token')?.value || ''),
-    gistId: (document.getElementById('gist-id')?.value    || '')
-  };
-  localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(cfg));
-}
-
-function gistApplyConfig() {
-  const cfg = gistLoadConfig();
-  const t = document.getElementById('gist-token');
-  const g = document.getElementById('gist-id');
-  if (t) t.value = cfg.token  || '';
-  if (g) g.value = cfg.gistId || '';
-}
-
-function gistToggleTokenVis() {
-  const inp = document.getElementById('gist-token');
-  const eye = document.getElementById('gist-token-eye');
-  if (!inp) return;
-  const show = inp.type === 'password';
-  inp.type = show ? 'text' : 'password';
-  if (eye) eye.textContent = show ? '🙈' : '👁';
-}
-
-function gistSetStatus(msg, state) {
-  // state: 'ok' | 'err' | 'busy' | null
-  const el = document.getElementById('gist-status');
-  if (!el) return;
-  el.style.display = 'block';
-  const colors = { ok:'var(--green-bright)', err:'var(--red)', busy:'var(--gold)' };
-  const bgs    = { ok:'rgba(42,122,74,.08)', err:'rgba(204,34,51,.07)', busy:'rgba(201,162,39,.05)' };
-  el.style.borderColor     = colors[state] || 'var(--gold)';
-  el.style.color           = colors[state] || 'var(--text)';
-  el.style.backgroundColor = bgs[state]    || 'rgba(201,162,39,.05)';
-  el.textContent = msg;
-}
-
-function gistBuildPayload() {
-  save();
-  return {
-    btMercContract:      localStorage.getItem('btMercContract')      || '{}',
-    btMercUnitProfiles:  localStorage.getItem('btMercUnitProfiles')  || '[]',
-    btMercActiveUnit:    localStorage.getItem('btMercActiveUnit')     || '',
-    _savedAt: new Date().toISOString()
-  };
-}
-
-async function gistPush() {
-  const cfg = gistLoadConfig();
-  if (!cfg.token)  { gistSetStatus('⚠ Enter a GitHub Personal Access Token first.', 'err'); return; }
-  gistSetStatus('⏳ Pushing data to GitHub…', 'busy');
-
-  const files = { 'btmerc-data.json': { content: JSON.stringify(gistBuildPayload(), null, 2) } };
-
-  try {
-    let res;
-    if (cfg.gistId) {
-      res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
-        body: JSON.stringify({ description: 'BattleTech CC Mercs Companion Data', files })
-      });
-    } else {
-      res = await fetch('https://api.github.com/gists', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
-        body: JSON.stringify({ description: 'BattleTech CC Mercs Companion Data', public: false, files })
-      });
-    }
-
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`GitHub API error ${res.status}: ${errBody}`);
-    }
-
-    const body = await res.json();
-    // Persist the Gist ID back into the form + config
-    const idEl = document.getElementById('gist-id');
-    if (idEl) idEl.value = body.id;
-    gistSaveConfig();
-
-    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    gistSetStatus(`✓ Pushed at ${ts}  ·  Gist ID: ${body.id}`, 'ok');
-    toast('Data pushed to GitHub Gist!');
-  } catch(err) {
-    gistSetStatus(`✕ Push failed — ${err.message}`, 'err');
-  }
-}
-
-async function gistPull(silent = false) {
-  const cfg = gistLoadConfig();
-  if (!cfg.token)  { if (!silent) gistSetStatus('⚠ Enter a GitHub Personal Access Token first.', 'err'); return; }
-  if (!cfg.gistId) { if (!silent) gistSetStatus('⚠ Enter a Gist ID (or Push to create one).', 'err'); return; }
-
-  if (!silent) gistSetStatus('⏳ Pulling data from GitHub…', 'busy');
-
-  try {
-    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { Authorization: `Bearer ${cfg.token}`, 'X-GitHub-Api-Version': '2022-11-28' }
-    });
-    if (!res.ok) throw new Error(`GitHub API error ${res.status}`);
-
-    const body = await res.json();
-    const fileContent = body.files?.['btmerc-data.json']?.content;
-    if (!fileContent) throw new Error('"btmerc-data.json" not found in this Gist.');
-
-    const payload = JSON.parse(fileContent);
-
-    // Confirm before overwriting (skip in silent/auto-pull mode)
-    if (!silent) {
-      const savedAt = payload._savedAt ? `\n\nGist was last pushed: ${new Date(payload._savedAt).toLocaleString()}` : '';
-      if (!confirm(`Pull from Gist? This will overwrite your current local data.${savedAt}`)) return;
-    }
-
-    if (payload.btMercContract)    localStorage.setItem('btMercContract',     payload.btMercContract);
-    if (payload.btMercUnitProfiles) localStorage.setItem('btMercUnitProfiles', payload.btMercUnitProfiles);
-    if (payload.btMercActiveUnit !== undefined) {
-      payload.btMercActiveUnit
-        ? localStorage.setItem('btMercActiveUnit', payload.btMercActiveUnit)
-        : localStorage.removeItem('btMercActiveUnit');
-    }
-
-    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (!silent) gistSetStatus(`✓ Pulled at ${ts}`, 'ok');
-
-    loadData();
-    renderUnitsPage();
-    updateActiveUnitLabel();
-    if (!silent) toast('Data pulled from GitHub Gist!');
-  } catch(err) {
-    if (!silent) gistSetStatus(`✕ Pull failed — ${err.message}`, 'err');
-  }
-}
-
-function gistClearCredentials() {
-  if (!confirm('Clear saved token and Gist ID from this device?')) return;
-  localStorage.removeItem(GIST_CONFIG_KEY);
-  const t = document.getElementById('gist-token');
-  const g = document.getElementById('gist-id');
-  const eye = document.getElementById('gist-token-eye');
-  if (t) { t.value = ''; t.type = 'password'; }
-  if (g) g.value = '';
-  if (eye) eye.textContent = '👁';
-  gistSetStatus('✓ Credentials cleared from this device.', 'ok');
-  toast('Gist credentials cleared.');
-}
-
-function gistOpenInBrowser() {
-  const cfg = gistLoadConfig();
-  if (!cfg.gistId) { gistSetStatus('⚠ No Gist ID set — Push first to create one.', 'err'); return; }
-  window.open(`https://gist.github.com/${cfg.gistId}`, '_blank');
-}
-
-// Apply saved config to form fields on startup
-gistApplyConfig();
-
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js');
@@ -4503,6 +4377,160 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+// ─────────────────────────────────────────
+// JOURNAL
+// ─────────────────────────────────────────
+if (!data.journalEntries) data.journalEntries = [];
+
+function addJournalEntry() {
+  if (!data.journalEntries) data.journalEntries = [];
+  const today = new Date().toISOString().split('T')[0];
+  data.journalEntries.unshift({
+    id: 'j_' + Date.now(),
+    title: '',
+    date: today,
+    type: 'ic',
+    body: ''
+  });
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderJournal();
+  // Focus the title field of the new entry
+  setTimeout(() => {
+    const first = document.querySelector('.journal-title-input');
+    if (first) first.focus();
+  }, 60);
+}
+
+function deleteJournalEntry(id) {
+  if (!confirm('Delete this journal entry? This cannot be undone.')) return;
+  data.journalEntries = (data.journalEntries || []).filter(e => e.id !== id);
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderJournal();
+  toast('Entry deleted.');
+}
+
+function updateJournalEntry(id, field, val) {
+  const entry = (data.journalEntries || []).find(e => e.id === id);
+  if (!entry) return;
+  entry[field] = val;
+  // Live-update the badge + header if type or title changed without full re-render
+  if (field === 'type') {
+    const card = document.getElementById('jcard-' + id);
+    if (card) {
+      card.className = `journal-entry type-${val}`;
+      const badge = card.querySelector('.journal-type-badge');
+      if (badge) {
+        badge.className = `journal-type-badge ${val === 'ic' ? 'badge-ic' : 'badge-gm'}`;
+        badge.textContent = val === 'ic' ? 'In Character' : 'GM / Notes';
+      }
+    }
+  }
+  if (field === 'title') {
+    const card = document.getElementById('jcard-' + id);
+    if (card) {
+      const disp = card.querySelector('.journal-entry-title-display');
+      if (disp) disp.textContent = val || '(Untitled)';
+    }
+  }
+  if (field === 'date') {
+    const card = document.getElementById('jcard-' + id);
+    if (card) {
+      const disp = card.querySelector('.journal-entry-date-display');
+      if (disp) disp.textContent = val || '';
+    }
+  }
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function setJournalFilter(filter, btn) {
+  journalFilter = filter;
+  document.querySelectorAll('.journal-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderJournal();
+}
+
+function renderJournal() {
+  if (!data.journalEntries) data.journalEntries = [];
+  const list = document.getElementById('journal-entries-list');
+  if (!list) return;
+
+  const filtered = journalFilter === 'all'
+    ? data.journalEntries
+    : data.journalEntries.filter(e => e.type === journalFilter);
+
+  // Update count
+  const countEl = document.getElementById('journal-count');
+  if (countEl) {
+    const total = data.journalEntries.length;
+    const shown = filtered.length;
+    countEl.textContent = journalFilter === 'all'
+      ? `${total} entr${total !== 1 ? 'ies' : 'y'}`
+      : `${shown} of ${total} entries`;
+  }
+
+  if (!data.journalEntries.length) {
+    list.innerHTML = `
+      <div class="journal-empty">
+        <div class="journal-empty-icon">📖</div>
+        <div class="journal-empty-title">No Journal Entries Yet</div>
+        <div class="journal-empty-sub">Record your campaign's story — in-character field reports,<br>GM notes, session recaps, and mission logs.</div>
+      </div>`;
+    return;
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div class="journal-empty">
+        <div class="journal-empty-icon">🔍</div>
+        <div class="journal-empty-title">No ${journalFilter === 'ic' ? 'In Character' : 'GM / Notes'} Entries</div>
+        <div class="journal-empty-sub">No entries match this filter. Switch to <strong style="color:var(--text)">All</strong> or add a new entry.</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => {
+    const typeClass = e.type === 'ic' ? 'type-ic' : 'type-gm';
+    const badgeClass = e.type === 'ic' ? 'badge-ic' : 'badge-gm';
+    const badgeLabel = e.type === 'ic' ? 'In Character' : 'GM / Notes';
+    return `
+    <div class="journal-entry ${typeClass}" id="jcard-${esc(e.id)}">
+      <div class="journal-entry-header">
+        <span class="journal-type-badge ${badgeClass}">${badgeLabel}</span>
+        <div class="journal-entry-title-display">${esc(e.title) || '<span style="color:var(--text-dim);font-style:italic">Untitled</span>'}</div>
+        <div class="journal-entry-date-display">${esc(e.date) || ''}</div>
+      </div>
+      <div class="journal-body">
+        <textarea placeholder="Write your entry here — field reports, mission logs, session notes, lore…"
+          oninput="updateJournalEntry('${esc(e.id)}','body',this.value)"
+          style="width:100%">${esc(e.body)}</textarea>
+      </div>
+      <div class="journal-entry-fields">
+        <div class="field" style="margin:0">
+          <label>Entry Title</label>
+          <input type="text" class="journal-title-input" value="${esc(e.title)}" placeholder="e.g. After the Fall of Hesperus II"
+            oninput="updateJournalEntry('${esc(e.id)}','title',this.value)">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Date</label>
+          <input type="date" value="${esc(e.date)}"
+            oninput="updateJournalEntry('${esc(e.id)}','date',this.value)"
+            style="color-scheme:dark">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Entry Type</label>
+          <select onchange="updateJournalEntry('${esc(e.id)}','type',this.value)"
+            style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:14px;width:100%">
+            <option value="ic" ${e.type === 'ic' ? 'selected' : ''}>In Character</option>
+            <option value="gm" ${e.type === 'gm' ? 'selected' : ''}>GM / Notes</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:1px">
+          <button class="btn btn-sm btn-danger" onclick="deleteJournalEntry('${esc(e.id)}')">✕ Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 </script>
-</body>
 </html>
