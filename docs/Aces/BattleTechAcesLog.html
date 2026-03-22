@@ -315,6 +315,107 @@
   .sp-skill { color: var(--gold); font-weight: 700; font-size: 13px; }
   .sp-cost { color: var(--text-dim); }
 
+  /* ── ACTIVE FORCE BADGE ── */
+  #activeForceLabel {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: rgba(201,162,39,.1);
+    border: 1px solid var(--border-gold);
+    padding: 5px 12px;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  #activeForceLabel.visible { display: flex; }
+  #activeForceName {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  /* ── FORCES PAGE ── */
+  .force-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  .force-card:hover { border-color: var(--border-gold); }
+  .force-card.active-force {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold), 0 0 20px rgba(201,162,39,.15);
+  }
+  .force-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: rgba(255,255,255,.02);
+    border-bottom: 1px solid var(--border);
+  }
+  .force-card.active-force .force-card-header {
+    background: rgba(201,162,39,.08);
+    border-bottom-color: var(--border-gold);
+  }
+  .force-card-icon { font-size: 28px; width: 48px; text-align: center; flex-shrink: 0; }
+  .force-card-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px; font-weight: 700; letter-spacing: 1px; color: var(--text); flex: 1;
+  }
+  .force-card.active-force .force-card-name { color: var(--gold); }
+  .force-card-co { font-size: 12px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+  .force-active-badge {
+    display: none;
+    font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; background: var(--gold); color: #000;
+    padding: 3px 10px; font-weight: 700;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .force-card.active-force .force-active-badge { display: block; }
+  .force-card-stats { display: flex; gap: 0; padding: 10px 20px; align-items: center; }
+  .force-stat {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 16px; border-right: 1px solid var(--border);
+  }
+  .force-stat:first-child { padding-left: 0; }
+  .force-stat:last-child { border-right: none; }
+  .force-stat-val { font-family: 'Share Tech Mono', monospace; font-size: 18px; color: var(--gold); font-weight: 700; }
+  .force-stat-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); margin-top: 1px; }
+  .force-card-actions {
+    display: flex; gap: 6px; padding: 10px 20px;
+    border-top: 1px solid var(--border); background: rgba(0,0,0,.2); flex-wrap: wrap;
+  }
+  .force-saved-at {
+    margin-left: auto; font-size: 11px; color: var(--text-dim);
+    letter-spacing: 1px; align-self: center; font-family: 'Share Tech Mono', monospace;
+  }
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.75); z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border-gold);
+    padding: 28px 32px; min-width: 360px; max-width: 480px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.8);
+    clip-path: polygon(16px 0%, 100% 0%, calc(100% - 16px) 100%, 0% 100%);
+  }
+  .modal-title {
+    font-family: 'Oswald', sans-serif; font-size: 18px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-gold); padding-bottom: 12px;
+  }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+  .forces-empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .forces-empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .forces-empty-title {
+    font-family: 'Oswald', sans-serif; font-size: 20px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+  }
+  .forces-empty-sub { font-size: 13px; letter-spacing: 1px; line-height: 1.7; }
+
   /* ── TOAST ── */
   #toast {
     position: fixed; bottom: 24px; right: 24px;
@@ -400,11 +501,16 @@
       <div class="logo-text">BattleTech Aces</div>
       <div class="logo-sub">Log Sheets</div>
     </div>
+    <div id="activeForceLabel">
+      <span style="font-size:14px;color:var(--text-dim)">⚔</span>
+      <span id="activeForceName"></span>
+    </div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('roster', this)">Force Roster</button>
       <button class="nav-tab" onclick="showPage('sortie', this)">Sortie Log</button>
       <button class="nav-tab" onclick="showPage('campaign', this)">Campaign Log</button>
       <button class="nav-tab" onclick="showPage('pilots', this)">Pilot Cards</button>
+      <button class="nav-tab" onclick="showPage('forces', this)">Forces</button>
       <button class="nav-tab" onclick="showPage('settings', this)">Settings</button>
     </nav>
   </div>
@@ -692,6 +798,7 @@
         <div class="calc-field" id="sortie_campaign" style="font-size:15px;text-align:left;padding:8px 12px;letter-spacing:1px">—</div>
       </div>
     </div>
+    <button class="btn btn-sm" onclick="toggleSortieOrder()" id="btnSortieOrder">↓ Oldest First</button>
     <button class="btn btn-sm" onclick="addSortieLog()">+ New Sortie Log</button>
   </div>
 
@@ -711,7 +818,34 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
-     PAGE 5 · SETTINGS
+     PAGE 5 · FORCES
+══════════════════════════════════════════════ -->
+<div id="page-forces" class="page">
+  <div class="section-title">Force Profiles</div>
+  <div class="panel panel-gold" style="margin-bottom:20px">
+    <div style="display:flex;align-items:flex-start;gap:16px">
+      <div style="font-size:32px;flex-shrink:0">⚔</div>
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Multi-Force Management</div>
+        <div style="font-size:13px;color:var(--text-dim);letter-spacing:0.5px;line-height:1.7">
+          Save your current force data as a named profile, then switch between different forces freely. Each profile stores everything independently — roster, pilots, sorties, campaign log, warchest, and archives. Switching forces will prompt you to save any unsaved changes first.
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="openSaveForceModal()">💾 Save Current Force As Profile</button>
+      <button class="btn" onclick="createNewForce()">+ Create New Force</button>
+      <button class="btn btn-sm" onclick="saveCurrentForceInPlace()" id="btnUpdateForce" style="display:none">🔄 Update Active Profile</button>
+    </div>
+  </div>
+  <div id="activeForceHint" style="display:none;margin-bottom:16px;padding:10px 16px;background:rgba(201,162,39,.07);border:1px solid var(--border-gold);border-left:3px solid var(--gold);font-size:12px;letter-spacing:1px;color:var(--text-dim)">
+    <span style="color:var(--gold);font-weight:700">Active:</span> <span id="activeForceHintName" style="color:var(--text)"></span> — changes are not automatically saved to the profile. Use <strong style="color:var(--gold)">Update Active Profile</strong> to sync.
+  </div>
+  <div id="forcesListContainer"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 6 · SETTINGS
 ══════════════════════════════════════════════ -->
 <div id="page-settings" class="page">
   <div class="section-title">Settings</div>
@@ -770,6 +904,23 @@
 </div>
 
 </div><!-- /container -->
+
+<div class="modal-backdrop" id="saveForceModal">
+  <div class="modal">
+    <div class="modal-title">⚔ Save Force Profile</div>
+    <div class="field">
+      <label>Profile Name</label>
+      <input type="text" id="saveForceNameInput" placeholder="e.g. Iron Panthers — Campaign 1" style="font-size:16px">
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.7;margin-top:8px">
+      This will save a complete snapshot of your current force — all units, pilots, sorties, campaign log, and warchest — as a named profile you can return to at any time.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-danger" onclick="closeSaveForceModal()">Cancel</button>
+      <button class="btn btn-sm" onclick="confirmSaveForce()">💾 Save Profile</button>
+    </div>
+  </div>
+</div>
 
 <footer style="max-width:1520px;margin:0 auto;padding:12px 20px 24px;text-align:center;color:var(--text-dim);font-size:10px;letter-spacing:0.5px;line-height:1.6;border-top:1px solid var(--border);margin-top:8px;">
   BattleTech, 'Mech, BattleMech, MechWarrior, CityTech, BattleForce, and AeroTech are registered trademarks of The Topps Company, Inc. © 2026 The Topps Company, Inc., All rights reserved.
@@ -875,8 +1026,10 @@ function importData(input) {
 }
 
 function clearAll() {
-  if (!confirm('Clear ALL data? This cannot be undone.')) return;
+  if (!confirm('Clear ALL data including Force Profiles? This cannot be undone.')) return;
   localStorage.removeItem('btAcesData');
+  localStorage.removeItem(FORCES_KEY);
+  localStorage.removeItem(ACTIVE_FORCE_KEY);
   data = {
     forceName:'', forceCO:'', forceLevel:'', totalPV:0, pvPercent:100, spPercent:100,
     campaignName:'', startWarchest:0, memorial:'', maxDeployPV:0, miscSpend:0, miscSpendLog:[],
@@ -884,6 +1037,7 @@ function clearAll() {
     campaignMeta:{}, archivedCampaigns:[]
   };
   renderAll();
+  renderForcesPage();
   toast('All data cleared.');
 }
 
@@ -906,6 +1060,7 @@ function renderAll() {
   renderDeployment();
   renderMiscSpendLog();
   updatePilotPayCalc();
+  updateActiveForceLabel();
 }
 
 // ─────────────────────────────────────────
@@ -916,6 +1071,7 @@ function showPage(id, el) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if (el) el.classList.add('active');
+  if (id === 'forces') renderForcesPage();
 }
 
 function showPageById(id) {
@@ -1552,12 +1708,15 @@ function renderSortieLogs() {
     c.innerHTML = `<div class="panel" style="text-align:center;color:var(--text-dim);padding:32px;">No sortie logs yet. Click "+ New Sortie Log" to begin.</div>`;
     return;
   }
-  c.innerHTML = data.sortieLogs.map((s,i) => {
+  const indices = data.sortieLogs.map((_,i) => i);
+  if (sortieOrderNewestFirst) indices.reverse();
+  c.innerHTML = indices.map((i) => {
+    const s = data.sortieLogs[i];
     const calc = calcSortie(s);
     return `
     <div class="sortie-card">
       <div class="sortie-card-header" onclick="toggleSortie(${i})">
-        <div class="sortie-num">${s.num ? '##'+s.num : ''}</div>
+        <div class="sortie-num">${s.num ? '#'+s.num : ''}</div>
         <input type="text" value="${esc(s.name)}" onclick="event.stopPropagation()" onchange="updateSL(${i},'name',this.value)" placeholder="Sortie Name..." style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(201,162,39,0.3);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;padding:2px 6px;outline:none;" onfocus="this.style.borderBottomColor='var(--gold)'" onblur="this.style.borderBottomColor='rgba(201,162,39,0.3)'">
         <div class="sortie-earning" id="sl_${i}_headEarning" style="color:${calc.earnings>=0?'var(--gold)':'var(--red)'}">${(calc.earnings>=0?'+':'')+calc.earnings} SP</div>
         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeSortieLog(${i})" style="margin-left:8px">✕</button>
@@ -1678,13 +1837,29 @@ function killPilotCard(i) {
   toast(`${name} recorded as KIA in the Memorial.`);
 }
 
+function clearPortrait(i) {
+  data.pilotCards[i].portrait = '';
+  saveData(); renderPilotCards();
+}
+
 function uploadPortrait(i, input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    data.pilotCards[i].portrait = e.target.result;
-    saveData(); renderPilotCards();
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 200;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else        { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      data.pilotCards[i].portrait = canvas.toDataURL('image/jpeg', 0.72);
+      saveData(); renderPilotCards();
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -1713,14 +1888,17 @@ function renderPilotCards() {
     return `
     <div class="pilot-card">
       <div class="pilot-header">
-        <div class="pilot-portrait" style="cursor:pointer;position:relative;overflow:hidden;" onclick="document.getElementById('portrait-upload-${i}').click()" title="Click to upload photo">
-          ${p.portrait
-            ? `<img src="${p.portrait}" style="width:100%;height:100%;object-fit:cover;display:block;">`
-            : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:2px">
-                <span style="font-size:22px">${pilotIcons[i % pilotIcons.length]}</span>
-                <span style="font-size:8px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Upload</span>
-               </div>`}
-          <input type="file" id="portrait-upload-${i}" accept="image/*" style="display:none" onchange="uploadPortrait(${i}, this)">
+        <div style="position:relative;flex-shrink:0;">
+          <div class="pilot-portrait" style="cursor:pointer;overflow:hidden;" onclick="document.getElementById('portrait-upload-${i}').click()" title="Click to upload photo">
+            ${p.portrait
+              ? `<img src="${p.portrait}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+              : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:2px">
+                  <span style="font-size:22px">${pilotIcons[i % pilotIcons.length]}</span>
+                  <span style="font-size:8px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Upload</span>
+                 </div>`}
+            <input type="file" id="portrait-upload-${i}" accept="image/*" style="display:none" onchange="uploadPortrait(${i}, this)">
+          </div>
+          ${p.portrait ? `<button onclick="clearPortrait(${i})" title="Remove photo" style="position:absolute;top:0;right:0;width:18px;height:18px;background:rgba(0,0,0,.75);border:1px solid var(--red);color:var(--red);font-size:11px;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">&#x2715;</button>` : ''}
         </div>
         <div class="pilot-info">
           <div class="field" style="margin-bottom:6px">
@@ -2048,8 +2226,268 @@ function importCsvRoster(input) {
 }
 
 // ─────────────────────────────────────────
-// HELPERS
+// FORCES — STORAGE
 // ─────────────────────────────────────────
+const FORCES_KEY       = 'btAcesForces';
+const ACTIVE_FORCE_KEY = 'btAcesActiveForce';
+
+function loadForces() {
+  try { return JSON.parse(localStorage.getItem(FORCES_KEY)) || []; } catch(e) { return []; }
+}
+function saveForces(forces) { localStorage.setItem(FORCES_KEY, JSON.stringify(forces)); }
+function getActiveForceId() { return localStorage.getItem(ACTIVE_FORCE_KEY) || null; }
+function setActiveForceId(id) { if (id) localStorage.setItem(ACTIVE_FORCE_KEY, id); else localStorage.removeItem(ACTIVE_FORCE_KEY); }
+
+function updateActiveForceLabel() {
+  const id = getActiveForceId();
+  const label    = document.getElementById('activeForceLabel');
+  const nameEl   = document.getElementById('activeForceName');
+  const hint     = document.getElementById('activeForceHint');
+  const hintName = document.getElementById('activeForceHintName');
+  const btnUpdate = document.getElementById('btnUpdateForce');
+  if (!id) {
+    if (label) label.classList.remove('visible');
+    if (hint) hint.style.display = 'none';
+    if (btnUpdate) btnUpdate.style.display = 'none';
+    return;
+  }
+  const forces = loadForces();
+  const found = forces.find(f => f.id === id);
+  if (found) {
+    if (label) label.classList.add('visible');
+    if (nameEl) nameEl.textContent = found.profileName;
+    if (hint) hint.style.display = 'block';
+    if (hintName) hintName.textContent = found.profileName;
+    if (btnUpdate) btnUpdate.style.display = '';
+  } else {
+    setActiveForceId(null);
+    if (label) label.classList.remove('visible');
+    if (hint) hint.style.display = 'none';
+    if (btnUpdate) btnUpdate.style.display = 'none';
+  }
+}
+
+// ─────────────────────────────────────────
+// FORCES — RENDER
+// ─────────────────────────────────────────
+function getForceIcon(level) {
+  return {'70':'🌟','80':'⚡','90':'🔥','100':'⚔','120':'🎯'}[level] || '⚔';
+}
+
+function renderForcesPage() {
+  const container = document.getElementById('forcesListContainer');
+  if (!container) return;
+  const forces   = loadForces();
+  const activeId = getActiveForceId();
+  updateActiveForceLabel();
+
+  if (!forces.length) {
+    container.innerHTML = `<div class="forces-empty"><div class="forces-empty-icon">⚔</div><div class="forces-empty-title">No Force Profiles Saved</div><div class="forces-empty-sub">Click <strong style="color:var(--gold)">Save Current Force As Profile</strong> above<br>to save your first force profile.</div></div>`;
+    return;
+  }
+
+  container.innerHTML = forces.map((f) => {
+    const isActive = f.id === activeId;
+    const fd = f.data || {};
+    const unitCount   = (fd.units||[]).length;
+    const pilotCount  = (fd.pilotCards||[]).length;
+    const sortieCount = (fd.sortieLogs||[]).filter(s=>s.num).length;
+    let warchest = +fd.startWarchest||0;
+    (fd.sortieLogs||[]).filter(s=>s.num).forEach(s => {
+      const meta = (fd.campaignMeta||{})[s.num] || {};
+      if (meta.win) {
+        const income = (+s.primaryObj||0)+(+s.otherObj||0);
+        const totalSP = Math.round(income*(+s.diffMod||100)/100);
+        let repairTotal = 0;
+        (s.repairRows||[]).forEach(r => repairTotal += (+r.size||0)*(REPAIR_COSTS[r.type]||0));
+        warchest += totalSP-(+s.waypoints||0)-(+s.recon||0)-(+s.rearmCount||0)*20-(+s.woundedCount||0)*100-(+s.newPilotsCount||0)*150-repairTotal;
+        warchest -= (+meta.pilots||0)+(+meta.purchases||0);
+      }
+    });
+    warchest -= (+fd.miscSpend||0);
+    return `
+    <div class="force-card ${isActive?'active-force':''}">
+      <div class="force-card-header">
+        <div class="force-card-icon">${getForceIcon(fd.forceLevel)}</div>
+        <div>
+          <div class="force-card-name">${esc(f.profileName)}</div>
+          <div class="force-card-co">${fd.forceName?esc(fd.forceName):''}${fd.forceCO?' · CO: '+esc(fd.forceCO):''}${!fd.forceName&&!fd.forceCO?'No force name set':''}</div>
+        </div>
+        <div class="force-active-badge">● Active</div>
+      </div>
+      <div class="force-card-stats">
+        <div class="force-stat"><div class="force-stat-val">${unitCount}</div><div class="force-stat-lbl">Units</div></div>
+        <div class="force-stat"><div class="force-stat-val">${pilotCount}</div><div class="force-stat-lbl">Pilots</div></div>
+        <div class="force-stat"><div class="force-stat-val">${sortieCount}</div><div class="force-stat-lbl">Sorties</div></div>
+        <div class="force-stat"><div class="force-stat-val" style="color:${warchest>=0?'var(--gold)':'var(--red)'}">${warchest}</div><div class="force-stat-lbl">Warchest SP</div></div>
+        ${fd.campaignName?`<div class="force-stat"><div class="force-stat-val" style="font-size:13px">${esc(fd.campaignName)}</div><div class="force-stat-lbl">Campaign</div></div>`:''}
+      </div>
+      <div class="force-card-actions">
+        ${isActive
+          ? `<button class="btn btn-sm" onclick="saveCurrentForceInPlace()">🔄 Update Profile</button>`
+          : `<button class="btn btn-sm" onclick="loadForceProfile('${f.id}')">▶ Load Force</button>`}
+        <button class="btn btn-sm" onclick="renameForce('${f.id}')">✎ Rename</button>
+        <button class="btn btn-sm" onclick="duplicateForce('${f.id}')">⧉ Duplicate</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteForce('${f.id}')">✕ Delete</button>
+        <div class="force-saved-at">Saved ${esc(f.savedAt)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+// FORCES — ACTIONS
+// ─────────────────────────────────────────
+function openSaveForceModal() {
+  saveData();
+  const input = document.getElementById('saveForceNameInput');
+  const activeId = getActiveForceId();
+  if (activeId) {
+    const found = loadForces().find(f => f.id === activeId);
+    if (found) { input.value = found.profileName; document.getElementById('saveForceModal').classList.add('open'); return; }
+  }
+  input.value = data.forceName || '';
+  document.getElementById('saveForceModal').classList.add('open');
+  setTimeout(() => input.focus(), 100);
+}
+function closeSaveForceModal() { document.getElementById('saveForceModal').classList.remove('open'); }
+
+function confirmSaveForce() {
+  const name = document.getElementById('saveForceNameInput').value.trim();
+  if (!name) { toast('Enter a profile name first.'); return; }
+  saveData();
+  const forces  = loadForces();
+  const id      = 'force_' + Date.now();
+  const savedAt = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  forces.unshift({ id, profileName: name, savedAt, data: JSON.parse(JSON.stringify(data)) });
+  saveForces(forces);
+  setActiveForceId(id);
+  closeSaveForceModal();
+  renderForcesPage();
+  updateActiveForceLabel();
+  toast('"' + name + '" saved as a force profile!');
+}
+
+function saveCurrentForceInPlace() {
+  const activeId = getActiveForceId();
+  if (!activeId) { openSaveForceModal(); return; }
+  saveData();
+  const forces = loadForces();
+  const idx    = forces.findIndex(f => f.id === activeId);
+  if (idx === -1) { openSaveForceModal(); return; }
+  forces[idx].data    = JSON.parse(JSON.stringify(data));
+  forces[idx].savedAt = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  saveForces(forces);
+  renderForcesPage();
+  toast('Profile "' + forces[idx].profileName + '" updated!');
+}
+
+function loadForceProfile(id) {
+  const forces = loadForces();
+  const target = forces.find(f => f.id === id);
+  if (!target) { toast('Force profile not found.'); return; }
+  const activeId    = getActiveForceId();
+  const currentName = activeId ? (forces.find(f=>f.id===activeId)||{}).profileName : null;
+  const hasData     = data.units.length || data.pilotCards.length || (data.sortieLogs||[]).length;
+  if (hasData) {
+    const msg = currentName
+      ? 'Switch to "' + target.profileName + '"?\n\nSave changes to "' + currentName + '" first?\n\nOK = Save & Switch\nCancel = Switch without saving'
+      : 'Switch to "' + target.profileName + '"?\n\nYour current unsaved data will be lost.\n\nOK = Switch anyway\nCancel = Go back';
+    const confirmed = confirm(msg);
+    if (currentName && confirmed) saveCurrentForceInPlace();
+    else if (!currentName && !confirmed) return;
+  }
+  const blank = {forceName:'',forceCO:'',forceLevel:'',totalPV:0,pvPercent:100,spPercent:100,campaignName:'',startWarchest:0,memorial:'',maxDeployPV:0,miscSpend:0,miscSpendLog:[],units:[],namedPilots:[],campaignRows:[],sortieLogs:[],pilotCards:[],archivedCampaigns:[],campaignMeta:{},pilotPayMax:0};
+  data = {...blank, ...JSON.parse(JSON.stringify(target.data))};
+  localStorage.setItem('btAcesData', JSON.stringify(data));
+  setActiveForceId(id);
+  renderAll();
+  renderForcesPage();
+  toast('"' + target.profileName + '" loaded!');
+}
+
+function createNewForce() {
+  const forces      = loadForces();
+  const activeId    = getActiveForceId();
+  const currentName = activeId ? (forces.find(f=>f.id===activeId)||{}).profileName : null;
+  const hasData     = data.units.length || data.pilotCards.length || (data.sortieLogs||[]).length;
+  if (hasData) {
+    const msg = currentName
+      ? 'Save changes to "' + currentName + '" before creating a new force?\n\nOK = Save & create new\nCancel = Create new without saving'
+      : 'Your current unsaved data will be lost. Create a new blank force anyway?\n\nOK = Create new\nCancel = Go back';
+    const confirmed = confirm(msg);
+    if (!confirmed && !currentName) return;
+    if (confirmed && currentName) saveCurrentForceInPlace();
+  }
+  const blank = {forceName:'',forceCO:'',forceLevel:'',totalPV:0,pvPercent:100,spPercent:100,campaignName:'',startWarchest:0,memorial:'',maxDeployPV:0,miscSpend:0,miscSpendLog:[],units:[],namedPilots:[],campaignRows:[],sortieLogs:[],pilotCards:[],archivedCampaigns:[],campaignMeta:{},pilotPayMax:0};
+  data = {...blank};
+  localStorage.setItem('btAcesData', JSON.stringify(data));
+  setActiveForceId(null);
+  renderAll();
+  renderForcesPage();
+  // Switch to roster tab
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-roster').classList.add('active');
+  document.querySelector('.nav-tab').classList.add('active');
+  toast('New blank force created. Set your Force Name to get started.');
+}
+
+function renameForce(id) {
+  const forces = loadForces();
+  const target = forces.find(f => f.id === id);
+  if (!target) return;
+  const newName = prompt('Rename profile:', target.profileName);
+  if (!newName || !newName.trim()) return;
+  target.profileName = newName.trim();
+  saveForces(forces);
+  renderForcesPage();
+  updateActiveForceLabel();
+  toast('Profile renamed to "' + target.profileName + '".');
+}
+
+function duplicateForce(id) {
+  const forces = loadForces();
+  const src    = forces.find(f => f.id === id);
+  if (!src) return;
+  const newId   = 'force_' + Date.now();
+  const savedAt = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const copy    = { id: newId, profileName: src.profileName + ' (Copy)', savedAt, data: JSON.parse(JSON.stringify(src.data)) };
+  const srcIdx  = forces.findIndex(f => f.id === id);
+  forces.splice(srcIdx + 1, 0, copy);
+  saveForces(forces);
+  renderForcesPage();
+  toast('"' + copy.profileName + '" created!');
+}
+
+function deleteForce(id) {
+  const forces = loadForces();
+  const target = forces.find(f => f.id === id);
+  if (!target) return;
+  if (!confirm('Delete "' + target.profileName + '"?\n\nThis cannot be undone.')) return;
+  saveForces(forces.filter(f => f.id !== id));
+  if (getActiveForceId() === id) setActiveForceId(null);
+  renderForcesPage();
+  updateActiveForceLabel();
+  toast('"' + target.profileName + '" deleted.');
+}
+
+// ─────────────────────────────────────────
+// SORTIE ORDER TOGGLE
+// ─────────────────────────────────────────
+let sortieOrderNewestFirst = false;
+function toggleSortieOrder() {
+  sortieOrderNewestFirst = !sortieOrderNewestFirst;
+  const btn = document.getElementById('btnSortieOrder');
+  if (btn) btn.textContent = sortieOrderNewestFirst ? '↑ Newest First' : '↓ Oldest First';
+  renderSortieLogs();
+}
+
+// Close modal on backdrop click
+document.getElementById('saveForceModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSaveForceModal();
+});
+
 function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
