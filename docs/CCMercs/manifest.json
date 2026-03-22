@@ -2,7 +2,7 @@
   "name": "BattleTech Chaos Campaign Mercenaries Digital Companion",
   "short_name": "BT CC Mercs",
   "description": "Campaign log sheets for BattleTech Chaos Campaign Mercenaries",
-  "start_url": "./BattleTechAcesLog.html",
+  "start_url": "./CCMercsContractSheet.html",
   "display": "standalone",
   "background_color": "#080909",
   "theme_color": "#c9a227",
