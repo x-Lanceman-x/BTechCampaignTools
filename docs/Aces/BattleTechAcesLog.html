@@ -454,6 +454,46 @@
     #unitTable .btn-sm { padding: 4px 6px; font-size: 10px; letter-spacing: 0.5px; }
     /* Make Type column a bit narrower */
     #unitTable td:nth-child(3) select { min-width: 0; }
+
+    /* Named Pilots table on roster: hide less-critical columns */
+    #namedPilotTable th:nth-child(3),
+    #namedPilotTable td:nth-child(3) { display: none; } /* Type */
+
+    /* Warchest bar: stack vertically */
+    .warchest-display { flex-wrap: wrap; gap: 12px; }
+    .warchest-display > div:last-child {
+      flex-direction: column;
+      align-items: flex-start;
+      border-left: none;
+      padding-left: 0;
+      margin-left: 0;
+      width: 100%;
+      border-top: 1px solid var(--border-gold);
+      padding-top: 10px;
+      gap: 10px;
+    }
+    .warchest-display > div:last-child > div:last-child {
+      border-left: none;
+      padding-left: 0;
+      margin-left: 0;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    /* Pilot pay calculator: reflow to 2-col grid */
+    .pilot-pay-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px !important;
+    }
+    .pilot-pay-grid > .pilot-pay-op { display: none !important; }
+    .pilot-pay-grid > .pilot-pay-total {
+      grid-column: 1 / -1;
+    }
+
+    /* Campaign table: scrollable */
+    #campaignTable th:nth-child(9),
+    #campaignTable td:nth-child(9) { display: none; } /* Keywords: hide on mobile */
   }
 
   /* ── WARCHEST BAR ── */
@@ -616,12 +656,14 @@
   <!-- Named Pilots -->
   <div class="section-title">Named Pilots</div>
   <div class="panel">
+    <div class="table-scroll">
     <table id="namedPilotTable">
       <thead>
         <tr><th>Callsign</th><th>Skill</th><th>Type</th><th>SP Earned</th><th>Wounded</th><th>Edge Abilities</th></tr>
       </thead>
       <tbody id="namedPilotRows"></tbody>
     </table>
+    </div>
     <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px">⟶ Pilots are managed on the <strong style="color:var(--gold);cursor:pointer" onclick="showPageById('pilots')">Pilot Cards</strong> tab.</div>
   </div>
 
@@ -641,6 +683,7 @@
         <div class="calc-field" id="deployPVDisplay" style="font-size:20px">0 / 0</div>
       </div>
     </div>
+    <div class="table-scroll">
     <table id="deployTable">
       <thead>
         <tr>
@@ -653,6 +696,7 @@
       </thead>
       <tbody id="deployRows"></tbody>
     </table>
+    </div>
   </div>
 
   <!-- Memorial -->
@@ -685,13 +729,13 @@
       <div class="warchest-val" id="currentWarchest">0</div>
       <div class="warchest-lbl">Current Warchest Balance (SP)</div>
     </div>
-    <div style="margin-left:auto; display:flex; align-items:center; gap:10px">
+    <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
       <div>
         <div class="warchest-val" id="totalSortiesWon" style="font-size:20px; color:var(--text)">0 / 0</div>
         <div class="warchest-lbl">Sorties Won / Played</div>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; border-left:1px solid var(--border-gold); padding-left:16px; margin-left:6px">
-        <div style="display:flex; gap:6px; align-items:center">
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; border-left:1px solid var(--border-gold); padding-left:16px; margin-left:6px; flex-wrap:wrap;">
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
           <input type="number" id="manualSPAdjust" placeholder="± SP" style="width:100px; background:var(--darker); border:1px solid var(--border); color:var(--text); padding:6px 8px; font-family:'Share Tech Mono',monospace; font-size:14px; outline:none; text-align:center;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
           <button class="btn btn-sm" onclick="applyManualSPAdjust()">Apply</button>
         </div>
@@ -715,7 +759,7 @@
   <!-- Named Pilot Payment Calculator -->
   <div class="section-title">Named Pilot Payment Calculator</div>
   <div class="panel panel-gold" style="margin-bottom:16px;padding:12px 16px">
-    <div style="display:grid;grid-template-columns:160px 24px 1fr 24px 1fr 24px 1fr 32px 1fr;align-items:center;gap:6px">
+    <div class="pilot-pay-grid" style="display:grid;grid-template-columns:160px 24px 1fr 24px 1fr 24px 1fr 32px 1fr;align-items:center;gap:6px">
 
       <!-- Max Pay input -->
       <div>
@@ -727,7 +771,7 @@
       </div>
 
       <!-- × -->
-      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-dim);padding-top:4px">×</div>
+      <div class="pilot-pay-op" style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-dim);padding-top:4px">×</div>
 
       <!-- Deployed count -->
       <div>
@@ -737,7 +781,7 @@
       </div>
 
       <!-- = -->
-      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-dim);padding-top:4px">=</div>
+      <div class="pilot-pay-op" style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-dim);padding-top:4px">=</div>
 
       <!-- Deployed subtotal -->
       <div>
@@ -747,7 +791,7 @@
       </div>
 
       <!-- + -->
-      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--text-dim);padding-top:4px">+</div>
+      <div class="pilot-pay-op" style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--text-dim);padding-top:4px">+</div>
 
       <!-- Remaining subtotal -->
       <div>
@@ -757,10 +801,10 @@
       </div>
 
       <!-- = -->
-      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--gold);font-weight:700;padding-top:4px">=</div>
+      <div class="pilot-pay-op" style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--gold);font-weight:700;padding-top:4px">=</div>
 
       <!-- Total -->
-      <div>
+      <div class="pilot-pay-total">
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;font-weight:600">Total Payroll</div>
         <div class="calc-field" id="pilotPayTotal" style="font-size:16px;padding:6px 8px;border-color:var(--gold)">0 SP</div>
         <div style="font-size:10px;color:transparent;margin-top:3px">—</div>
@@ -771,6 +815,7 @@
 
   <div class="section-title">Sortie List</div>
   <div class="panel">
+    <div class="table-scroll">
     <table id="campaignTable">
       <thead>
         <tr>
@@ -787,6 +832,7 @@
       </thead>
       <tbody id="campaignRows"></tbody>
     </table>
+    </div>
     <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px">⟶ Sortie entries are populated from the <strong style="color:var(--gold);cursor:pointer" onclick="showPageById('sortie')">Sortie Log</strong> tab.</div>
   </div>
 
@@ -1633,6 +1679,7 @@ function renderArchivedCampaigns() {
         <span style="font-size:10px;color:var(--text-dim);letter-spacing:1px">${esc(arc.archivedAt)} · Final Balance: <span style="color:${arc.finalBalance>=0?'var(--gold)':'var(--red)'}">${arc.finalBalance} SP</span></span>
       </div>
       <div class="panel" style="opacity:0.75">
+        <div class="table-scroll">
         <table>
           <thead>
             <tr>
@@ -1664,6 +1711,7 @@ function renderArchivedCampaigns() {
             })()}
           </tbody>
         </table>
+        </div>
       </div>
     </div>`).join('');
 }
