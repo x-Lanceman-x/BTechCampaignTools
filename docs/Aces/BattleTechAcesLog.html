@@ -909,6 +909,64 @@
       Export your data as a JSON file to back it up or transfer it to another device. Import a previously exported file to restore your data.
     </div>
   </div>
+
+  <!-- ── GIST SYNC ── -->
+  <div class="panel panel-gold">
+    <div class="section-title" style="margin-bottom:12px">GitHub Gist Sync</div>
+    <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
+      Sync your data to a private GitHub Gist so it's accessible across browsers and devices.
+      Requires a GitHub <strong style="color:var(--text)">Personal Access Token</strong> with <code style="font-family:'Share Tech Mono',monospace;background:rgba(201,162,39,.1);padding:1px 5px;border:1px solid var(--border-gold);font-size:11px">gist</code> scope.
+      <br>Generate one at <strong style="color:var(--gold)">github.com → Settings → Developer settings → Personal access tokens</strong>
+      (fine-grained: enable <em>Gists</em> read+write; or classic: enable <em>gist</em> scope).
+    </div>
+
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Personal Access Token</label>
+        <div style="position:relative">
+          <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+            oninput="gistSaveCredentials()"
+            style="padding-right:38px;font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:1px">
+          <button onclick="gistToggleTokenVis()" title="Show / hide token"
+            id="gistTokenEye"
+            style="position:absolute;right:0;top:0;bottom:0;width:36px;background:transparent;border:none;border-left:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-size:14px;transition:color .15s">👁</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Gist ID <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">(auto-filled after first save)</span></label>
+        <input type="text" id="gistId" placeholder="Leave blank to create a new Gist"
+          oninput="gistSaveCredentials()"
+          style="font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:1px">
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="gistStatus" style="display:none;margin-bottom:12px;padding:8px 14px;border:1px solid var(--border);background:rgba(0,0,0,.3);font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;align-items:center;gap:10px">
+      <span id="gistStatusIcon" style="font-size:16px">—</span>
+      <span id="gistStatusText" style="flex:1;color:var(--text-dim)">Ready</span>
+      <span id="gistStatusTime" style="font-size:10px;color:var(--text-dim)"></span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="gistPush()" id="btnGistPush">
+        <span id="gistPushLabel">☁ Save to Gist</span>
+      </button>
+      <button class="btn" onclick="gistPull()" id="btnGistPull">
+        <span id="gistPullLabel">⬇ Load from Gist</span>
+      </button>
+      <button class="btn btn-sm" onclick="gistOpenInBrowser()" id="btnGistOpen" style="display:none">↗ Open Gist</button>
+      <button class="btn btn-sm btn-danger" onclick="gistClearCredentials()">✕ Clear Credentials</button>
+    </div>
+
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-left:3px solid var(--border-gold)">
+      <div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Security Note</div>
+      <div style="font-size:11px;color:var(--text-dim);letter-spacing:0.5px;line-height:1.7">
+        Your token is stored in <strong style="color:var(--text)">localStorage</strong> on this device only and is never transmitted anywhere except directly to <strong style="color:var(--text)">api.github.com</strong>.
+        Use a fine-grained token scoped only to Gists to minimise risk. Revoke it from GitHub at any time.
+      </div>
+    </div>
+  </div>
+
 </div>
 
 </div><!-- /container -->
@@ -2509,9 +2567,211 @@ function toast(msg) {
 }
 
 // ─────────────────────────────────────────
+// GITHUB GIST SYNC
+// ─────────────────────────────────────────
+const GIST_TOKEN_KEY = 'btAcesGistToken';
+const GIST_ID_KEY    = 'btAcesGistId';
+const GIST_FILENAME  = 'battletech-aces-data.json';
+
+function gistLoadCredentials() {
+  const token = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const id    = localStorage.getItem(GIST_ID_KEY)    || '';
+  const tokenEl = document.getElementById('gistToken');
+  const idEl    = document.getElementById('gistId');
+  if (tokenEl) tokenEl.value = token;
+  if (idEl)    idEl.value    = id;
+  gistUpdateOpenBtn(id);
+}
+
+function gistSaveCredentials() {
+  const token = document.getElementById('gistToken')?.value?.trim() || '';
+  const id    = document.getElementById('gistId')?.value?.trim()    || '';
+  if (token) localStorage.setItem(GIST_TOKEN_KEY, token); else localStorage.removeItem(GIST_TOKEN_KEY);
+  if (id)    localStorage.setItem(GIST_ID_KEY,    id);    else localStorage.removeItem(GIST_ID_KEY);
+  gistUpdateOpenBtn(id);
+}
+
+function gistClearCredentials() {
+  if (!confirm('Clear stored Gist token and ID from this device?\n\nYour data on GitHub will not be deleted.')) return;
+  localStorage.removeItem(GIST_TOKEN_KEY);
+  localStorage.removeItem(GIST_ID_KEY);
+  const tokenEl = document.getElementById('gistToken');
+  const idEl    = document.getElementById('gistId');
+  if (tokenEl) tokenEl.value = '';
+  if (idEl)    idEl.value    = '';
+  gistUpdateOpenBtn('');
+  gistSetStatus('idle', '', 'Credentials cleared.');
+  toast('Gist credentials cleared.');
+}
+
+function gistToggleTokenVis() {
+  const el  = document.getElementById('gistToken');
+  const eye = document.getElementById('gistTokenEye');
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+  if (eye) eye.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+function gistUpdateOpenBtn(id) {
+  const btn = document.getElementById('btnGistOpen');
+  if (btn) btn.style.display = id ? '' : 'none';
+}
+
+function gistSetStatus(state, time, message) {
+  const bar    = document.getElementById('gistStatus');
+  const icon   = document.getElementById('gistStatusIcon');
+  const text   = document.getElementById('gistStatusText');
+  const timeEl = document.getElementById('gistStatusTime');
+  if (!bar) return;
+  bar.style.display = 'flex';
+  const icons  = { idle:'—', busy:'⏳', ok:'✓', error:'✕' };
+  const colors = { idle:'var(--text-dim)', busy:'var(--gold)', ok:'#2ecc71', error:'var(--red)' };
+  if (icon)   { icon.textContent = icons[state]  || '—'; icon.style.color  = colors[state] || 'var(--text-dim)'; }
+  if (text)   { text.textContent = message || ''; text.style.color  = colors[state] || 'var(--text-dim)'; }
+  if (timeEl) timeEl.textContent = time || '';
+  bar.style.borderColor = colors[state] || 'var(--border)';
+}
+
+function gistSetBusy(busy) {
+  const pushBtn = document.getElementById('btnGistPush');
+  const pullBtn = document.getElementById('btnGistPull');
+  const pushLbl = document.getElementById('gistPushLabel');
+  const pullLbl = document.getElementById('gistPullLabel');
+  if (pushBtn) pushBtn.disabled = busy;
+  if (pullBtn) pullBtn.disabled = busy;
+  if (pushLbl) pushLbl.textContent = busy ? '⏳ Saving…'  : '☁ Save to Gist';
+  if (pullLbl) pullLbl.textContent = busy ? '⏳ Loading…' : '⬇ Load from Gist';
+}
+
+async function gistPush() {
+  const token = localStorage.getItem(GIST_TOKEN_KEY);
+  if (!token) { toast('Enter your GitHub token first.'); return; }
+
+  saveData();
+  gistSetBusy(true);
+  gistSetStatus('busy', '', 'Saving to GitHub Gist…');
+
+  const body = {
+    description: 'BattleTech Aces — Log Sheet Data',
+    public: false,
+    files: { [GIST_FILENAME]: { content: JSON.stringify(data, null, 2) } }
+  };
+
+  try {
+    let gistId = localStorage.getItem(GIST_ID_KEY);
+    let url    = 'https://api.github.com/gists';
+    let method = 'POST';
+
+    if (gistId) {
+      const check = await fetch(`https://api.github.com/gists/${gistId}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+      });
+      if (check.ok) {
+        url    = `https://api.github.com/gists/${gistId}`;
+        method = 'PATCH';
+      } else {
+        // Gist was deleted — create a new one
+        gistId = null;
+        localStorage.removeItem(GIST_ID_KEY);
+        const idEl = document.getElementById('gistId');
+        if (idEl) idEl.value = '';
+      }
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+
+    const result = await res.json();
+    const newId  = result.id;
+    localStorage.setItem(GIST_ID_KEY, newId);
+    const idEl = document.getElementById('gistId');
+    if (idEl) idEl.value = newId;
+    gistUpdateOpenBtn(newId);
+
+    const ts = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    gistSetStatus('ok', ts, method === 'POST' ? `Gist created — ID: ${newId}` : `Saved successfully — ID: ${newId}`);
+    toast('Data saved to GitHub Gist!');
+  } catch (err) {
+    gistSetStatus('error', '', `Save failed: ${err.message}`);
+    toast('Gist save failed — check your token.');
+    console.error('Gist push error:', err);
+  } finally {
+    gistSetBusy(false);
+  }
+}
+
+async function gistPull() {
+  const token  = localStorage.getItem(GIST_TOKEN_KEY);
+  const gistId = localStorage.getItem(GIST_ID_KEY);
+  if (!token)  { toast('Enter your GitHub token first.'); return; }
+  if (!gistId) { toast('No Gist ID stored. Save to Gist first, or paste an existing Gist ID.'); return; }
+
+  if (!confirm('Load data from GitHub Gist?\n\nThis will OVERWRITE your current local data.')) return;
+
+  gistSetBusy(true);
+  gistSetStatus('busy', '', 'Loading from GitHub Gist…');
+
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+
+    const result = await res.json();
+    const file   = result.files?.[GIST_FILENAME];
+    if (!file) throw new Error(`File "${GIST_FILENAME}" not found in Gist.`);
+
+    let content = file.content;
+    if (file.truncated) {
+      const raw = await fetch(file.raw_url);
+      if (!raw.ok) throw new Error('Failed to fetch raw Gist content.');
+      content = await raw.text();
+    }
+
+    const imported = JSON.parse(content);
+    data = { ...data, ...imported };
+    localStorage.setItem('btAcesData', JSON.stringify(data));
+    renderAll();
+
+    const ts = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    gistSetStatus('ok', ts, `Loaded successfully from Gist ${gistId}`);
+    toast('Data loaded from GitHub Gist!');
+  } catch (err) {
+    gistSetStatus('error', '', `Load failed: ${err.message}`);
+    toast('Gist load failed — check your token and Gist ID.');
+    console.error('Gist pull error:', err);
+  } finally {
+    gistSetBusy(false);
+  }
+}
+
+function gistOpenInBrowser() {
+  const gistId = localStorage.getItem(GIST_ID_KEY);
+  if (!gistId) return;
+  window.open(`https://gist.github.com/${gistId}`, '_blank', 'noopener');
+}
+
+// ─────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────
 loadData();
+gistLoadCredentials();
 
 // Auto-add starter rows if empty
 if (!data.units.length) { data.units = [{unit:'',pv:'',callsign:'',sp:''}]; renderUnits(); }
