@@ -4,21 +4,31 @@ const ASSETS = [
   // Google Fonts will be cached on first load
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll(['./', './BattleTechAcesLog.html'])
+    )
+  );
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      // Cache Google Fonts requests too
-      if (e.request.url.includes('fonts.g')) {
-        return caches.open(CACHE_NAME).then(c => {
-          c.put(e.request, res.clone());
-          return res;
-        });
-      }
-      return res;
-    }))
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
   );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(cached => cached || fetch(event.request))
+  );
+});
+
+// Part 3 goes here — listens for the reload signal from the main app
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
