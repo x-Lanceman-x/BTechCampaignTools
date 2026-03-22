@@ -517,6 +517,15 @@
     .warchest-display { gap: 12px; }
   }
 </style>
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS support (Safari doesn't use manifest for some things) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BT CC Mercs">
+<link rel="apple-touch-icon" href="./CCMercs192.png">
+<meta name="theme-color" content="#c9a227">
 </head>
 <body>
 
@@ -4246,6 +4255,13 @@ showPage = function(id, btn) {
 };
 
 updateActiveUnitLabel();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => console.log('SW registered'))
+    .catch(err => console.warn('SW failed:', err));
+}
+```
 </script>
 </body>
 </html>
