@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BattleTech — Mercenary Unit Record Sheet v1.6</title>
+<title>BattleTech — CC Mercs Companion</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#c9a227">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BT Mercs Companion">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
 
@@ -517,15 +522,6 @@
     .warchest-display { gap: 12px; }
   }
 </style>
-<!-- PWA Manifest -->
-<link rel="manifest" href="manifest.json">
-
-<!-- iOS support (Safari doesn't use manifest for some things) -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BT CC Mercs">
-<link rel="apple-touch-icon" href="./CCMercs192.png">
-<meta name="theme-color" content="#c9a227">
 </head>
 <body>
 
@@ -534,7 +530,7 @@
     <div>
       <div class="logo-text">BattleTech</div>
       <div style="display:flex;align-items:center;gap:10px">
-        <div class="logo-sub">Mercenary Unit Record Sheet</div>
+        <div class="logo-sub">Chaos Campaign Mercenaries Digital Companion</div>
         <div id="activeUnitLabel">
           <span style="font-size:14px;color:var(--text-dim)">⚔</span>
           <span id="activeUnitName"></span>
@@ -4257,11 +4253,10 @@ showPage = function(id, btn) {
 updateActiveUnitLabel();
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log('SW registered'))
-    .catch(err => console.warn('SW failed:', err));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
 }
-```
 </script>
 </body>
 </html>
