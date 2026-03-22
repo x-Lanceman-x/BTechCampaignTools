@@ -3,6 +3,5 @@ These are a collection of BattleTech related campaign management web apps for Ac
 ROADMAP
 
 - Third application for Campaign Operations Chaos Campaign
-- Manage multiple units/campaigns without having to juggle JSONs 
-- Convert apps to Progressive Web Apps
+- Convert apps to Progressive Web Apps (Aces app done, Mercs app pending)
 - Explore possiblity of syncing across devices
