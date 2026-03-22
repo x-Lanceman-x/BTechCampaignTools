@@ -1,5 +1,5 @@
 {
-  "name": "BattleTech: Aces — Log Sheets",
+  "name": "BattleTech Aces Digital Companion",
   "short_name": "BT Aces",
   "description": "Campaign log sheets for BattleTech: Aces",
   "start_url": "./BattleTechAcesLog.html",
@@ -8,8 +8,8 @@
   "theme_color": "#c9a227",
   "orientation": "any",
   "icons": [
-    { "src": "https://github.com/x-Lanceman-x/BTechCampaignTools/blob/main/docs/Aces/Aces16.png", "sizes": "16x16", "type": "image/png" },
-    { "src": "https://github.com/x-Lanceman-x/BTechCampaignTools/blob/main/docs/Aces/Aces192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "https://github.com/x-Lanceman-x/BTechCampaignTools/blob/main/docs/Aces/Aces512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "./Aces16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "./Aces192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./Aces512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
