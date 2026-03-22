@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BattleTech: Aces — Log Sheets</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c9a227">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BT Aces">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
 
@@ -2511,6 +2519,17 @@ if (!data.namedPilots.length) { data.namedPilots = [{callsign:'',skill:'4',type:
 if (!data.campaignRows.length) { data.campaignRows = [{num:'1',date:'',name:'',earnings:'',win:false,pilots:'',purchases:'',keywords:''}]; renderCampaignRows(); updateCampaignTotals(); }
 if (!data.sortieLogs.length) { addSortieLog(); }
 if (!data.pilotCards.length) { addPilotCard(); }
+// ─────────────────────────────────────────
+// SERVICE WORKER REGISTRATION
+// ─────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('BT Aces SW registered:', reg.scope))
+      .catch(err => console.warn('BT Aces SW registration failed:', err));
+  });
+}
 </script>
+
 </body>
 </html>
