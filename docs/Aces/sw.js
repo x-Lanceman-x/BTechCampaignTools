@@ -1,4 +1,8 @@
-const CACHE_NAME = 'bt-aces-v3';
+const CACHE_NAME = 'bt-aces-v2';
+const ASSETS = [
+  './BattleTechAcesLog.html',
+  // Google Fonts will be cached on first load
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(
