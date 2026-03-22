@@ -1,8 +1,4 @@
-const CACHE_NAME = 'bt-aces-v2';
-const ASSETS = [
-  './BattleTechAcesLog.html',
-  // Google Fonts will be cached on first load
-];
+const CACHE_NAME = 'bt-aces-v3';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -28,7 +24,6 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Part 3 goes here — listens for the reload signal from the main app
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
