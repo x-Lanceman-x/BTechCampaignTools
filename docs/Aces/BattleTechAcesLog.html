@@ -2784,13 +2784,6 @@ if (!data.pilotCards.length) { addPilotCard(); }
 // ─────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('BT Aces SW registered:', reg.scope))
-      .catch(err => console.warn('BT Aces SW registration failed:', err));
-  });
-}
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then(reg => {
 
       // Check for updates every time the app is focused
