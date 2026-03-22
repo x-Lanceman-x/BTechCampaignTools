@@ -337,6 +337,57 @@
   .drag-over-top { box-shadow: 0 -2px 0 var(--gold) !important; }
   .drag-over-bottom { box-shadow: 0 2px 0 var(--gold) !important; }
 
+  /* ── LEDGER / TRACK TABLE ── */
+  .track-table { width: 100%; border-collapse: collapse; }
+  .track-table th {
+    background: rgba(201,162,39,.12); border: 1px solid var(--border-gold);
+    padding: 8px 10px; font-family: 'Oswald', sans-serif;
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold); text-align: left; font-weight: 600;
+  }
+  .track-table td { border: 1px solid var(--border); padding: 4px 6px; }
+  .track-table tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+  .track-table tr:hover td { background: rgba(201,162,39,.04); }
+  .track-table td input[type=text], .track-table td input[type=number] {
+    background: transparent; border: none;
+    padding: 4px; font-size: 13px; font-family: 'Share Tech Mono', monospace;
+    width: 100%;
+  }
+  .track-table td input:focus { background: rgba(201,162,39,.06); outline: none; }
+  .td-num { font-family: 'Share Tech Mono', monospace; text-align: right; }
+  .td-pos { color: var(--green-bright); }
+  .td-neg { color: var(--red); }
+
+  /* ── CAMPAIGN LOG / LEDGER ── */
+  .ledger-banner {
+    background: linear-gradient(90deg, rgba(201,162,39,.08), transparent);
+    border: 1px solid var(--border-gold);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 24px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .ledger-balance-icon { font-size: 28px; flex-shrink: 0; }
+  .ledger-balance-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 30px; color: var(--gold); font-weight: 700; line-height: 1;
+  }
+  .ledger-balance-lbl {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-dim); margin-top: 3px;
+  }
+  .ledger-stat {
+    display: flex; flex-direction: column; align-items: flex-end;
+    padding: 0 0 0 24px; border-left: 1px solid var(--border-gold);
+  }
+  .ledger-stat-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px; font-weight: 700;
+  }
+  .ledger-stat-lbl {
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text-dim); margin-top: 2px;
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 700px) {
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -357,6 +408,7 @@
     </div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('force', this)">Force Record</button>
+      <button class="nav-tab" onclick="showPage('campaign', this)">Campaign Log</button>
       <button class="nav-tab" onclick="showPage('ref', this)">Reference</button>
       <button class="nav-tab" onclick="showPage('journal', this)">Journal</button>
       <button class="nav-tab" onclick="showPage('settings', this)">Settings</button>
@@ -371,7 +423,7 @@
 ══════════════════════════════════════════════ -->
 <div id="page-force" class="page active">
 
-  <div class="section-title">Force Record Sheet</div>
+  <div class="section-title">Force Information</div>
 
   <!-- Force Identity -->
   <div class="panel panel-gold" style="margin-bottom:16px">
@@ -387,15 +439,24 @@
         </select>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr;gap:12px">
-      <div class="field">
-        <label>Warchest (WP)</label>
-        <input type="number" id="force-warchest" placeholder="0" oninput="saveForce()">
-      </div>
-    </div>
-    <div class="field" style="margin-top:4px;margin-bottom:0">
+    <div class="field" style="margin-top:4px;margin-bottom:12px">
       <label>Notes</label>
       <input type="text" id="force-notes" placeholder="Special abilities, ongoing effects, campaign notes…" oninput="saveForce()">
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border-gold);margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div class="stat-box">
+        <div class="stat-val" id="force-unit-count">0</div>
+        <div class="stat-lbl">Total Units</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="force-total-bv">0</div>
+        <div class="stat-lbl">Total BV</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="force-total-tons">0</div>
+        <div class="stat-lbl">Total Tonnage</div>
+      </div>
     </div>
   </div>
 
@@ -414,7 +475,7 @@
   </div>
 
   <div class="panel" style="padding:0;margin-bottom:16px">
-    <div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+    <div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
       <div style="padding:7px 8px"></div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Name</div>
@@ -422,7 +483,6 @@
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Callsign</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Assigned Unit</div>
       <div id="pilot-skill-header" style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">G/P Skill</div>
-      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">ADV</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">SPAs</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Wounds</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Status</div>
@@ -435,8 +495,184 @@
     </div>
   </div>
 
+
+  <!-- Deployment -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
+    <div class="section-title" style="margin:0;flex:1">Deployment</div>
+    <button class="btn btn-sm btn-danger" onclick="clearAllDeploy()">✕ Clear Deployment</button>
+  </div>
+
+  <!-- Percent of Force Calculator -->
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:140px">
+        <label>% of Player Total Force</label>
+        <input type="number" id="deploy-pct" min="0" max="100" step="1" placeholder="100"
+          oninput="recalcDeployment()"
+          style="background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;text-align:center;width:100%">
+      </div>
+      <div style="display:flex;align-items:center;padding-top:18px">
+        <span style="font-family:'Oswald',sans-serif;font-size:22px;color:var(--text-dim);padding:0 4px">%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:180px">
+        <label>Metric</label>
+        <select id="deploy-metric" onchange="recalcDeployment()"
+          style="background:var(--darker);border:1px solid var(--border-gold);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:14px">
+          <option value="bv">Total BV</option>
+          <option value="units">Total Units</option>
+          <option value="tons">Total Tonnage</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;padding-top:18px">
+        <span style="font-family:'Oswald',sans-serif;font-size:22px;color:var(--text-dim);padding:0 8px">=</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
+        <label>Force Allocation</label>
+        <div style="background:rgba(201,162,39,.08);border:1px solid var(--border-gold);padding:8px 14px;font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)" id="deploy-calc-result">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deployed units table -->
+  <div id="deployment-empty" style="display:none;text-align:center;color:var(--text-dim);padding:24px;border:1px dashed var(--border);background:var(--panel);margin-bottom:16px;font-size:13px;letter-spacing:1px">
+    No units deployed. Check the <strong style="color:var(--text)">Deploy</strong> box on a formation row to stage a unit.
+  </div>
+
+  <div id="deployment-panel" class="panel panel-gold" style="padding:0;overflow-x:auto;margin-bottom:16px;display:none">
+    <div style="display:grid;grid-template-columns:32px 2.5fr 70px 80px 120px 1fr 90px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">#</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 10px;text-align:right">Tons</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 10px;text-align:right">BV</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Tech Base</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Crew</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Formation</div>
+    </div>
+    <div id="deployment-rows"></div>
+    <!-- Totals footer -->
+    <div style="display:flex;align-items:center;gap:24px;padding:10px 14px;border-top:1px solid var(--border-gold);background:rgba(201,162,39,.04);flex-wrap:wrap">
+      <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Deployed Totals</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Units</span>
+        <span id="deploy-total-units" style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">0</span>
+        <span id="deploy-overage-units" style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:600;display:none"></span>
+      </div>
+      <div style="width:1px;height:20px;background:var(--border-gold)"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">BV</span>
+        <span id="deploy-total-bv" style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">0</span>
+        <span id="deploy-overage-bv" style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:600;display:none"></span>
+      </div>
+      <div style="width:1px;height:20px;background:var(--border-gold)"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Tonnage</span>
+        <span id="deploy-total-tons" style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">0</span>
+        <span id="deploy-overage-tons" style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:600;display:none"></span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Enemy Strength Calculator -->
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div class="section-title" style="margin-bottom:12px">Enemy Strength</div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:140px">
+        <label>% of Player Deployed Force</label>
+        <input type="number" id="enemy-pct" min="0" step="1" placeholder="100"
+          oninput="recalcEnemyStrength()"
+          style="background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;text-align:center;width:100%">
+      </div>
+      <div style="display:flex;align-items:center;padding-top:18px">
+        <span style="font-family:'Oswald',sans-serif;font-size:22px;color:var(--text-dim);padding:0 4px">%</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:160px;padding-top:18px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:1px">Metric from Force Allocation: <span id="enemy-metric-label" style="color:var(--gold)">BV</span></span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:1px">Deployed: <span id="enemy-deployed-val" style="color:var(--gold)">0</span></span>
+      </div>
+      <div style="display:flex;align-items:center;padding-top:18px">
+        <span style="font-family:'Oswald',sans-serif;font-size:22px;color:var(--text-dim);padding:0 8px">=</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
+        <label>Enemy Strength</label>
+        <div style="background:rgba(201,162,39,.08);border:1px solid var(--border-gold);padding:8px 14px;font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)" id="enemy-calc-result">—</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /page-force -->
 
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 2 · CAMPAIGN LOG
+══════════════════════════════════════════════ -->
+<div id="page-campaign" class="page">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="section-title" style="margin:0;flex:1">Campaign Log</div>
+    <button class="btn btn-sm" onclick="addLedgerRow()" style="border-color:var(--gold);color:var(--gold)">+ Add Entry</button>
+  </div>
+
+  <!-- Campaign name + starting warchest -->
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div class="section-title" style="margin-bottom:12px">Campaign Log</div>
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Campaign Name</label>
+        <input type="text" id="campaign-name" placeholder="e.g. Total Chaos" oninput="saveCampaign()">
+      </div>
+      <div class="field">
+        <label>Starting Warchest Balance (WP)</label>
+        <input type="number" id="campaign-start-wp" placeholder="0" oninput="saveCampaign(); renderLedger()">
+      </div>
+    </div>
+    <div>
+      <button class="btn btn-sm btn-danger" onclick="startNewCampaign()">▶ Start New Campaign</button>
+    </div>
+  </div>
+
+  <!-- Running balance banner -->
+  <div class="ledger-banner">
+    <div class="ledger-balance-icon">📒</div>
+    <div>
+      <div class="ledger-balance-val" id="ledger-balance">0 WP</div>
+      <div class="ledger-balance-lbl">Running Balance</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:0">
+      <div class="ledger-stat">
+        <div class="ledger-stat-val" id="ledger-income" style="color:var(--green-bright)">0 WP</div>
+        <div class="ledger-stat-lbl">Total Income</div>
+      </div>
+      <div class="ledger-stat">
+        <div class="ledger-stat-val" id="ledger-costs" style="color:var(--red)">0 WP</div>
+        <div class="ledger-stat-lbl">Total Costs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ledger table -->
+  <div class="panel" style="padding:0;overflow-x:auto;margin-bottom:8px">
+    <table class="track-table" id="ledger-table">
+      <thead>
+        <tr>
+          <th style="width:80px">Month</th>
+          <th>Description</th>
+          <th style="width:130px;text-align:right">Track Cost (WP)</th>
+          <th style="width:110px;text-align:center">Options (WP)</th>
+          <th style="width:140px;text-align:right">Objectives (WP)</th>
+          <th style="width:140px;text-align:right">Balance (WP)</th>
+          <th style="width:40px"></th>
+        </tr>
+      </thead>
+      <tbody id="ledger-rows"></tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:16px">
+    ⟶ Balance is calculated cumulatively from the Starting Warchest Balance set above.
+  </div>
+
+</div><!-- /page-campaign -->
 
 <!-- ══════════════════════════════════════════════
      PAGE 2 · REFERENCE
@@ -525,6 +761,21 @@
     </div>
   </div>
 
+  <div class="panel panel-gold">
+    <div class="section-title" style="margin-bottom:12px">Import Force from CSV</div>
+    <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
+      Upload a MekBay-exported CSV to populate formations on the Force Record.<br>
+      Columns used: <span style="color:var(--text);font-family:'Share Tech Mono',monospace">group, chassis, model, tonnage, BV, techBase, omni</span><br>
+      Rows are grouped into formations by the <span style="color:var(--text);font-family:'Share Tech Mono',monospace">group</span> column. If absent, all units go into one formation.
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn" onclick="document.getElementById('csvImportFile').click()">⬆ Choose CSV File</button>
+      <span id="csv-filename" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">No file chosen</span>
+      <input type="file" id="csvImportFile" accept=".csv" style="display:none" onchange="previewCsvImport(this)">
+    </div>
+    <div id="csv-preview" style="margin-top:14px"></div>
+  </div>
+
 </div><!-- /page-settings -->
 
 </div><!-- /container -->
@@ -543,12 +794,15 @@ let journalFilter = 'all';
 
 let data = {
   clanTechMult: 2,
+  campaignName: '',
+  campaignStartWP: 0,
+  ledger: [],
   journalEntries: [],
   pilotRoster: [],
   forceData: {
-    name: '', co: '', scale: '', bvAvail: '', warchest: '', rep: '', notes: '',
+    name: '', co: '', notes: '',
     formations: [
-      { label: 'Formation 1', rows: Array(4).fill(null).map(() => ({ unit:'', pilot:'', tons:'', bv:'', gp:'', adv:'', spa:'' })) }
+      { label: 'Formation 1', rows: Array(4).fill(null).map(() => ({ unit:'', pilot:'', tons:'', bv:'', techBase:'', unitStatus:'', omni:false, deploy:false, gp:'', adv:'', spa:'' })) }
     ]
   }
 };
@@ -561,12 +815,14 @@ function loadData() {
     const saved = localStorage.getItem('btChaosCampaign');
     if (saved) data = { ...data, ...JSON.parse(saved) };
     if (!data.forceData) data.forceData = {
-      name:'', co:'', scale:'', bvAvail:'', warchest:'', rep:'', notes:'',
+      name:'', co:'', notes:'',
       formations:[{ label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',pilot:'',tons:'',bv:'',gp:'',adv:'',spa:''})) }]
     };
     if (!data.forceData.formations) data.forceData.formations = [];
     if (!data.journalEntries) data.journalEntries = [];
     if (!data.pilotRoster) data.pilotRoster = [];
+    if (!data.ledger) data.ledger = [];
+    if (data.campaignStartWP === undefined) data.campaignStartWP = 0;
   } catch(e) {}
   renderAll();
 }
@@ -605,8 +861,9 @@ function clearAll() {
   localStorage.removeItem('btChaosCampaign');
   data = {
     clanTechMult: 2,
+    campaignName: '', campaignStartWP: 0, ledger: [],
     journalEntries:[], pilotRoster:[],
-    forceData:{ name:'', co:'', warchest:'', notes:'',
+    forceData:{ name:'', co:'', notes:'',
       formations:[{ label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',pilot:'',tons:'',bv:'',gp:'',adv:'',spa:''})) }]
     }
   };
@@ -647,9 +904,11 @@ function renderAll() {
   // Force Record fields
   if (data.forceData) {
     sv('force-name', data.forceData.name);
-    sv('force-warchest', data.forceData.warchest);
     sv('force-notes', data.forceData.notes);
   }
+  // Campaign Log fields
+  sv('campaign-name', data.campaignName || '');
+  sv('campaign-start-wp', data.campaignStartWP || '');
   // Settings
   const clanMult = document.getElementById('clan-tech-mult');
   if (clanMult) clanMult.value = data.clanTechMult || 2;
@@ -657,7 +916,182 @@ function renderAll() {
   renderFormations();
   renderPilotRoster();
   renderCoDropdown();
+  renderLedger();
+  renderDeployment();
   renderJournal();
+}
+
+
+// ─────────────────────────────────────────
+// CAMPAIGN LOG
+// ─────────────────────────────────────────
+function saveCampaign() {
+  data.campaignName   = (document.getElementById('campaign-name') || {}).value || '';
+  data.campaignStartWP = +((document.getElementById('campaign-start-wp') || {}).value || 0);
+  save();
+}
+
+function startNewCampaign() {
+  if (!confirm('Start a new campaign? This will clear all ledger entries and reset the starting balance. Your force record and pilots will be kept.')) return;
+  data.campaignName    = '';
+  data.campaignStartWP = 0;
+  data.ledger          = [];
+  save();
+  sv('campaign-name', '');
+  sv('campaign-start-wp', '');
+  renderLedger();
+  toast('New campaign started.');
+}
+
+function addLedgerRow() {
+  if (!data.ledger) data.ledger = [];
+  data.ledger.push({ month: '', event: '', cost: '', cover: '', paid: '' });
+  save();
+  renderLedger();
+}
+
+function removeLedgerRow(i) {
+  data.ledger.splice(i, 1);
+  save();
+  renderLedger();
+}
+
+function updateLedgerRow(i, field, val) {
+  data.ledger[i][field] = val;
+  save();
+  recalcLedgerBalances();
+}
+
+// Full re-render after a numeric field is committed (onchange) — safe because focus is already moving away
+function commitLedgerRow(i, field, val) {
+  data.ledger[i][field] = val;
+  save();
+  renderLedger();
+}
+
+// Recalculates and updates only the balance cells + banner without touching input elements
+function recalcLedgerBalances() {
+  if (!data.ledger) return;
+  const startWP = +(data.campaignStartWP || 0);
+  let balance = startWP;
+  let totalIncome = 0;
+  let totalCosts  = 0;
+
+  const tbody = document.getElementById('ledger-rows');
+  if (!tbody) return;
+  // +1 offset because row 0 is the fixed Starting Warchest row
+  const trs = tbody.querySelectorAll('tr');
+
+  data.ledger.forEach((r, i) => {
+    const cost       = +(r.cost  || 0);
+    const options    = +(r.cover || 0);  // Options (WP) — income
+    const objectives = +(r.paid  || 0);  // Objectives (WP) — income
+    const totalRowIncome = options + objectives;
+    balance     += totalRowIncome - cost;
+    totalIncome += totalRowIncome;
+    totalCosts  += cost;
+
+    // trs[0] is Starting Warchest, so data rows start at trs[i+1]
+    const tr = trs[i + 1];
+    if (tr) {
+      const balCell = tr.cells[5];
+      if (balCell) {
+        balCell.textContent = fmt(balance);
+        balCell.style.color = balance >= 0 ? 'var(--green-bright)' : 'var(--red)';
+      }
+    }
+  });
+
+  const finalBalance = startWP + totalIncome - totalCosts;
+  const balEl = document.getElementById('ledger-balance');
+  if (balEl) { balEl.textContent = fmt(finalBalance) + ' WP'; balEl.style.color = finalBalance < 0 ? 'var(--red)' : 'var(--gold)'; }
+  const incEl = document.getElementById('ledger-income');
+  if (incEl) incEl.textContent = fmt(totalIncome) + ' WP';
+  const costEl = document.getElementById('ledger-costs');
+  if (costEl) costEl.textContent = fmt(totalCosts) + ' WP';
+}
+
+function renderLedger() {
+  if (!data.ledger) data.ledger = [];
+  const tbody = document.getElementById('ledger-rows');
+  if (!tbody) return;
+
+  const startWP = +(data.campaignStartWP || 0);
+  let balance   = startWP;
+  let totalIncome = 0;
+  let totalCosts  = 0;
+
+  const rows = data.ledger.map((r, i) => {
+    const cost       = +(r.cost  || 0);
+    const options    = +(r.cover || 0);  // Options (WP) — income
+    const objectives = +(r.paid  || 0);  // Objectives (WP) — income
+    const totalRowIncome = options + objectives;
+    balance     += totalRowIncome - cost;
+    totalIncome += totalRowIncome;
+    totalCosts  += cost;
+
+    const balColor = balance >= 0 ? 'var(--green-bright)' : 'var(--red)';
+    const rowBg = i % 2 === 1 ? 'background:rgba(255,255,255,.02)' : '';
+    return `<tr style="${rowBg}" onmouseover="this.style.background='rgba(201,162,39,.04)'" onmouseout="this.style.background='${i%2===1?'rgba(255,255,255,.02)':'transparent'}'">
+      <td style="width:80px">
+        <input type="text" value="${esc(r.month)}" placeholder="e.g. Track 03"
+          oninput="updateLedgerRow(${i},'month',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px;color:var(--text-dim)">
+      </td>
+      <td>
+        <input type="text" value="${esc(r.event)}" placeholder="Description…"
+          oninput="updateLedgerRow(${i},'event',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;padding:4px;color:var(--text)">
+      </td>
+      <td style="text-align:right">
+        <input type="number" value="${r.cost||''}" placeholder="0"
+          onchange="commitLedgerRow(${i},'cost',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px;color:var(--red);text-align:right">
+      </td>
+      <td style="text-align:center">
+        <input type="number" value="${r.cover||''}" placeholder="0"
+          onchange="commitLedgerRow(${i},'cover',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px;color:#4a9a60;text-align:center">
+      </td>
+      <td style="text-align:right">
+        <input type="number" value="${r.paid||''}" placeholder="0"
+          onchange="commitLedgerRow(${i},'paid',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px;color:var(--green-bright);text-align:right">
+      </td>
+      <td style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:${balColor};padding:4px 8px">
+        ${fmt(balance)}
+      </td>
+      <td style="text-align:center">
+        <button onclick="removeLedgerRow(${i})"
+          style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px">✕</button>
+      </td>
+    </tr>`;
+  });
+
+  // Prepend starting warchest row
+  const startRow = `<tr>
+    <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:var(--text-dim)">—</td>
+    <td style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;padding:6px 8px;color:var(--text)">Starting Warchest</td>
+    <td style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:var(--text-dim)">—</td>
+    <td style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:var(--text-dim)">—</td>
+    <td style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px;color:var(--text-dim)">—</td>
+    <td style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;padding:6px 8px;color:var(--text)">${fmt(startWP)}</td>
+    <td></td>
+  </tr>`;
+
+  tbody.innerHTML = startRow + rows.join('');
+
+  // Update banner
+  const finalBalance = startWP + totalIncome - totalCosts;
+  const balEl = document.getElementById('ledger-balance');
+  if (balEl) {
+    balEl.textContent = fmt(finalBalance) + ' WP';
+    balEl.style.color = finalBalance < 0 ? 'var(--red)' : 'var(--gold)';
+  }
+  const incEl = document.getElementById('ledger-income');
+  if (incEl) incEl.textContent = fmt(totalIncome) + ' WP';
+  const costEl = document.getElementById('ledger-costs');
+  if (costEl) costEl.textContent = fmt(totalCosts) + ' WP';
 }
 
 // ─────────────────────────────────────────
@@ -679,7 +1113,6 @@ function saveForce() {
   if (!data.forceData) data.forceData = {};
   data.forceData.name     = document.getElementById('force-name') ? document.getElementById('force-name').value : '';
   data.forceData.co       = document.getElementById('force-co') ? document.getElementById('force-co').value : '';
-  data.forceData.warchest = document.getElementById('force-warchest') ? document.getElementById('force-warchest').value : '';
   data.forceData.notes    = document.getElementById('force-notes') ? document.getElementById('force-notes').value : '';
   save();
 }
@@ -706,7 +1139,7 @@ function removeFormation(fi) {
 }
 
 function addFormationRow(fi) {
-  data.forceData.formations[fi].rows.push({ unit:'', pilot:'', tons:'', bv:'', gp:'', adv:'', spa:'' });
+  data.forceData.formations[fi].rows.push({ unit:'', pilot:'', tons:'', bv:'', techBase:'', unitStatus:'', omni:false, deploy:false, gp:'', adv:'', spa:'' });
   save();
   renderFormations();
 }
@@ -725,100 +1158,213 @@ function updateFormationLabel(fi, val) {
 function updateFormationField(fi, ri, field, val) {
   data.forceData.formations[fi].rows[ri][field] = val;
   save();
+  updateForceStats();
 }
+
+function updateForceStats() {
+  const formations = (data.forceData && data.forceData.formations) || [];
+  let units = 0, totalBv = 0, totalTons = 0;
+  formations.forEach(f => {
+    (f.rows || []).forEach(r => {
+      if (r.unit && r.unit.trim()) {
+        units++;
+        totalBv   += +(r.bv   || 0);
+        totalTons += +(r.tons || 0);
+      }
+    });
+  });
+  setText('force-unit-count', fmt(units));
+  setText('force-total-bv',   fmt(totalBv));
+  setText('force-total-tons', fmt(totalTons));
+}
+
+const TECH_BASE_COLORS = { '': 'var(--text-dim)', 'IS': 'var(--text)', 'Clan': 'var(--gold)', 'Mixed': '#6ab0e8' };
+const UNIT_STATUS_COLORS = { '': 'var(--text-dim)', 'Operational': 'var(--green-bright)', 'Damaged': 'var(--gold)', 'Crippled': '#e8a030', 'Destroyed': 'var(--red)' };
 
 function renderFormations() {
   const cont = document.getElementById('force-formations');
   if (!cont) return;
   const formations = (data.forceData && data.forceData.formations) || [];
-  const bvLabel = 'BV';
 
   if (!formations.length) {
     cont.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:24px;border:1px dashed var(--border);background:var(--panel);margin-bottom:16px;font-size:13px;letter-spacing:1px">No formations. Click <strong style="color:var(--text)">+ Add Formation</strong> to create one.</div>`;
     return;
   }
 
+  // cols: drag | unit | tons | bv | techbase | status | omni | crew | gp | adv | spa | deploy | del
+  const COLS = '16px 2.8fr 60px 70px 120px 120px 44px 1.4fr 80px 1fr 44px 32px';
+
   cont.innerHTML = formations.map((f, fi) => {
     const rows = f.rows || [];
+    const allDeployed = rows.filter(r => r.unit && r.unit.trim()).length > 0 &&
+                        rows.filter(r => r.unit && r.unit.trim()).every(r => r.deploy);
     return `
     <div class="panel panel-gold" style="padding:0;margin-bottom:16px">
       <!-- Formation Header -->
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.06)">
+        <span style="color:var(--border);font-size:16px;cursor:default;padding:0 4px">⠿</span>
         <input type="text" value="${esc(f.label)}" oninput="updateFormationLabel(${fi}, this.value)"
-          style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);padding:0;width:200px;outline:none">
-        <button class="btn btn-sm" onclick="addFormationRow(${fi})" style="margin-left:auto">+ Add Unit</button>
-        <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">✕ Remove</button>
+          style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);padding:0;width:220px;outline:none">
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${allDeployed?'#000':'var(--gold)'};background:${allDeployed?'var(--gold)':'transparent'};border:1px solid var(--gold);padding:5px 12px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .2s">
+            <input type="checkbox" ${allDeployed?'checked':''} onchange="deployFormation(${fi},this.checked)" style="display:none">
+            <span style="width:14px;height:14px;border:2px solid ${allDeployed?'#000':'var(--gold)'};background:${allDeployed?'#000':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              ${allDeployed?'<span style="color:var(--gold);font-size:10px;font-weight:700;line-height:1">✓</span>':''}
+            </span>
+            Deploy All
+          </label>
+          <button class="btn btn-sm" onclick="addFormationRow(${fi})">+ Add Unit</button>
+          <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">Remove Formation</button>
+        </div>
       </div>
       <!-- Column Headers -->
-      <div style="display:grid;grid-template-columns:2.5fr 1fr 0.8fr 0.8fr 1.2fr 1.2fr 0.8fr 36px;gap:0;background:rgba(201,162,39,.04);border-bottom:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:${COLS};gap:0;background:rgba(201,162,39,.04);border-bottom:1px solid var(--border)">
+        <div style="padding:6px 4px"></div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 10px">Unit / 'Mech</div>
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">Tons</div>
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">${bvLabel}</div>
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">Crew</div>
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">G/P Skill</div>
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">ADV</div>
-        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">SPAs</div>
-        <div style="padding:6px 8px"></div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">Tons</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">BV</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">Tech Base</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">Status</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px;text-align:center">Omni</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">Crew</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">G/P Skill</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">Special Pilot Abilities</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px;text-align:center">Deploy</div>
+        <div style="padding:6px 4px"></div>
       </div>
       <!-- Rows -->
       ${rows.map((r, ri) => {
         const rowBg = ri % 2 === 1 ? 'background:rgba(255,255,255,.015)' : '';
-        // Build pilot options
+        const tbVal = r.techBase || '';
+        const tbColor = TECH_BASE_COLORS[tbVal] || 'var(--text-dim)';
+        const stVal = r.unitStatus || '';
+        const stColor = UNIT_STATUS_COLORS[stVal] || 'var(--text-dim)';
         const pilotOpts = `<option value="">— Unassigned —</option>` +
-          (data.pilotRoster || []).filter(p => p.status !== 'KIA').map((p, pi) => {
+          (data.pilotRoster || []).filter(p => p.status !== 'KIA').map(p => {
             const lbl = [p.callsign ? `"${p.callsign}"` : '', p.name].filter(Boolean).join(' ');
             const isAssigned = r.pilot === (p.name || lbl);
             return `<option value="${esc(p.name || lbl)}" ${isAssigned ? 'selected' : ''}>${esc(lbl || '(Unnamed)')}</option>`;
           }).join('');
+        const isDestroyed = stVal === 'Destroyed';
         return `
-        <div style="display:grid;grid-template-columns:2.5fr 1fr 0.8fr 0.8fr 1.2fr 1.2fr 0.8fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.4);${rowBg}">
-          <div style="padding:3px 8px">
-            <input type="text" value="${esc(r.unit)}" placeholder="e.g. Timber Wolf Prime"
+        <div id="frow-${fi}-${ri}" style="display:grid;grid-template-columns:${COLS};gap:0;border-bottom:1px solid rgba(42,48,64,.4);${rowBg}${isDestroyed?';opacity:0.55':''}">
+          <div style="display:flex;align-items:center;justify-content:center;color:var(--border);font-size:13px;padding:0 2px;cursor:default">⠿</div>
+          <div style="padding:2px 6px">
+            <input type="text" value="${esc(r.unit)}" placeholder="e.g. Atlas AS7-D"
               oninput="updateFormationField(${fi},${ri},'unit',this.value)"
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)">
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text)">
           </div>
-          <div style="padding:3px 6px">
-            <input type="number" value="${esc(r.tons)}" placeholder="0"
+          <div style="padding:2px 2px">
+            <input type="number" value="${esc(r.tons)}" placeholder="T"
               oninput="updateFormationField(${fi},${ri},'tons',this.value)"
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center">
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 2px;color:var(--text);text-align:center">
           </div>
-          <div style="padding:3px 6px">
-            <input type="number" value="${esc(r.bv)}" placeholder="0"
+          <div style="padding:2px 2px">
+            <input type="number" value="${esc(r.bv)}" placeholder="BV"
               oninput="updateFormationField(${fi},${ri},'bv',this.value)"
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:center">
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 2px;color:var(--gold);text-align:center">
           </div>
-          <div style="padding:3px 4px">
+          <div style="padding:2px 2px;display:flex;align-items:center">
+            <select onchange="updateFormationField(${fi},${ri},'techBase',this.value);this.style.color=TECH_BASE_COLORS[this.value]||'var(--text-dim)'"
+              style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;padding:4px 2px;color:${tbColor};cursor:pointer">
+              <option value="" style="background:var(--panel);color:var(--text-dim)">— Tech —</option>
+              <option value="IS" ${tbVal==='IS'?'selected':''} style="background:var(--panel);color:var(--text)">Inner Sphere</option>
+              <option value="Clan" ${tbVal==='Clan'?'selected':''} style="background:var(--panel);color:var(--gold)">Clan</option>
+              <option value="Mixed" ${tbVal==='Mixed'?'selected':''} style="background:var(--panel);color:#6ab0e8">Mixed</option>
+            </select>
+          </div>
+          <div style="padding:2px 2px;display:flex;align-items:center">
+            <select onchange="updateFormationField(${fi},${ri},'unitStatus',this.value);this.style.color=UNIT_STATUS_COLORS[this.value]||'var(--text-dim)'"
+              style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;padding:4px 2px;color:${stColor};cursor:pointer;text-transform:uppercase">
+              <option value="" style="background:var(--panel);color:var(--text-dim)">— Status —</option>
+              <option value="Operational" ${stVal==='Operational'?'selected':''} style="background:var(--panel);color:var(--green-bright)">Operational</option>
+              <option value="Damaged" ${stVal==='Damaged'?'selected':''} style="background:var(--panel);color:var(--gold)">Damaged</option>
+              <option value="Crippled" ${stVal==='Crippled'?'selected':''} style="background:var(--panel);color:#e8a030">Crippled</option>
+              <option value="Destroyed" ${stVal==='Destroyed'?'selected':''} style="background:var(--panel);color:var(--red)">Destroyed</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;padding:2px">
+            <label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0" title="OmniMech">
+              <input type="checkbox" ${r.omni?'checked':''} onchange="toggleOmni(${fi},${ri},this.checked)" style="display:none">
+              <span id="omni-span-${fi}-${ri}" style="width:16px;height:16px;border:2px solid ${r.omni?'var(--gold)':'var(--border)'};background:${r.omni?'var(--gold)':'transparent'};display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0">
+                ${r.omni?'<span style="color:#000;font-size:10px;font-weight:700;line-height:1">✓</span>':''}
+              </span>
+            </label>
+          </div>
+          <div style="padding:2px 2px">
             <select onchange="assignPilotToFormation(${fi},${ri},this.value)"
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text);cursor:pointer">
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:11px;padding:5px 2px;color:var(--text);cursor:pointer">
               ${pilotOpts}
             </select>
           </div>
-          <div style="padding:3px 6px">
+          <div style="padding:2px 2px">
             <input type="text" value="${esc(r.gp)}" placeholder="4/5" readonly
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${r.pilot?'1':'0.4'}">
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 2px;color:var(--text);text-align:center;opacity:${r.pilot?'1':'0.4'}">
           </div>
-          <div style="padding:3px 6px">
-            <input type="text" value="${esc(r.adv)}" placeholder="" readonly
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${r.pilot?'1':'0.4'}">
-          </div>
-          <div style="padding:3px 6px">
+          <div style="padding:2px 2px">
             <input type="text" value="${esc(r.spa)}" placeholder="" readonly
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);opacity:${r.pilot?'1':'0.4'}">
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 2px;color:var(--text);opacity:${r.pilot?'1':'0.4'}">
           </div>
-          <div style="display:flex;align-items:center;justify-content:center;padding:3px 4px">
-            <button class="btn btn-sm btn-danger" onclick="removeFormationRow(${fi},${ri})" style="padding:2px 6px;font-size:11px;clip-path:none;border:none;background:transparent;color:var(--red);cursor:pointer">✕</button>
+          <div style="display:flex;align-items:center;justify-content:center;padding:2px">
+            ${isDestroyed
+              ? `<span title="Destroyed units cannot be deployed" style="width:18px;height:18px;border:2px solid #440000;background:rgba(136,0,0,.2);display:flex;align-items:center;justify-content:center;cursor:not-allowed;opacity:0.4">✕</span>`
+              : `<label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0" title="Deploy">
+                <input type="checkbox" ${r.deploy?'checked':''} onchange="toggleDeployUnit(${fi},${ri},this.checked)" style="display:none">
+                <span id="deploy-span-${fi}-${ri}" style="width:18px;height:18px;border:2px solid ${r.deploy?'var(--gold)':'var(--border)'};background:${r.deploy?'var(--gold)':'transparent'};display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0">
+                  ${r.deploy?'<span style="color:#000;font-size:11px;font-weight:700;line-height:1">✓</span>':''}
+                </span>
+              </label>`}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center">
+            <button onclick="removeFormationRow(${fi},${ri})" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px">✕</button>
           </div>
         </div>`;
       }).join('')}
       <!-- Formation BV total -->
       <div style="display:flex;align-items:center;padding:8px 14px;border-top:1px solid var(--border-gold);background:rgba(201,162,39,.03);gap:16px">
-        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Formation ${bvLabel}</span>
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Formation BV</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">
           ${fmt(rows.reduce((s, r) => s + (+r.bv || 0), 0))}
         </span>
       </div>
     </div>`;
   }).join('');
+  updateForceStats();
+}
+
+function patchCheckSpan(spanId, checked, size) {
+  const span = document.getElementById(spanId);
+  if (!span) return;
+  span.style.border = '2px solid ' + (checked ? 'var(--gold)' : 'var(--border)');
+  span.style.background = checked ? 'var(--gold)' : 'transparent';
+  span.innerHTML = checked ? `<span style="color:#000;font-size:${size}px;font-weight:700;line-height:1">✓</span>` : '';
+}
+
+function toggleOmni(fi, ri, checked) {
+  data.forceData.formations[fi].rows[ri].omni = checked;
+  save();
+  patchCheckSpan('omni-span-' + fi + '-' + ri, checked, 10);
+}
+
+function deployFormation(fi, checked) {
+  const rows = data.forceData.formations[fi].rows;
+  rows.forEach((r, ri) => {
+    if (r.unit && r.unit.trim() && r.unitStatus !== 'Destroyed') {
+      r.deploy = checked;
+      patchCheckSpan('deploy-span-' + fi + '-' + ri, checked, 11);
+    }
+  });
+  save();
+  renderDeployment();
+}
+
+function toggleDeployUnit(fi, ri, checked) {
+  const row = data.forceData.formations[fi].rows[ri];
+  if (checked && row.unitStatus === 'Destroyed') { toast('Destroyed units cannot be deployed.'); return; }
+  row.deploy = checked;
+  save();
+  patchCheckSpan('deploy-span-' + fi + '-' + ri, checked, 11);
+  renderDeployment();
 }
 
 function assignPilotToFormation(fi, ri, pilotName) {
@@ -874,26 +1420,32 @@ function removePilotRow(i) {
   renderCoDropdown();
 }
 
+// Called on oninput for text-only fields — just saves, no DOM rebuild
+function updatePilotFieldText(i, field, val) {
+  data.pilotRoster[i][field] = val;
+  save();
+}
+
+// Called on onchange (blur/commit) for fields that affect other panels or need re-render
 function updatePilotField(i, field, val) {
   data.pilotRoster[i][field] = val;
   if (field === 'status' && val === 'KIA') {
     (data.forceData.formations || []).forEach(f => {
       f.rows.forEach(r => {
         if (r.pilot === data.pilotRoster[i].name) {
-          r.pilot = ''; r.gp = ''; r.adv = ''; r.spa = '';
+          r.pilot = ''; r.gp = ''; r.spa = '';
         }
       });
     });
     renderFormations();
   }
-  if (['name','skill','adv','spa'].includes(field)) {
+  if (['name','skill','spa'].includes(field)) {
     const p = data.pilotRoster[i];
     (data.forceData.formations || []).forEach(f => {
       f.rows.forEach(r => {
         if (r.pilot === (field === 'name' ? val : p.name) || r.pilot === p.name) {
           if (field === 'name') r.pilot = val;
           else if (field === 'skill') r.gp = val;
-          else if (field === 'adv') r.adv = val;
           else if (field === 'spa') r.spa = val;
         }
       });
@@ -907,16 +1459,19 @@ function updatePilotField(i, field, val) {
 
 function updatePilotWounds(i, val) {
   const wounds = +val;
+  const prev = data.pilotRoster[i].status;
   data.pilotRoster[i].wounds = wounds;
-  if (wounds >= 6) {
-    data.pilotRoster[i].status = 'KIA';
-  } else if (wounds >= 1) {
-    if (data.pilotRoster[i].status === 'Active') data.pilotRoster[i].status = 'Wounded';
-  } else {
-    if (data.pilotRoster[i].status === 'Wounded') data.pilotRoster[i].status = 'Active';
-  }
+  let newStatus = prev;
+  if (wounds >= 6)                             newStatus = 'KIA';
+  else if (wounds >= 1 && prev === 'Active')   newStatus = 'Wounded';
+  else if (wounds === 0 && prev === 'Wounded') newStatus = 'Active';
+  data.pilotRoster[i].status = newStatus;
   save();
-  renderPilotRoster();
+  // Full re-render only when status changes — otherwise just save
+  if (newStatus !== prev) {
+    renderPilotRoster();
+    renderCoDropdown();
+  }
 }
 
 function renderCoDropdown() {
@@ -953,7 +1508,7 @@ function renderPilotRoster() {
     const statusColor = PILOT_STATUS_COLORS[p.status] || 'var(--text)';
     const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06)' :
                   p.wounds > 0 ? 'background:rgba(201,162,39,.04)' : '';
-    return `<div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border);${rowBg}">
+    return `<div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border);${rowBg}">
       <div style="display:flex;align-items:center;justify-content:center;padding:4px 2px;color:var(--text-dim);font-size:13px">⠿</div>
       <div style="padding:3px 4px">
         <select onchange="updatePilotField(${i},'type',this.value)"
@@ -963,37 +1518,32 @@ function renderPilotRoster() {
       </div>
       <div style="padding:3px 6px">
         <input type="text" value="${esc(p.name)}" placeholder="Full Name"
-          oninput="updatePilotField(${i},'name',this.value)"
+          oninput="updatePilotFieldText(${i},'name',this.value)" onchange="updatePilotField(${i},'name',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text)">
       </div>
       <div style="padding:3px 6px">
         <input type="text" value="${esc(p.rank)}" placeholder="Rank"
-          oninput="updatePilotField(${i},'rank',this.value)"
+          oninput="updatePilotFieldText(${i},'rank',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:13px;padding:5px 4px;color:var(--text-dim)">
       </div>
       <div style="padding:3px 6px">
         <input type="text" value="${esc(p.callsign)}" placeholder='"Callsign"'
-          oninput="updatePilotField(${i},'callsign',this.value)"
+          oninput="updatePilotFieldText(${i},'callsign',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text-dim)">
       </div>
       <div style="padding:3px 6px">
         <input type="text" value="${esc(p.unit)}" placeholder="Assigned 'Mech"
-          oninput="updatePilotField(${i},'unit',this.value)"
+          oninput="updatePilotFieldText(${i},'unit',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text-dim)">
       </div>
       <div style="padding:3px 6px">
         <input type="text" value="${esc(p.skill)}" placeholder="4/5"
-          oninput="updatePilotField(${i},'skill',this.value)"
+          oninput="updatePilotFieldText(${i},'skill',this.value)" onchange="updatePilotField(${i},'skill',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text);text-align:center">
       </div>
       <div style="padding:3px 6px">
-        <input type="number" value="${p.adv||0}" min="0"
-          oninput="updatePilotField(${i},'adv',+this.value)"
-          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--gold);text-align:center">
-      </div>
-      <div style="padding:3px 6px">
         <input type="text" value="${esc(p.spa)}" placeholder="SPAs"
-          oninput="updatePilotField(${i},'spa',this.value)"
+          oninput="updatePilotFieldText(${i},'spa',this.value)" onchange="updatePilotField(${i},'spa',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text-dim)">
       </div>
       <div style="padding:3px 6px">
@@ -1009,7 +1559,7 @@ function renderPilotRoster() {
       </div>
       <div style="padding:3px 6px">
         <input type="text" value="${esc(p.notes)}" placeholder="Notes…"
-          oninput="updatePilotField(${i},'notes',this.value)"
+          oninput="updatePilotFieldText(${i},'notes',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:13px;padding:5px 4px;color:var(--text-dim)">
       </div>
       <div style="display:flex;align-items:center;justify-content:center">
@@ -1162,6 +1712,369 @@ function renderJournal() {
       </div>
     </div>`;
   }).join('');
+}
+
+
+
+// ─────────────────────────────────────────
+// DEPLOYMENT
+// ─────────────────────────────────────────
+function renderDeployment() {
+  const formations = (data.forceData && data.forceData.formations) || [];
+  const deployed = [];
+
+  formations.forEach(f => {
+    (f.rows || []).forEach(r => {
+      if (r.deploy && r.unit && r.unit.trim()) {
+        deployed.push({
+          unit:      r.unit,
+          tons:      +(r.tons || 0),
+          bv:        +(r.bv   || 0),
+          techBase:  r.techBase  || '',
+          pilot:     r.pilot     || '',
+          formation: f.label     || ''
+        });
+      }
+    });
+  });
+
+  const panel = document.getElementById('deployment-panel');
+  const empty = document.getElementById('deployment-empty');
+  const rows  = document.getElementById('deployment-rows');
+
+  if (!deployed.length) {
+    if (panel) panel.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    setText('deploy-total-units', '0');
+    setText('deploy-total-bv',    '0');
+    setText('deploy-total-tons',  '0');
+    recalcDeployment();
+    return;
+  }
+
+  if (panel) panel.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+
+  const TECH_COLORS = { IS: 'var(--text)', Clan: 'var(--gold)', Mixed: '#6ab0e8' };
+
+  rows.innerHTML = deployed.map((d, i) => {
+    const rowBg = i % 2 === 1 ? 'background:rgba(255,255,255,.02)' : '';
+    const techColor = TECH_COLORS[d.techBase] || 'var(--text-dim)';
+    return `<div style="display:grid;grid-template-columns:32px 2.5fr 70px 80px 120px 1fr 90px;gap:0;border-bottom:1px solid rgba(42,48,64,.4);${rowBg}">
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);text-align:center">${i + 1}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:var(--text)">${esc(d.unit)}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);text-align:right">${d.tons || '—'}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--gold);text-align:right;font-weight:700">${d.bv ? fmt(d.bv) : '—'}</div>
+      <div style="padding:8px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:${techColor};letter-spacing:0.5px">${d.techBase || '—'}</div>
+      <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">${esc(d.pilot) || '—'}</div>
+      <div style="padding:8px;font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--text-dim);text-align:center;letter-spacing:0.5px">${esc(d.formation)}</div>
+    </div>`;
+  }).join('');
+
+  const totalUnits = deployed.length;
+  const totalBv    = deployed.reduce((s, d) => s + d.bv,   0);
+  const totalTons  = deployed.reduce((s, d) => s + d.tons, 0);
+
+  setText('deploy-total-units', fmt(totalUnits));
+  setText('deploy-total-bv',    fmt(totalBv));
+  setText('deploy-total-tons',  fmt(totalTons));
+
+  recalcDeployment();
+  recalcEnemyStrength();
+}
+
+function recalcDeployment() {
+  const pctEl    = document.getElementById('deploy-pct');
+  const metricEl = document.getElementById('deploy-metric');
+  const resultEl = document.getElementById('deploy-calc-result');
+  if (!resultEl) return;
+
+  const pct    = parseFloat((pctEl    || {}).value);
+  const metric = (metricEl || {}).value || 'bv';
+  const labels = { bv: 'BV', units: 'Units', tons: 'Tons' };
+
+  // Read force totals (from top panel stat boxes)
+  const totalUnits = parseInt(document.getElementById('force-unit-count')?.textContent?.replace(/,/g,'') || '0');
+  const totalBv    = parseInt(document.getElementById('force-total-bv')?.textContent?.replace(/,/g,'')    || '0');
+  const totalTons  = parseInt(document.getElementById('force-total-tons')?.textContent?.replace(/,/g,'')  || '0');
+
+  // Read deployed totals (from deployment footer)
+  const deployedUnits = parseInt(document.getElementById('deploy-total-units')?.textContent?.replace(/,/g,'') || '0');
+  const deployedBv    = parseInt(document.getElementById('deploy-total-bv')?.textContent?.replace(/,/g,'')    || '0');
+  const deployedTons  = parseInt(document.getElementById('deploy-total-tons')?.textContent?.replace(/,/g,'')  || '0');
+
+  // Reset all footer totals to gold first
+  const elU = document.getElementById('deploy-total-units');
+  const elB = document.getElementById('deploy-total-bv');
+  const elT = document.getElementById('deploy-total-tons');
+  if (elU) elU.style.color = 'var(--gold)';
+  if (elB) elB.style.color = 'var(--gold)';
+  if (elT) elT.style.color = 'var(--gold)';
+
+  // Helper: update one overage span
+  function setOverageSpan(spanId, deployed, allocation) {
+    const el = document.getElementById(spanId);
+    if (!el) return;
+    if (isNaN(pct) || pct <= 0) { el.style.display = 'none'; return; }
+    const diff = deployed - allocation;
+    el.style.display = 'inline';
+    if (diff > 0) {
+      el.textContent = '(+' + fmt(diff) + ')';
+      el.style.color = 'var(--red)';
+    } else {
+      el.textContent = '(' + fmt(diff) + ')';
+      el.style.color = 'var(--green-bright)';
+    }
+  }
+
+  if (isNaN(pct) || pct <= 0) {
+    resultEl.textContent = '—';
+    resultEl.style.color = 'var(--gold)';
+    resultEl.style.borderColor = 'var(--border-gold)';
+    resultEl.style.background = 'rgba(201,162,39,.08)';
+    // Hide all overage spans
+    ['deploy-overage-units','deploy-overage-bv','deploy-overage-tons'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    recalcEnemyStrength();
+    return;
+  }
+
+  const allocUnits = Math.round(totalUnits * (pct / 100));
+  const allocBv    = Math.round(totalBv    * (pct / 100));
+  const allocTons  = Math.round(totalTons  * (pct / 100));
+
+  // Show overage for all three metrics in the footer
+  setOverageSpan('deploy-overage-units', deployedUnits, allocUnits);
+  setOverageSpan('deploy-overage-bv',    deployedBv,    allocBv);
+  setOverageSpan('deploy-overage-tons',  deployedTons,  allocTons);
+
+  // Allocation box: show the allocation for the selected metric (always gold)
+  let allocation = 0;
+  if (metric === 'bv')    allocation = allocBv;
+  if (metric === 'units') allocation = allocUnits;
+  if (metric === 'tons')  allocation = allocTons;
+
+  resultEl.textContent = fmt(allocation) + ' ' + (labels[metric] || '');
+  resultEl.style.color = 'var(--gold)';
+  resultEl.style.borderColor = 'var(--border-gold)';
+  resultEl.style.background  = 'rgba(201,162,39,.08)';
+
+  // Reset footer total colors (overage spans handle the feedback now)
+  if (elU) elU.style.color = 'var(--gold)';
+  if (elB) elB.style.color = 'var(--gold)';
+  if (elT) elT.style.color = 'var(--gold)';
+
+  recalcEnemyStrength();
+}
+
+
+function recalcEnemyStrength() {
+  const pctEl    = document.getElementById('enemy-pct');
+  const resultEl = document.getElementById('enemy-calc-result');
+  if (!resultEl) return;
+
+  // Share the same metric as the Force Allocation calculator
+  const metric = (document.getElementById('deploy-metric') || {}).value || 'bv';
+  const labels = { bv: 'BV', units: 'Units', tons: 'Tons' };
+
+  // Get the deployed total for the active metric
+  const deployedUnits = parseInt(document.getElementById('deploy-total-units')?.textContent?.replace(/,/g,'') || '0');
+  const deployedBv    = parseInt(document.getElementById('deploy-total-bv')?.textContent?.replace(/,/g,'')    || '0');
+  const deployedTons  = parseInt(document.getElementById('deploy-total-tons')?.textContent?.replace(/,/g,'')  || '0');
+
+  let deployed = 0;
+  if (metric === 'bv')    deployed = deployedBv;
+  if (metric === 'units') deployed = deployedUnits;
+  if (metric === 'tons')  deployed = deployedTons;
+
+  // Update the reference labels
+  const metricLbl   = document.getElementById('enemy-metric-label');
+  const deployedLbl = document.getElementById('enemy-deployed-val');
+  if (metricLbl)   metricLbl.textContent   = labels[metric] || 'BV';
+  if (deployedLbl) deployedLbl.textContent = fmt(deployed);
+
+  const pct = parseFloat((pctEl || {}).value);
+  if (isNaN(pct) || pct <= 0) { resultEl.textContent = '—'; resultEl.style.color = 'var(--gold)'; return; }
+
+  const result = Math.round(deployed * (pct / 100));
+  resultEl.textContent = fmt(result) + ' ' + (labels[metric] || '');
+  resultEl.style.color = 'var(--gold)';
+}
+
+function clearAllDeploy() {
+  if (!confirm('Clear all deployment selections?')) return;
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => { r.deploy = false; });
+  });
+  save();
+  renderFormations();
+  renderDeployment();
+  toast('Deployment cleared.');
+}
+
+// ─────────────────────────────────────────
+// CSV IMPORT
+// ─────────────────────────────────────────
+function previewCsvImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('csv-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const result = parseMekBayCsv(e.target.result);
+    if (result.error) {
+      document.getElementById('csv-preview').innerHTML =
+        `<div style="color:var(--red);font-size:12px;padding:8px;letter-spacing:1px">${esc(result.error)}</div>`;
+      return;
+    }
+    renderCsvPreview(result.formations);
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function parseMekBayCsv(text) {
+  // Strip BOM
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.trim().split(/\r?\n/)
+  if (lines.length < 2) return { error: 'CSV must have a header row and at least one data row.' };
+
+  function splitCsvLine(line) {
+    const result = [];
+    let cur = '', inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === ',' && !inQuote) { result.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+  const col = k => headers.indexOf(k.toLowerCase());
+
+  const iGroup   = col('group');
+  const iChassis = col('chassis');
+  const iModel   = col('model');
+  const iTons    = col('tonnage');
+  const iBV      = col('bv');
+  const iTech    = col('techbase');
+  const iOmni    = col('omni');
+
+  if (iChassis === -1) return { error: 'CSV must have a "chassis" column.' };
+
+  const get = (row, i) => i === -1 ? '' : (row[i] || '').replace(/^"|"$/g, '').trim();
+
+  const formationMap = {};
+  const formationOrder = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const row = splitCsvLine(lines[i]);
+
+    const chassis = get(row, iChassis);
+    const model   = get(row, iModel);
+    if (!chassis) continue;
+
+    const unit = model ? `${chassis} ${model}` : chassis;
+
+    // Group label: use text before first comma in group col, or fallback
+    let groupRaw = iGroup !== -1 ? get(row, iGroup) : '';
+    const formLabel = groupRaw ? groupRaw.split(' - ').pop().trim() || groupRaw : 'Formation 1';
+
+    if (!formationMap[formLabel]) {
+      formationMap[formLabel] = [];
+      formationOrder.push(formLabel);
+    }
+
+    // Tech base mapping
+    const techRaw = get(row, iTech).toLowerCase();
+    let techBase = '';
+    if (techRaw === 'inner sphere') techBase = 'IS';
+    else if (techRaw === 'clan') techBase = 'Clan';
+    else if (techRaw === 'mixed') techBase = 'Mixed';
+
+    // Omni: "1", "true", "yes" → true
+    const omniRaw = get(row, iOmni).toLowerCase();
+    const omni = ['1', 'true', 'yes', 'x'].includes(omniRaw);
+
+    formationMap[formLabel].push({
+      unit, tons: get(row, iTons), bv: get(row, iBV),
+      techBase, omni,
+      unitStatus: '', deploy: false,
+      pilot: '', gp: '', adv: '', spa: ''
+    });
+  }
+
+  if (!formationOrder.length) return { error: 'No valid unit rows found in CSV.' };
+  return { formations: formationOrder.map(label => ({ label, rows: formationMap[label] })) };
+}
+
+function renderCsvPreview(formations) {
+  const totalUnits = formations.reduce((s, f) => s + f.rows.length, 0);
+  const TECH_COLORS = { IS: 'var(--text)', Clan: 'var(--gold)', Mixed: '#6ab0e8' };
+
+  const previewRows = formations.map(f => `
+    <div style="margin-bottom:10px">
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px">
+        ${esc(f.label)} — ${f.rows.length} unit${f.rows.length !== 1 ? 's' : ''}
+      </div>
+      ${f.rows.map(r => `
+        <div style="display:flex;gap:12px;font-family:'Share Tech Mono',monospace;font-size:12px;padding:3px 8px;border-left:2px solid var(--border-gold);align-items:center">
+          <span style="flex:2;color:var(--text)">${esc(r.unit)}</span>
+          <span style="color:var(--text-dim);min-width:40px">${r.tons ? r.tons + 'T' : '—'}</span>
+          <span style="color:var(--gold);min-width:60px">${r.bv ? 'BV ' + r.bv : '—'}</span>
+          ${r.techBase ? `<span style="color:${TECH_COLORS[r.techBase]||'var(--text-dim)'};font-size:11px">${r.techBase}</span>` : ''}
+          ${r.omni ? `<span style="color:var(--gold);font-size:11px">OMNI</span>` : ''}
+        </div>`).join('')}
+    </div>`).join('');
+
+  const preview = document.getElementById('csv-preview');
+  preview.innerHTML = `
+    <div style="border:1px solid var(--border-gold);padding:14px;background:rgba(201,162,39,.04);margin-top:4px">
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">
+        Preview — ${formations.length} formation${formations.length !== 1 ? 's' : ''}, ${totalUnits} unit${totalUnits !== 1 ? 's' : ''}
+      </div>
+      <div style="max-height:280px;overflow-y:auto;margin-bottom:12px">${previewRows}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="commitCsvImport('replace')" style="border-color:var(--green);color:var(--green-bright)">✓ Replace All Formations</button>
+        <button class="btn" onclick="commitCsvImport('append')" style="border-color:var(--accent);color:#6ab0e8">+ Append to Force</button>
+        <button class="btn btn-sm btn-danger" onclick="cancelCsvImport()">✕ Cancel</button>
+      </div>
+    </div>`;
+  preview._pendingFormations = formations;
+}
+
+function commitCsvImport(mode) {
+  const preview = document.getElementById('csv-preview');
+  const formations = preview._pendingFormations;
+  if (!formations) return;
+  if (!data.forceData) data.forceData = {};
+
+  if (mode === 'replace') {
+    if (!confirm(`Replace all existing formations with ${formations.length} formation(s) from CSV?`)) return;
+    data.forceData.formations = formations;
+    toast('Force Record replaced from CSV.');
+  } else {
+    data.forceData.formations = [...(data.forceData.formations || []), ...formations];
+    toast(`${formations.length} formation(s) appended to Force Record.`);
+  }
+
+  save();
+  renderFormations();
+  cancelCsvImport();
+}
+
+function cancelCsvImport() {
+  const preview = document.getElementById('csv-preview');
+  if (preview) { preview.innerHTML = ''; preview._pendingFormations = null; }
+  const fn = document.getElementById('csv-filename');
+  if (fn) fn.textContent = 'No file chosen';
+  const input = document.getElementById('csvImportFile');
+  if (input) input.value = '';
 }
 
 // ─────────────────────────────────────────
