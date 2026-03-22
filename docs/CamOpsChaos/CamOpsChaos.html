@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BattleTech — Chaos Campaign Tracker</title>
+<meta name="theme-color" content="#c9a227">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BT Chaos Campaign">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  :root {
+    --gold: #c9a227;
+    --gold-light: #e8c84a;
+    --dark: #0d0e10;
+    --darker: #080909;
+    --panel: #13161a;
+    --panel2: #1a1e24;
+    --border: #2a3040;
+    --border-gold: #4a3a10;
+    --text: #cdd4e0;
+    --text-dim: #7a8499;
+    --red: #cc2233;
+    --red-dim: rgba(204,34,51,.08);
+    --green: #2a7a4a;
+    --green-bright: #2ecc71;
+    --accent: #1e4a6e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--darker);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  header {
+    background: linear-gradient(180deg, #000 0%, #0d0e10 100%);
+    border-bottom: 2px solid var(--gold);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(0,0,0,.8);
+  }
+  .header-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 20px;
+    flex-wrap: wrap;
+  }
+  .logo-text {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(201,162,39,.4);
+    line-height: 1;
+  }
+  .logo-sub {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    letter-spacing: 8px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+  .nav-tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 8px 18px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .2s;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .nav-tab:hover { background: var(--panel2); color: var(--text); border-color: var(--gold); }
+  .nav-tab.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1600px; margin: 0 auto; padding: 24px 20px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── SECTION HEADERS ── */
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: linear-gradient(90deg, rgba(201,162,39,.15) 0%, transparent 100%);
+    border-left: 3px solid var(--gold);
+    padding: 6px 12px;
+    margin-bottom: 12px;
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .panel-gold { border-color: var(--border-gold); }
+
+  /* ── GRID HELPERS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%;
+    background: var(--darker);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    background: #111318;
+  }
+  input[type=number] { -moz-appearance: textfield; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  textarea { resize: vertical; min-height: 60px; }
+  select { cursor: pointer; }
+  select option { background: var(--panel); }
+  .field { margin-bottom: 12px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    background: transparent; border: 1px solid var(--gold);
+    color: var(--gold); padding: 10px 20px;
+    font-family: 'Oswald', sans-serif; font-size: 13px;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all .2s;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  }
+  .btn:hover { background: var(--gold); color: #000; }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+  .btn-sm { padding: 5px 12px; font-size: 11px; clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%); }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .divider-gold { border-color: var(--border-gold); }
+
+  /* ── STAT BOX ── */
+  .stat-box {
+    background: var(--panel2); border: 1px solid var(--border);
+    padding: 10px; text-align: center;
+  }
+  .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 24px; color: var(--gold); font-weight: 700; }
+  .stat-lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── CHECKBOX ── */
+  .check-label {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; text-transform: uppercase;
+    font-size: 12px; letter-spacing: 1px; color: var(--text-dim);
+    font-weight: 600;
+  }
+  input[type=checkbox] { display: none; }
+  .checkmark {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .2s;
+  }
+  input[type=checkbox]:checked + .checkmark { background: var(--gold); border-color: var(--gold); }
+  input[type=checkbox]:checked + .checkmark::after { content: '✓'; color: #000; font-size: 13px; font-weight: 700; }
+
+  /* ── TABLES ── */
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: rgba(201,162,39,.12);
+    border: 1px solid var(--border-gold);
+    padding: 8px 10px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--gold);
+    text-align: left; font-weight: 600;
+  }
+  td { border: 1px solid var(--border); padding: 4px 6px; }
+  td input[type=text], td input[type=number] {
+    background: transparent; border: none;
+    padding: 4px; font-size: 13px; font-family: 'Share Tech Mono', monospace;
+  }
+  td input[type=text]:focus, td input[type=number]:focus {
+    background: rgba(201,162,39,.06); border: none; outline: none;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+  tr:hover td { background: rgba(201,162,39,.04); }
+
+  /* ── COST REFERENCE CARD ── */
+  .ref-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+  .ref-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .ref-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; border-bottom: 1px solid rgba(42,48,64,.6);
+    font-size: 13px;
+  }
+  .ref-row:last-child { border-bottom: none; }
+  .ref-cost {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--gold); font-size: 12px; font-weight: 700;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--gold); color: #000;
+    padding: 12px 20px; font-family: 'Oswald', sans-serif;
+    font-size: 14px; letter-spacing: 2px; text-transform: uppercase;
+    opacity: 0; transform: translateY(10px);
+    transition: all .3s; pointer-events: none; z-index: 999;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── JOURNAL ── */
+  .journal-entry {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-gold);
+    margin-bottom: 20px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .journal-entry:hover { border-left-color: var(--gold); box-shadow: 0 0 16px rgba(201,162,39,.07); }
+  .journal-entry.type-ic { border-left-color: var(--gold); }
+  .journal-entry.type-gm { border-left-color: #2a6aaa; }
+  .journal-entry-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px 10px; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.018); flex-wrap: wrap;
+  }
+  .journal-type-badge {
+    font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; padding: 3px 10px; flex-shrink: 0;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .badge-ic { background: rgba(201,162,39,.18); border: 1px solid var(--border-gold); color: var(--gold); }
+  .badge-gm { background: rgba(30,74,110,.35); border: 1px solid #2a5a8a; color: #6ab0e8; }
+  .journal-entry-title-display {
+    font-family: 'Oswald', sans-serif; font-size: 17px; font-weight: 600;
+    letter-spacing: 1px; color: var(--text); flex: 1; min-width: 0;
+  }
+  .journal-entry-date-display {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); flex-shrink: 0;
+  }
+  .journal-body { padding: 12px 16px 0; }
+  .journal-body textarea {
+    min-height: 160px; background: rgba(0,0,0,.25); border-color: var(--border);
+    font-size: 14px; line-height: 1.75; letter-spacing: 0.3px; color: var(--text); resize: vertical;
+  }
+  .journal-body textarea:focus { border-color: var(--gold); background: rgba(0,0,0,.35); }
+  .journal-entry-fields {
+    display: grid; grid-template-columns: 1fr 180px 160px auto;
+    gap: 10px; align-items: end; padding: 10px 16px 14px;
+  }
+  .journal-empty {
+    text-align: center; padding: 60px 20px; color: var(--text-dim);
+    border: 1px dashed var(--border); background: var(--panel);
+  }
+  .journal-empty-icon { font-size: 40px; margin-bottom: 14px; }
+  .journal-empty-title {
+    font-family: 'Oswald', sans-serif; font-size: 18px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .journal-empty-sub { font-size: 13px; color: var(--text-dim); letter-spacing: 0.5px; }
+  .journal-filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .journal-filter-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 6px 16px; font-family: 'Oswald', sans-serif; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .journal-filter-btn:hover { border-color: var(--gold); color: var(--text); }
+  .journal-filter-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+  .journal-count { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 1px; margin-left: auto; }
+
+  /* ── DRAG & DROP ── */
+  .drag-handle {
+    cursor: grab; color: var(--border); font-size: 16px;
+    padding: 0 6px; user-select: none; transition: color .15s;
+    display: flex; align-items: center; flex-shrink: 0;
+  }
+  .drag-handle:hover { color: var(--gold); }
+  .drag-handle:active { cursor: grabbing; }
+  [draggable=true] { transition: opacity .15s; }
+  [draggable=true].dragging { opacity: 0.35; }
+  .drag-over-top { box-shadow: 0 -2px 0 var(--gold) !important; }
+  .drag-over-bottom { box-shadow: 0 2px 0 var(--gold) !important; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .nav-tabs { gap: 2px; }
+    .nav-tab { padding: 6px 10px; font-size: 11px; }
+    .logo-text { font-size: 20px; }
+    .journal-entry-fields { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="logo-text">BattleTech</div>
+      <div class="logo-sub">Chaos Campaign Tracker</div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('force', this)">Force Record</button>
+      <button class="nav-tab" onclick="showPage('ref', this)">Reference</button>
+      <button class="nav-tab" onclick="showPage('journal', this)">Journal</button>
+      <button class="nav-tab" onclick="showPage('settings', this)">Settings</button>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════
+     PAGE 1 · FORCE RECORD SHEET
+══════════════════════════════════════════════ -->
+<div id="page-force" class="page active">
+
+  <div class="section-title">Force Record Sheet</div>
+
+  <!-- Force Identity -->
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Force Name</label>
+        <input type="text" id="force-name" placeholder="e.g. Iron Panthers" oninput="saveForce()">
+      </div>
+      <div class="field">
+        <label>Commanding Officer</label>
+        <select id="force-co" onchange="saveForce()">
+          <option value="">— Select CO —</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr;gap:12px">
+      <div class="field">
+        <label>Warchest (WP)</label>
+        <input type="number" id="force-warchest" placeholder="0" oninput="saveForce()">
+      </div>
+    </div>
+    <div class="field" style="margin-top:4px;margin-bottom:0">
+      <label>Notes</label>
+      <input type="text" id="force-notes" placeholder="Special abilities, ongoing effects, campaign notes…" oninput="saveForce()">
+    </div>
+  </div>
+
+  <!-- Formations -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div class="section-title" style="margin:0;flex:1">Formations</div>
+    <button class="btn btn-sm" onclick="addFormation()">+ Add Formation</button>
+  </div>
+
+  <div id="force-formations" style="margin-bottom:16px"></div>
+
+  <!-- Pilot / Crew Roster -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
+    <div class="section-title" style="margin:0;flex:1">Pilot &amp; Crew Roster</div>
+    <button class="btn btn-sm" onclick="addPilotRow()">+ Add Pilot</button>
+  </div>
+
+  <div class="panel" style="padding:0;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="padding:7px 8px"></div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Name</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Rank</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Callsign</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Assigned Unit</div>
+      <div id="pilot-skill-header" style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">G/P Skill</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">ADV</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">SPAs</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Wounds</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Status</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Notes</div>
+      <div style="padding:7px 8px"></div>
+    </div>
+    <div id="pilot-roster-rows"></div>
+    <div id="pilot-roster-empty" style="display:none;text-align:center;color:var(--text-dim);padding:16px;font-size:13px;letter-spacing:1px">
+      No pilots on roster. Add a pilot to begin.
+    </div>
+  </div>
+
+</div><!-- /page-force -->
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 2 · REFERENCE
+══════════════════════════════════════════════ -->
+<div id="page-ref" class="page">
+
+  <div class="section-title">Reference</div>
+
+  <div class="panel" style="text-align:center;padding:60px 20px">
+    <div style="font-size:40px;margin-bottom:16px">📖</div>
+    <div style="font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Reference Material Coming Soon</div>
+    <div style="font-size:13px;color:var(--text-dim);letter-spacing:0.5px">This section will be populated with Chaos Campaign rules, tables, and quick reference information.</div>
+  </div>
+
+</div><!-- /page-ref -->
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 3 · JOURNAL
+══════════════════════════════════════════════ -->
+<div id="page-journal" class="page">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="section-title" style="margin:0;flex:1">Campaign Journal</div>
+    <button class="btn" onclick="addJournalEntry()" style="border-color:var(--green);color:var(--green-bright)">✦ New Entry</button>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="journal-filter-bar">
+    <button class="journal-filter-btn active" onclick="setJournalFilter('all', this)">All</button>
+    <button class="journal-filter-btn" onclick="setJournalFilter('ic', this)">In Character</button>
+    <button class="journal-filter-btn" onclick="setJournalFilter('gm', this)">GM / Notes</button>
+    <span class="journal-count" id="journal-count"></span>
+  </div>
+
+  <!-- Entries -->
+  <div id="journal-entries-list"></div>
+
+</div><!-- /page-journal -->
+
+
+<!-- ══════════════════════════════════════════════
+     PAGE 4 · SETTINGS
+══════════════════════════════════════════════ -->
+<div id="page-settings" class="page">
+  <div class="section-title">Settings</div>
+
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div class="section-title" style="margin-bottom:12px">Force Options</div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:0">Clan / Mixed Tech Repair Multiplier</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="clan-tech-mult" min="1" max="5" step="0.1" value="2"
+            onchange="setClanTechMult(this.value)"
+            style="width:90px;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:7px 10px;font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;text-align:center">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim)">× base repair cost</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      Applied to repair costs when a unit's Tech Base is set to <strong style="color:var(--gold)">Clan</strong> or <strong style="color:#6ab0e8">Mixed</strong>. Default is <strong style="color:var(--text)">2×</strong>.
+    </div>
+  </div>
+
+  <div class="panel panel-gold" style="margin-bottom:16px">
+    <div class="section-title" style="margin-bottom:12px">Save &amp; Load</div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveAll()">💾 Save All Data</button>
+      <button class="btn btn-danger" onclick="clearAll()">✕ Clear All Data</button>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      Data is automatically saved to your browser's local storage. Use <strong style="color:var(--text)">Save All Data</strong> to manually force a save. <strong style="color:var(--red)">Clear All Data</strong> will permanently erase everything.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title" style="margin-bottom:12px">Export &amp; Import</div>
+    <div class="btn-row">
+      <button class="btn" onclick="exportData()">⬇ Export Data (JSON)</button>
+      <button class="btn" onclick="document.getElementById('importFile').click()">⬆ Import Data (JSON)</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      Export your campaign data as a JSON file to back it up or transfer it. Import a previously exported file to restore your data.
+    </div>
+  </div>
+
+</div><!-- /page-settings -->
+
+</div><!-- /container -->
+
+<footer style="max-width:1200px;margin:0 auto;padding:12px 20px 24px;text-align:center;color:var(--text-dim);font-size:10px;letter-spacing:0.5px;line-height:1.6;border-top:1px solid var(--border);margin-top:8px;">
+  BattleTech, 'Mech, BattleMech, MechWarrior and related marks are registered trademarks of The Topps Company, Inc. © 2025 The Topps Company, Inc., All rights reserved.
+</footer>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────
+// DATA MODEL
+// ─────────────────────────────────────────
+let journalFilter = 'all';
+
+let data = {
+  clanTechMult: 2,
+  journalEntries: [],
+  pilotRoster: [],
+  forceData: {
+    name: '', co: '', scale: '', bvAvail: '', warchest: '', rep: '', notes: '',
+    formations: [
+      { label: 'Formation 1', rows: Array(4).fill(null).map(() => ({ unit:'', pilot:'', tons:'', bv:'', gp:'', adv:'', spa:'' })) }
+    ]
+  }
+};
+
+// ─────────────────────────────────────────
+// PERSISTENCE
+// ─────────────────────────────────────────
+function loadData() {
+  try {
+    const saved = localStorage.getItem('btChaosCampaign');
+    if (saved) data = { ...data, ...JSON.parse(saved) };
+    if (!data.forceData) data.forceData = {
+      name:'', co:'', scale:'', bvAvail:'', warchest:'', rep:'', notes:'',
+      formations:[{ label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',pilot:'',tons:'',bv:'',gp:'',adv:'',spa:''})) }]
+    };
+    if (!data.forceData.formations) data.forceData.formations = [];
+    if (!data.journalEntries) data.journalEntries = [];
+    if (!data.pilotRoster) data.pilotRoster = [];
+  } catch(e) {}
+  renderAll();
+}
+
+function save() {
+  localStorage.setItem('btChaosCampaign', JSON.stringify(data));
+}
+
+function saveAll() { save(); toast('Data saved!'); }
+
+function exportData() {
+  save();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'chaos-campaign-data.json';
+  a.click();
+  toast('Data exported!');
+}
+
+function importData(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      data = { ...data, ...JSON.parse(e.target.result) };
+      localStorage.setItem('btChaosCampaign', JSON.stringify(data));
+      renderAll(); toast('Data imported!');
+    } catch { toast('Import failed — invalid file.'); }
+  };
+  reader.readAsText(file); input.value = '';
+}
+
+function clearAll() {
+  if (!confirm('Clear ALL data? This cannot be undone.')) return;
+  localStorage.removeItem('btChaosCampaign');
+  data = {
+    clanTechMult: 2,
+    journalEntries:[], pilotRoster:[],
+    forceData:{ name:'', co:'', warchest:'', notes:'',
+      formations:[{ label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',pilot:'',tons:'',bv:'',gp:'',adv:'',spa:''})) }]
+    }
+  };
+  renderAll(); toast('All data cleared.');
+}
+
+// ─────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ─────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────
+function sv(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
+function fmt(n) { return Number(n || 0).toLocaleString(); }
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─────────────────────────────────────────
+// RENDER ALL
+// ─────────────────────────────────────────
+function renderAll() {
+  // Force Record fields
+  if (data.forceData) {
+    sv('force-name', data.forceData.name);
+    sv('force-warchest', data.forceData.warchest);
+    sv('force-notes', data.forceData.notes);
+  }
+  // Settings
+  const clanMult = document.getElementById('clan-tech-mult');
+  if (clanMult) clanMult.value = data.clanTechMult || 2;
+
+  renderFormations();
+  renderPilotRoster();
+  renderCoDropdown();
+  renderJournal();
+}
+
+// ─────────────────────────────────────────
+// GAME MODE
+// ─────────────────────────────────────────
+function setClanTechMult(val) {
+  const n = parseFloat(val);
+  data.clanTechMult = (!isNaN(n) && n >= 1) ? n : 1.5;
+  const el = document.getElementById('clan-tech-mult');
+  if (el) el.value = data.clanTechMult;
+  save();
+  toast(`Clan/Mixed repair multiplier set to ×${data.clanTechMult}`);
+}
+
+// ─────────────────────────────────────────
+// FORCE RECORD
+// ─────────────────────────────────────────
+function saveForce() {
+  if (!data.forceData) data.forceData = {};
+  data.forceData.name     = document.getElementById('force-name') ? document.getElementById('force-name').value : '';
+  data.forceData.co       = document.getElementById('force-co') ? document.getElementById('force-co').value : '';
+  data.forceData.warchest = document.getElementById('force-warchest') ? document.getElementById('force-warchest').value : '';
+  data.forceData.notes    = document.getElementById('force-notes') ? document.getElementById('force-notes').value : '';
+  save();
+}
+
+// ─────────────────────────────────────────
+// FORMATIONS
+// ─────────────────────────────────────────
+function addFormation() {
+  if (!data.forceData.formations) data.forceData.formations = [];
+  const num = data.forceData.formations.length + 1;
+  data.forceData.formations.push({
+    label: `Formation ${num}`,
+    rows: Array(4).fill(null).map(() => ({ unit:'', pilot:'', tons:'', bv:'', gp:'', adv:'', spa:'' }))
+  });
+  save();
+  renderFormations();
+}
+
+function removeFormation(fi) {
+  if (!confirm(`Remove Formation ${fi + 1}? This cannot be undone.`)) return;
+  data.forceData.formations.splice(fi, 1);
+  save();
+  renderFormations();
+}
+
+function addFormationRow(fi) {
+  data.forceData.formations[fi].rows.push({ unit:'', pilot:'', tons:'', bv:'', gp:'', adv:'', spa:'' });
+  save();
+  renderFormations();
+}
+
+function removeFormationRow(fi, ri) {
+  data.forceData.formations[fi].rows.splice(ri, 1);
+  save();
+  renderFormations();
+}
+
+function updateFormationLabel(fi, val) {
+  data.forceData.formations[fi].label = val;
+  save();
+}
+
+function updateFormationField(fi, ri, field, val) {
+  data.forceData.formations[fi].rows[ri][field] = val;
+  save();
+}
+
+function renderFormations() {
+  const cont = document.getElementById('force-formations');
+  if (!cont) return;
+  const formations = (data.forceData && data.forceData.formations) || [];
+  const bvLabel = 'BV';
+
+  if (!formations.length) {
+    cont.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:24px;border:1px dashed var(--border);background:var(--panel);margin-bottom:16px;font-size:13px;letter-spacing:1px">No formations. Click <strong style="color:var(--text)">+ Add Formation</strong> to create one.</div>`;
+    return;
+  }
+
+  cont.innerHTML = formations.map((f, fi) => {
+    const rows = f.rows || [];
+    return `
+    <div class="panel panel-gold" style="padding:0;margin-bottom:16px">
+      <!-- Formation Header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.06)">
+        <input type="text" value="${esc(f.label)}" oninput="updateFormationLabel(${fi}, this.value)"
+          style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);padding:0;width:200px;outline:none">
+        <button class="btn btn-sm" onclick="addFormationRow(${fi})" style="margin-left:auto">+ Add Unit</button>
+        <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">✕ Remove</button>
+      </div>
+      <!-- Column Headers -->
+      <div style="display:grid;grid-template-columns:2.5fr 1fr 0.8fr 0.8fr 1.2fr 1.2fr 0.8fr 36px;gap:0;background:rgba(201,162,39,.04);border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 10px">Unit / 'Mech</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">Tons</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">${bvLabel}</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">Crew</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">G/P Skill</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">ADV</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px">SPAs</div>
+        <div style="padding:6px 8px"></div>
+      </div>
+      <!-- Rows -->
+      ${rows.map((r, ri) => {
+        const rowBg = ri % 2 === 1 ? 'background:rgba(255,255,255,.015)' : '';
+        // Build pilot options
+        const pilotOpts = `<option value="">— Unassigned —</option>` +
+          (data.pilotRoster || []).filter(p => p.status !== 'KIA').map((p, pi) => {
+            const lbl = [p.callsign ? `"${p.callsign}"` : '', p.name].filter(Boolean).join(' ');
+            const isAssigned = r.pilot === (p.name || lbl);
+            return `<option value="${esc(p.name || lbl)}" ${isAssigned ? 'selected' : ''}>${esc(lbl || '(Unnamed)')}</option>`;
+          }).join('');
+        return `
+        <div style="display:grid;grid-template-columns:2.5fr 1fr 0.8fr 0.8fr 1.2fr 1.2fr 0.8fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.4);${rowBg}">
+          <div style="padding:3px 8px">
+            <input type="text" value="${esc(r.unit)}" placeholder="e.g. Timber Wolf Prime"
+              oninput="updateFormationField(${fi},${ri},'unit',this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)">
+          </div>
+          <div style="padding:3px 6px">
+            <input type="number" value="${esc(r.tons)}" placeholder="0"
+              oninput="updateFormationField(${fi},${ri},'tons',this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center">
+          </div>
+          <div style="padding:3px 6px">
+            <input type="number" value="${esc(r.bv)}" placeholder="0"
+              oninput="updateFormationField(${fi},${ri},'bv',this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:center">
+          </div>
+          <div style="padding:3px 4px">
+            <select onchange="assignPilotToFormation(${fi},${ri},this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text);cursor:pointer">
+              ${pilotOpts}
+            </select>
+          </div>
+          <div style="padding:3px 6px">
+            <input type="text" value="${esc(r.gp)}" placeholder="4/5" readonly
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${r.pilot?'1':'0.4'}">
+          </div>
+          <div style="padding:3px 6px">
+            <input type="text" value="${esc(r.adv)}" placeholder="" readonly
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${r.pilot?'1':'0.4'}">
+          </div>
+          <div style="padding:3px 6px">
+            <input type="text" value="${esc(r.spa)}" placeholder="" readonly
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);opacity:${r.pilot?'1':'0.4'}">
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;padding:3px 4px">
+            <button class="btn btn-sm btn-danger" onclick="removeFormationRow(${fi},${ri})" style="padding:2px 6px;font-size:11px;clip-path:none;border:none;background:transparent;color:var(--red);cursor:pointer">✕</button>
+          </div>
+        </div>`;
+      }).join('')}
+      <!-- Formation BV total -->
+      <div style="display:flex;align-items:center;padding:8px 14px;border-top:1px solid var(--border-gold);background:rgba(201,162,39,.03);gap:16px">
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Formation ${bvLabel}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">
+          ${fmt(rows.reduce((s, r) => s + (+r.bv || 0), 0))}
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function assignPilotToFormation(fi, ri, pilotName) {
+  const r = data.forceData.formations[fi].rows[ri];
+  const pilot = (data.pilotRoster || []).find(p => (p.name || '') === pilotName);
+  r.pilot = pilotName;
+  if (pilot) {
+    r.gp  = pilot.skill || '';
+    r.adv = pilot.adv   || '';
+    r.spa = pilot.spa   || '';
+    pilot.unit = r.unit || '';
+  } else {
+    r.gp = ''; r.adv = ''; r.spa = '';
+  }
+  save();
+  renderFormations();
+  renderPilotRoster();
+}
+
+// ─────────────────────────────────────────
+// PILOT / CREW ROSTER
+// ─────────────────────────────────────────
+const PILOT_STATUSES = ['Active','Wounded','MIA','KIA','Retired'];
+const PILOT_STATUS_COLORS = {
+  'Active': 'var(--green-bright)',
+  'Wounded': 'var(--gold)',
+  'MIA': '#a0aacc',
+  'KIA': 'var(--red)',
+  'Retired': 'var(--text-dim)'
+};
+
+function addPilotRow() {
+  if (!data.pilotRoster) data.pilotRoster = [];
+  data.pilotRoster.push({ type:'MechWarrior', name:'', rank:'', callsign:'', unit:'', skill:'', adv:0, spa:'', wounds:0, status:'Active', notes:'' });
+  save();
+  renderPilotRoster();
+  renderFormations();
+}
+
+function removePilotRow(i) {
+  data.pilotRoster.splice(i, 1);
+  // Clear formation references
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => {
+      if (r.pilot === (data.pilotRoster[i] && data.pilotRoster[i].name)) {
+        r.pilot = ''; r.gp = ''; r.adv = ''; r.spa = '';
+      }
+    });
+  });
+  save();
+  renderPilotRoster();
+  renderFormations();
+  renderCoDropdown();
+}
+
+function updatePilotField(i, field, val) {
+  data.pilotRoster[i][field] = val;
+  if (field === 'status' && val === 'KIA') {
+    (data.forceData.formations || []).forEach(f => {
+      f.rows.forEach(r => {
+        if (r.pilot === data.pilotRoster[i].name) {
+          r.pilot = ''; r.gp = ''; r.adv = ''; r.spa = '';
+        }
+      });
+    });
+    renderFormations();
+  }
+  if (['name','skill','adv','spa'].includes(field)) {
+    const p = data.pilotRoster[i];
+    (data.forceData.formations || []).forEach(f => {
+      f.rows.forEach(r => {
+        if (r.pilot === (field === 'name' ? val : p.name) || r.pilot === p.name) {
+          if (field === 'name') r.pilot = val;
+          else if (field === 'skill') r.gp = val;
+          else if (field === 'adv') r.adv = val;
+          else if (field === 'spa') r.spa = val;
+        }
+      });
+    });
+    renderFormations();
+  }
+  save();
+  renderPilotRoster();
+  renderCoDropdown();
+}
+
+function updatePilotWounds(i, val) {
+  const wounds = +val;
+  data.pilotRoster[i].wounds = wounds;
+  if (wounds >= 6) {
+    data.pilotRoster[i].status = 'KIA';
+  } else if (wounds >= 1) {
+    if (data.pilotRoster[i].status === 'Active') data.pilotRoster[i].status = 'Wounded';
+  } else {
+    if (data.pilotRoster[i].status === 'Wounded') data.pilotRoster[i].status = 'Active';
+  }
+  save();
+  renderPilotRoster();
+}
+
+function renderCoDropdown() {
+  const sel = document.getElementById('force-co');
+  if (!sel) return;
+  const current = (data.forceData && data.forceData.co) || '';
+  const pilots = (data.pilotRoster || []).filter(p => p.status !== 'KIA');
+  sel.innerHTML = `<option value="">— Select CO —</option>` +
+    pilots.map(p => {
+      const label = [p.rank, p.name, p.callsign ? `"${p.callsign}"` : ''].filter(Boolean).join(' ');
+      const val = p.name || label;
+      return `<option value="${esc(val)}" ${current === val ? 'selected' : ''}>${esc(label || '(Unnamed)')}</option>`;
+    }).join('');
+}
+
+function renderPilotRoster() {
+  if (!data.pilotRoster) data.pilotRoster = [];
+  const cont = document.getElementById('pilot-roster-rows');
+  const empty = document.getElementById('pilot-roster-empty');
+  if (!cont) return;
+
+  if (!data.pilotRoster.length) {
+    cont.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const PILOT_TYPES = ['MechWarrior','Vehicle Crew','Aerospace Pilot','Battle Armor','Infantry','Naval Crew','ProtoMech Pilot'];
+  const statusOpts = PILOT_STATUSES.map(s => `<option value="${s}">${s}</option>`).join('');
+  const typeOpts   = PILOT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  cont.innerHTML = data.pilotRoster.map((p, i) => {
+    const statusColor = PILOT_STATUS_COLORS[p.status] || 'var(--text)';
+    const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06)' :
+                  p.wounds > 0 ? 'background:rgba(201,162,39,.04)' : '';
+    return `<div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border);${rowBg}">
+      <div style="display:flex;align-items:center;justify-content:center;padding:4px 2px;color:var(--text-dim);font-size:13px">⠿</div>
+      <div style="padding:3px 4px">
+        <select onchange="updatePilotField(${i},'type',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:12px;padding:5px 4px;color:var(--text-dim);cursor:pointer">
+          ${PILOT_TYPES.map(t => `<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.name)}" placeholder="Full Name"
+          oninput="updatePilotField(${i},'name',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text)">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.rank)}" placeholder="Rank"
+          oninput="updatePilotField(${i},'rank',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:13px;padding:5px 4px;color:var(--text-dim)">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.callsign)}" placeholder='"Callsign"'
+          oninput="updatePilotField(${i},'callsign',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text-dim)">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.unit)}" placeholder="Assigned 'Mech"
+          oninput="updatePilotField(${i},'unit',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text-dim)">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.skill)}" placeholder="4/5"
+          oninput="updatePilotField(${i},'skill',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--text);text-align:center">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="number" value="${p.adv||0}" min="0"
+          oninput="updatePilotField(${i},'adv',+this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:var(--gold);text-align:center">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.spa)}" placeholder="SPAs"
+          oninput="updatePilotField(${i},'spa',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:5px 4px;color:var(--text-dim)">
+      </div>
+      <div style="padding:3px 6px">
+        <input type="number" value="${p.wounds||0}" min="0" max="6"
+          oninput="updatePilotWounds(${i},this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 4px;color:${p.wounds>0?'var(--red)':'var(--text)'};text-align:center">
+      </div>
+      <div style="padding:3px 4px">
+        <select onchange="updatePilotField(${i},'status',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;padding:5px 4px;color:${statusColor};cursor:pointer">
+          ${PILOT_STATUSES.map(s => `<option value="${s}" ${p.status===s?'selected':''} style="color:${PILOT_STATUS_COLORS[s]||'var(--text)'}">${s}</option>`).join('')}
+        </select>
+      </div>
+      <div style="padding:3px 6px">
+        <input type="text" value="${esc(p.notes)}" placeholder="Notes…"
+          oninput="updatePilotField(${i},'notes',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:13px;padding:5px 4px;color:var(--text-dim)">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <button onclick="removePilotRow(${i})"
+          style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:4px 6px;">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+// JOURNAL
+// ─────────────────────────────────────────
+function addJournalEntry() {
+  if (!data.journalEntries) data.journalEntries = [];
+  const today = new Date().toISOString().split('T')[0];
+  data.journalEntries.unshift({ id: 'j_' + Date.now(), title: '', date: today, type: 'ic', body: '' });
+  save();
+  renderJournal();
+  setTimeout(() => {
+    const first = document.querySelector('.journal-title-input');
+    if (first) first.focus();
+  }, 60);
+}
+
+function deleteJournalEntry(id) {
+  if (!confirm('Delete this journal entry? This cannot be undone.')) return;
+  data.journalEntries = (data.journalEntries || []).filter(e => e.id !== id);
+  save();
+  renderJournal();
+  toast('Entry deleted.');
+}
+
+function updateJournalEntry(id, field, val) {
+  const entry = (data.journalEntries || []).find(e => e.id === id);
+  if (!entry) return;
+  entry[field] = val;
+  if (field === 'type') {
+    const card = document.getElementById('jcard-' + id);
+    if (card) {
+      card.className = `journal-entry type-${val}`;
+      const badge = card.querySelector('.journal-type-badge');
+      if (badge) {
+        badge.className = `journal-type-badge ${val === 'ic' ? 'badge-ic' : 'badge-gm'}`;
+        badge.textContent = val === 'ic' ? 'In Character' : 'GM / Notes';
+      }
+    }
+  }
+  if (field === 'title') {
+    const card = document.getElementById('jcard-' + id);
+    if (card) {
+      const disp = card.querySelector('.journal-entry-title-display');
+      if (disp) disp.textContent = val || '(Untitled)';
+    }
+  }
+  if (field === 'date') {
+    const card = document.getElementById('jcard-' + id);
+    if (card) {
+      const disp = card.querySelector('.journal-entry-date-display');
+      if (disp) disp.textContent = val || '';
+    }
+  }
+  save();
+}
+
+function setJournalFilter(filter, btn) {
+  journalFilter = filter;
+  document.querySelectorAll('.journal-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderJournal();
+}
+
+function renderJournal() {
+  if (!data.journalEntries) data.journalEntries = [];
+  const list = document.getElementById('journal-entries-list');
+  if (!list) return;
+
+  const filtered = journalFilter === 'all'
+    ? data.journalEntries
+    : data.journalEntries.filter(e => e.type === journalFilter);
+
+  const countEl = document.getElementById('journal-count');
+  if (countEl) {
+    const total = data.journalEntries.length;
+    const shown = filtered.length;
+    countEl.textContent = journalFilter === 'all'
+      ? `${total} entr${total !== 1 ? 'ies' : 'y'}`
+      : `${shown} of ${total} entries`;
+  }
+
+  if (!data.journalEntries.length) {
+    list.innerHTML = `
+      <div class="journal-empty">
+        <div class="journal-empty-icon">📖</div>
+        <div class="journal-empty-title">No Journal Entries Yet</div>
+        <div class="journal-empty-sub">Record your campaign's story — in-character field reports,<br>GM notes, session recaps, and mission logs.</div>
+      </div>`;
+    return;
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div class="journal-empty">
+        <div class="journal-empty-icon">🔍</div>
+        <div class="journal-empty-title">No ${journalFilter === 'ic' ? 'In Character' : 'GM / Notes'} Entries</div>
+        <div class="journal-empty-sub">No entries match this filter. Switch to <strong style="color:var(--text)">All</strong> or add a new entry.</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => {
+    const typeClass  = e.type === 'ic' ? 'type-ic' : 'type-gm';
+    const badgeClass = e.type === 'ic' ? 'badge-ic' : 'badge-gm';
+    const badgeLabel = e.type === 'ic' ? 'In Character' : 'GM / Notes';
+    return `
+    <div class="journal-entry ${typeClass}" id="jcard-${esc(e.id)}">
+      <div class="journal-entry-header">
+        <span class="journal-type-badge ${badgeClass}">${badgeLabel}</span>
+        <div class="journal-entry-title-display">${esc(e.title) || '<span style="color:var(--text-dim);font-style:italic">Untitled</span>'}</div>
+        <div class="journal-entry-date-display">${esc(e.date) || ''}</div>
+      </div>
+      <div class="journal-body">
+        <textarea placeholder="Write your entry here — field reports, mission logs, session notes, lore…"
+          oninput="updateJournalEntry('${esc(e.id)}','body',this.value)"
+          style="width:100%">${esc(e.body)}</textarea>
+      </div>
+      <div class="journal-entry-fields">
+        <div class="field" style="margin:0">
+          <label>Entry Title</label>
+          <input type="text" class="journal-title-input" value="${esc(e.title)}" placeholder="e.g. After the Fall of Hesperus II"
+            oninput="updateJournalEntry('${esc(e.id)}','title',this.value)">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Date</label>
+          <input type="date" value="${esc(e.date)}"
+            oninput="updateJournalEntry('${esc(e.id)}','date',this.value)"
+            style="color-scheme:dark">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Entry Type</label>
+          <select onchange="updateJournalEntry('${esc(e.id)}','type',this.value)"
+            style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:14px;width:100%">
+            <option value="ic" ${e.type==='ic'?'selected':''}>In Character</option>
+            <option value="gm" ${e.type==='gm'?'selected':''}>GM / Notes</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:1px">
+          <button class="btn btn-sm btn-danger" onclick="deleteJournalEntry('${esc(e.id)}')">✕ Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
