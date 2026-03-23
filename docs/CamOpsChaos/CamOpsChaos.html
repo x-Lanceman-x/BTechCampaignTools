@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BattleTech — Chaos Campaign Digital Companion</title>
+<title>BattleTech — Chaos Campaign Tracker</title>
 <meta name="theme-color" content="#c9a227">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BT Chaos Campaign">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="./Chaos192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="./Chaos512.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
 
@@ -391,6 +391,44 @@
     text-transform: uppercase; color: var(--text-dim); margin-top: 2px;
   }
 
+
+  /* ── UNIT PROFILES ── */
+  .unit-card {
+    background: var(--panel); border: 1px solid var(--border);
+    padding: 0; margin-bottom: 12px; transition: border-color .2s; position: relative;
+  }
+  .unit-card:hover { border-color: var(--border-gold); }
+  .unit-card.active-unit { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 20px rgba(201,162,39,.15); }
+  .unit-card-header { display:flex; align-items:center; gap:16px; padding:14px 20px; background:rgba(255,255,255,.02); border-bottom:1px solid var(--border); }
+  .unit-card.active-unit .unit-card-header { background:rgba(201,162,39,.08); border-bottom-color:var(--border-gold); }
+  .unit-card-icon { font-size:28px; width:48px; text-align:center; flex-shrink:0; }
+  .unit-card-name { font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; letter-spacing:1px; color:var(--text); flex:1; }
+  .unit-card.active-unit .unit-card-name { color:var(--gold); }
+  .unit-card-sub { font-size:12px; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; margin-top:2px; }
+  .unit-active-badge { display:none; font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:2px; text-transform:uppercase; background:var(--gold); color:#000; padding:3px 10px; font-weight:700; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
+  .unit-card.active-unit .unit-active-badge { display:block; }
+  .unit-card-stats { display:flex; gap:0; padding:10px 20px; align-items:center; flex-wrap:wrap; }
+  .unit-stat { display:flex; flex-direction:column; align-items:center; padding:6px 16px; border-right:1px solid var(--border); }
+  .unit-stat:first-child { padding-left:0; }
+  .unit-stat:last-child { border-right:none; }
+  .unit-stat-val { font-family:'Share Tech Mono',monospace; font-size:18px; color:var(--gold); font-weight:700; }
+  .unit-stat-lbl { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-top:1px; }
+  .unit-card-actions { display:flex; gap:6px; padding:10px 20px; border-top:1px solid var(--border); background:rgba(0,0,0,.2); flex-wrap:wrap; align-items:center; }
+  .unit-saved-at { margin-left:auto; font-size:11px; color:var(--text-dim); letter-spacing:1px; font-family:'Share Tech Mono',monospace; }
+  .units-empty { text-align:center; padding:60px 20px; color:var(--text-dim); }
+  .units-empty-icon { font-size:48px; margin-bottom:16px; }
+  .units-empty-title { font-family:'Oswald',sans-serif; font-size:20px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; }
+  .units-empty-sub { font-size:13px; letter-spacing:1px; line-height:1.7; }
+  /* Modal */
+  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.78); z-index:500; align-items:center; justify-content:center; }
+  .modal-backdrop.open { display:flex; }
+  .modal { background:var(--panel); border:1px solid var(--border-gold); padding:28px 32px; min-width:360px; max-width:500px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.85); clip-path:polygon(16px 0%,100% 0%,calc(100% - 16px) 100%,0% 100%); }
+  .modal-title { font-family:'Oswald',sans-serif; font-size:18px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
+  .modal-actions { display:flex; gap:8px; margin-top:20px; justify-content:flex-end; }
+  /* Header active label */
+  .active-unit-label { display:none; align-items:center; gap:6px; background:rgba(201,162,39,.12); border:1px solid var(--border-gold); padding:4px 12px; font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
+  .active-unit-label.visible { display:flex; }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 700px) {
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -407,14 +445,16 @@
   <div class="header-inner">
     <div>
       <div class="logo-text">BattleTech</div>
-      <div class="logo-sub">Chaos Campaign Digital Companion</div>
+      <div class="logo-sub">Chaos Campaign Tracker</div>
     </div>
+    <div id="activeUnitLabel" class="active-unit-label" style="margin-right:8px">⚔ <span id="activeUnitName">—</span></div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('force', this)">Force Record</button>
       <button class="nav-tab" onclick="showPage('campaign', this)">Campaign Log</button>
       <button class="nav-tab" onclick="showPage('support', this)">Support Costs</button>
       <button class="nav-tab" onclick="showPage('ref', this)">Reference</button>
       <button class="nav-tab" onclick="showPage('journal', this)">Journal</button>
+      <button class="nav-tab" onclick="showPage('units', this)">Forces</button>
       <button class="nav-tab" onclick="showPage('settings', this)">Settings</button>
     </nav>
   </div>
@@ -1341,6 +1381,37 @@
 </div><!-- /page-journal -->
 
 
+
+<!-- ══════════════════════════════════════════════
+     FORCES PAGE
+══════════════════════════════════════════════ -->
+<div id="page-units" class="page">
+  <div class="section-title">Forces &amp; Campaigns</div>
+
+  <div class="panel panel-gold" style="margin-bottom:20px">
+    <div style="display:flex;align-items:flex-start;gap:16px">
+      <div style="font-size:32px;flex-shrink:0">⚔</div>
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Multi-Force &amp; Campaign Management</div>
+        <div style="font-size:13px;color:var(--text-dim);letter-spacing:0.5px;line-height:1.7">
+          Save your current force as a named profile, then switch between different forces and campaigns freely. Each profile stores everything independently — force record, pilots, formations, campaign log, journal, and all support data. Switching profiles will prompt you to save any unsaved changes first.
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="openSaveUnitModal()" style="border-color:var(--green);color:var(--green-bright)">💾 Save Current Force As Profile</button>
+      <button class="btn" onclick="createNewUnit()">＋ New Force / Campaign</button>
+      <button class="btn btn-sm" onclick="saveCurrentUnitInPlace()" id="btnUpdateUnit" style="display:none">🔄 Update Active Profile</button>
+    </div>
+  </div>
+
+  <div id="activeUnitHint" style="display:none;margin-bottom:16px;padding:10px 16px;background:rgba(201,162,39,.07);border:1px solid var(--border-gold);border-left:3px solid var(--gold);font-size:12px;letter-spacing:1px;color:var(--text-dim)">
+    <span style="color:var(--gold);font-weight:700">Active:</span> <span id="activeUnitHintName" style="color:var(--text)"></span> — changes are not automatically saved to the profile. Use <strong style="color:var(--gold)">Update Active Profile</strong> to sync.
+  </div>
+
+  <div id="unitsListContainer"></div>
+</div><!-- /page-units -->
+
 <!-- ══════════════════════════════════════════════
      PAGE 4 · SETTINGS
 ══════════════════════════════════════════════ -->
@@ -1441,7 +1512,7 @@
   <div class="panel panel-gold">
     <div class="section-title" style="margin-bottom:12px">Import Force from CSV</div>
     <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.9;margin-bottom:14px">
-      Upload a <a href=https://mekbay.com>MekBay</a>-exported CSV to populate formations on the Force Record.<br>
+      Upload a MekBay-exported CSV to populate formations on the Force Record.<br>
       Columns used: <span style="color:var(--text);font-family:'Share Tech Mono',monospace">group, chassis, model, tonnage, BV, techBase, omni</span><br>
       Rows are grouped into formations by the <span style="color:var(--text);font-family:'Share Tech Mono',monospace">group</span> column. If absent, all units go into one formation.
     </div>
@@ -1454,6 +1525,25 @@
   </div>
 
 </div><!-- /page-settings -->
+
+
+<div class="modal-backdrop" id="saveUnitModal">
+  <div class="modal">
+    <div class="modal-title">💾 Save Force Profile</div>
+    <div style="font-size:13px;color:var(--text-dim);letter-spacing:0.5px;line-height:1.7;margin-bottom:16px">
+      Give this profile a name — e.g. <em style="color:var(--text)">"Iron Panthers — Total Chaos"</em>.
+    </div>
+    <div class="field">
+      <label>Profile Name</label>
+      <input type="text" id="saveUnitNameInput" placeholder="Force name / campaign…"
+        onkeydown="if(event.key==='Enter')confirmSaveUnit()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="closeSaveUnitModal()">Cancel</button>
+      <button class="btn" onclick="confirmSaveUnit()" style="border-color:var(--green);color:var(--green-bright)">✓ Save Profile</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /container -->
 
@@ -1621,6 +1711,8 @@ function renderAll() {
   renderLedger();
   renderDeployment();
   renderCampaignArchive();
+  renderUnitsPage();
+  updateActiveUnitLabel();
   renderJournal();
 }
 
@@ -4388,6 +4480,304 @@ function gistOpen() {
   const gistId = document.getElementById('gist-id')?.value?.trim() || '';
   if (!gistId) { gistSetStatus('No Gist ID set.', true); return; }
   window.open(`https://gist.github.com/${gistId}`, '_blank');
+}
+
+
+// ─────────────────────────────────────────
+// FORCE PROFILES (multi-force management)
+// ─────────────────────────────────────────
+const UNITS_KEY       = 'btChaosUnitProfiles';
+const ACTIVE_UNIT_KEY = 'btChaosActiveUnit';
+
+function loadUnitProfiles() {
+  try { return JSON.parse(localStorage.getItem(UNITS_KEY)) || []; } catch(e) { return []; }
+}
+function saveUnitProfiles(profiles) {
+  localStorage.setItem(UNITS_KEY, JSON.stringify(profiles));
+}
+function getActiveUnitId() {
+  return localStorage.getItem(ACTIVE_UNIT_KEY) || null;
+}
+function setActiveUnitId(id) {
+  if (id) localStorage.setItem(ACTIVE_UNIT_KEY, id);
+  else    localStorage.removeItem(ACTIVE_UNIT_KEY);
+}
+
+function updateActiveUnitLabel() {
+  const id        = getActiveUnitId();
+  const label     = document.getElementById('activeUnitLabel');
+  const nameEl    = document.getElementById('activeUnitName');
+  const hint      = document.getElementById('activeUnitHint');
+  const hintName  = document.getElementById('activeUnitHintName');
+  const btnUpdate = document.getElementById('btnUpdateUnit');
+  if (!id) {
+    if (label)     label.classList.remove('visible');
+    if (hint)      hint.style.display = 'none';
+    if (btnUpdate) btnUpdate.style.display = 'none';
+    return;
+  }
+  const profiles = loadUnitProfiles();
+  const found = profiles.find(p => p.id === id);
+  if (found) {
+    if (label)     label.classList.add('visible');
+    if (nameEl)    nameEl.textContent = found.profileName;
+    if (hint)      hint.style.display = 'block';
+    if (hintName)  hintName.textContent = found.profileName;
+    if (btnUpdate) btnUpdate.style.display = '';
+  } else {
+    setActiveUnitId(null);
+    if (label)     label.classList.remove('visible');
+    if (hint)      hint.style.display = 'none';
+    if (btnUpdate) btnUpdate.style.display = 'none';
+  }
+}
+
+function renderUnitsPage() {
+  const container = document.getElementById('unitsListContainer');
+  if (!container) return;
+  const profiles = loadUnitProfiles();
+  const activeId = getActiveUnitId();
+
+  if (!profiles.length) {
+    container.innerHTML = `
+      <div class="units-empty">
+        <div class="units-empty-icon">⚔</div>
+        <div class="units-empty-title">No Force Profiles Saved</div>
+        <div class="units-empty-sub">Click <strong style="color:var(--gold)">Save Current Force As Profile</strong> above<br>to save your first force profile.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = profiles.map(p => {
+    const isActive = p.id === activeId;
+    const pd = p.data || {};
+    const forceName  = (pd.forceData && pd.forceData.name) || '—';
+    const campaignName = pd.campaignName || '';
+    const pilotCount = (pd.pilotRoster || []).filter(pl => pl.status !== 'KIA').length;
+    let unitCount = 0;
+    ((pd.forceData || {}).formations || []).forEach(f => {
+      (f.rows || []).forEach(r => { if (r.unit && r.unit.trim()) unitCount++; });
+    });
+    // WP balance from ledger
+    const startWP = +(pd.campaignStartWP || 0);
+    let wpBal = startWP;
+    (pd.ledger || []).forEach(r => {
+      wpBal += (+(r.cover||0) + +(r.paid||0)) - (+(r.cost||0) + +(r.support||0));
+    });
+    const spBal = (pd.ledger || []).reduce((s, r) => s + +(r.spGain||0) - +(r.spCost||0), 0);
+    const wpColor = wpBal >= 0 ? 'var(--gold)' : 'var(--red)';
+    const spColor = spBal >= 0 ? 'var(--green-bright)' : 'var(--red)';
+
+    return `
+    <div class="unit-card ${isActive ? 'active-unit' : ''}" id="unit-card-${p.id}">
+      <div class="unit-card-header">
+        <div class="unit-card-icon">⚔</div>
+        <div style="flex:1">
+          <div class="unit-card-name">${esc(p.profileName)}</div>
+          <div class="unit-card-sub">${esc(forceName)}${campaignName ? ' · ' + esc(campaignName) : ''}</div>
+        </div>
+        <div class="unit-active-badge">● Active</div>
+      </div>
+      <div class="unit-card-stats">
+        <div class="unit-stat"><div class="unit-stat-val">${unitCount}</div><div class="unit-stat-lbl">Units</div></div>
+        <div class="unit-stat"><div class="unit-stat-val">${pilotCount}</div><div class="unit-stat-lbl">Active Pilots</div></div>
+        <div class="unit-stat"><div class="unit-stat-val" style="color:${wpColor}">${fmt(wpBal)}</div><div class="unit-stat-lbl">WP Balance</div></div>
+        <div class="unit-stat"><div class="unit-stat-val" style="color:${spColor}">${fmt(spBal)}</div><div class="unit-stat-lbl">SP Balance</div></div>
+      </div>
+      <div class="unit-card-actions">
+        ${isActive
+          ? `<button class="btn btn-sm" onclick="saveCurrentUnitInPlace()" style="border-color:var(--gold)">🔄 Update Profile</button>`
+          : `<button class="btn btn-sm" onclick="loadUnitProfile('${p.id}')" style="border-color:var(--green);color:var(--green-bright)">▶ Load Force</button>`
+        }
+        <button class="btn btn-sm" onclick="renameUnitProfile('${p.id}')">✎ Rename</button>
+        <button class="btn btn-sm" onclick="duplicateUnitProfile('${p.id}')">⧉ Duplicate</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteUnitProfile('${p.id}')">✕ Delete</button>
+        <div class="unit-saved-at">Saved ${esc(p.savedAt)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateActiveUnitLabel();
+}
+
+// ── Save modal ───────────────────────────────────────────────────────────────
+function openSaveUnitModal() {
+  save();
+  const modal = document.getElementById('saveUnitModal');
+  const input = document.getElementById('saveUnitNameInput');
+  const activeId = getActiveUnitId();
+  if (activeId) {
+    const found = loadUnitProfiles().find(p => p.id === activeId);
+    if (found) { input.value = found.profileName; modal.classList.add('open'); input.focus(); return; }
+  }
+  input.value = (data.forceData && data.forceData.name) || '';
+  modal.classList.add('open');
+  setTimeout(() => input.focus(), 80);
+}
+function closeSaveUnitModal() {
+  document.getElementById('saveUnitModal').classList.remove('open');
+}
+function confirmSaveUnit() {
+  const name = document.getElementById('saveUnitNameInput').value.trim();
+  if (!name) { toast('Enter a profile name first.'); return; }
+  save();
+  const profiles = loadUnitProfiles();
+  const id = 'unit_' + Date.now();
+  const savedAt = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  profiles.unshift({ id, profileName: name, savedAt, data: JSON.parse(JSON.stringify(data)) });
+  saveUnitProfiles(profiles);
+  setActiveUnitId(id);
+  closeSaveUnitModal();
+  renderUnitsPage();
+  updateActiveUnitLabel();
+  toast(`"${name}" saved as a force profile!`);
+}
+
+// ── Update active in-place ───────────────────────────────────────────────────
+function saveCurrentUnitInPlace() {
+  const activeId = getActiveUnitId();
+  if (!activeId) { openSaveUnitModal(); return; }
+  save();
+  const profiles = loadUnitProfiles();
+  const idx = profiles.findIndex(p => p.id === activeId);
+  if (idx === -1) { openSaveUnitModal(); return; }
+  profiles[idx].data    = JSON.parse(JSON.stringify(data));
+  profiles[idx].savedAt = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  saveUnitProfiles(profiles);
+  renderUnitsPage();
+  toast(`Profile "${profiles[idx].profileName}" updated!`);
+}
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+function loadUnitProfile(id) {
+  const profiles = loadUnitProfiles();
+  const target = profiles.find(p => p.id === id);
+  if (!target) { toast('Profile not found.'); return; }
+
+  const activeId = getActiveUnitId();
+  const currentName = activeId ? (profiles.find(p => p.id === activeId) || {}).profileName : null;
+  const hasData = (data.pilotRoster || []).length ||
+    ((data.forceData || {}).formations || []).some(f => f.rows.some(r => r.unit && r.unit.trim())) ||
+    (data.ledger || []).length;
+
+  if (hasData) {
+    if (currentName) {
+      const saveFirst = confirm(`Switch to "${target.profileName}"?
+
+Save changes to "${currentName}" first?
+
+OK = Save & Switch
+Cancel = Switch without saving`);
+      if (saveFirst) saveCurrentUnitInPlace();
+    } else {
+      if (!confirm(`Switch to "${target.profileName}"?
+
+Your current unsaved data will be lost.
+
+OK = Switch anyway
+Cancel = Go back`)) return;
+    }
+  }
+
+  // Blank slate merged with saved data
+  const BLANK = {
+    clanTechMult: 2, journalEntries: [], pilotRoster: [], ledger: [],
+    campaignName: '', campaignStartWP: 0, spBalance: 0, campaignArchive: [],
+    repairRows: [], omniRows: [], purchaseRows: [], protoPoint: null,
+    personnelCounts: {}, trainingCounts: {},
+    forceData: { name:'', co:'', forceType:'', bfsm:'', notes:'', formations:[
+      { label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',unitType:'',pilot:'',tons:'',unitLevel:'',bv:'',techBase:'',unitStatus:'',omni:false,deploy:false,gp:'',adv:'',spa:''})) }
+    ]}
+  };
+  data = { ...BLANK, ...JSON.parse(JSON.stringify(target.data)) };
+  localStorage.setItem('btChaosCampaign', JSON.stringify(data));
+  setActiveUnitId(id);
+  renderAll();
+  renderUnitsPage();
+  toast(`"${target.profileName}" loaded!`);
+  // Navigate to Force Record
+  const forceTab = document.querySelector('.nav-tab');
+  if (forceTab) showPage('force', forceTab);
+}
+
+// ── Rename ───────────────────────────────────────────────────────────────────
+function renameUnitProfile(id) {
+  const profiles = loadUnitProfiles();
+  const target = profiles.find(p => p.id === id);
+  if (!target) return;
+  const newName = prompt('Rename profile:', target.profileName);
+  if (!newName || !newName.trim()) return;
+  target.profileName = newName.trim();
+  saveUnitProfiles(profiles);
+  renderUnitsPage();
+  updateActiveUnitLabel();
+  toast(`Renamed to "${target.profileName}".`);
+}
+
+// ── Duplicate ────────────────────────────────────────────────────────────────
+function duplicateUnitProfile(id) {
+  const profiles = loadUnitProfiles();
+  const src = profiles.find(p => p.id === id);
+  if (!src) return;
+  const newId   = 'unit_' + Date.now();
+  const savedAt = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const copy = { id: newId, profileName: src.profileName + ' (Copy)', savedAt, data: JSON.parse(JSON.stringify(src.data)) };
+  profiles.splice(profiles.findIndex(p => p.id === id) + 1, 0, copy);
+  saveUnitProfiles(profiles);
+  renderUnitsPage();
+  toast(`"${copy.profileName}" created!`);
+}
+
+// ── Delete ───────────────────────────────────────────────────────────────────
+function deleteUnitProfile(id) {
+  const profiles = loadUnitProfiles();
+  const target = profiles.find(p => p.id === id);
+  if (!target) return;
+  if (!confirm(`Delete "${target.profileName}"?\n\nThis cannot be undone.`)) return;
+  const newProfiles = profiles.filter(p => p.id !== id);
+  saveUnitProfiles(newProfiles);
+  if (getActiveUnitId() === id) setActiveUnitId(null);
+  renderUnitsPage();
+  updateActiveUnitLabel();
+  toast(`"${target.profileName}" deleted.`);
+}
+
+// ── Create new blank force ───────────────────────────────────────────────────
+function createNewUnit() {
+  const hasData = (data.pilotRoster || []).length ||
+    ((data.forceData || {}).formations || []).some(f => f.rows.some(r => r.unit && r.unit.trim())) ||
+    (data.ledger || []).length;
+
+  if (hasData) {
+    const activeId = getActiveUnitId();
+    const profiles = loadUnitProfiles();
+    const currentName = activeId ? (profiles.find(p => p.id === activeId) || {}).profileName : null;
+    if (currentName) {
+      const saveFirst = confirm(`Create a new force?\n\nSave changes to "${currentName}" first?\n\nOK = Save & Create New\nCancel = Create New without saving`);
+      if (saveFirst) saveCurrentUnitInPlace();
+    } else {
+      if (!confirm('Create a new blank force?\n\nYour current unsaved data will be lost.\n\nOK = Proceed\nCancel = Go back')) return;
+    }
+  }
+
+  data = {
+    clanTechMult: data.clanTechMult || 2,
+    journalEntries: [], pilotRoster: [], ledger: [],
+    campaignName: '', campaignStartWP: 0, spBalance: 0, campaignArchive: [],
+    repairRows: [], omniRows: [], purchaseRows: [], protoPoint: null,
+    personnelCounts: {}, trainingCounts: {},
+    forceData: { name:'', co:'', forceType:'', bfsm:'', notes:'', formations:[
+      { label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',unitType:'',pilot:'',tons:'',unitLevel:'',bv:'',techBase:'',unitStatus:'',omni:false,deploy:false,gp:'',adv:'',spa:''})) }
+    ]}
+  };
+  localStorage.setItem('btChaosCampaign', JSON.stringify(data));
+  setActiveUnitId(null);
+  renderAll();
+  renderUnitsPage();
+  updateActiveUnitLabel();
+  toast('New blank force created.');
+  const forceTab = document.querySelector('.nav-tab');
+  if (forceTab) showPage('force', forceTab);
 }
 
 // ─────────────────────────────────────────

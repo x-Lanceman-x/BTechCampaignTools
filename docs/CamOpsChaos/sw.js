@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bt-chaos-v1'; // bump this
+const CACHE_NAME = 'bt-chaos-v2'; // bump this
 
 self.addEventListener('install', event => {
   self.skipWaiting(); // no pre-caching, let fetch handler build cache naturally
