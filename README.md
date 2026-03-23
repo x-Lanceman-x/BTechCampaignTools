@@ -2,7 +2,7 @@
 
 These are a collection of BattleTech campaign management web apps covering Chaos Campaign (Campaign Operations), Chaos Campaign Mercenaries, and BattleTech Aces. All are HTML and JavaScript based, run in your browser, work offline, and are installable as Progressive Web Apps.  
 
-These tools have been authored with the assistance of agentic AI.
+Code for these tools have been authored with the assistance of agentic AI. No generative AI art assets have been used.
 
 Access at: https://x-lanceman-x.github.io/BTechCampaignTools/
 
