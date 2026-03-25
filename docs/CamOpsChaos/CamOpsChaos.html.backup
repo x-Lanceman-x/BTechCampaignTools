@@ -437,31 +437,6 @@
     .logo-text { font-size: 20px; }
     .journal-entry-fields { grid-template-columns: 1fr 1fr; }
   }
-
-  /* ── FORMATION TABLE SCROLL WRAPPER ── */
-  .formation-scroll-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .formation-scroll-wrap > .formation-grid-inner {
-    min-width: 860px;
-  }
-
-  /* ── PILOT ROSTER SCROLL WRAPPER ── */
-  .pilot-roster-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pilot-roster-scroll > .pilot-roster-inner {
-    min-width: 860px;
-  }
-
-  @media (max-width: 900px) {
-    /* Force stat boxes to 2-col on small screens */
-    #page-force .panel-gold > div[style*="grid-template-columns:1fr 1fr 1fr 1fr 1fr"] {
-      grid-template-columns: 1fr 1fr 1fr !important;
-    }
-  }
 </style>
 </head>
 <body>
@@ -566,7 +541,6 @@
   </div>
 
   <div class="panel" style="padding:0;margin-bottom:16px">
-    <div class="pilot-roster-scroll"><div class="pilot-roster-inner">
     <div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
       <div style="padding:7px 8px"></div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
@@ -585,7 +559,6 @@
     <div id="pilot-roster-empty" style="display:none;text-align:center;color:var(--text-dim);padding:16px;font-size:13px;letter-spacing:1px">
       No pilots on roster. Add a pilot to begin.
     </div>
-    </div></div><!-- end pilot-roster-scroll -->
   </div>
 
 
@@ -2247,8 +2220,7 @@ function renderFormations() {
           <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">Remove Formation</button>
         </div>
       </div>
-      <!-- Column Headers + Rows (scrollable on small screens) -->
-      <div class="formation-scroll-wrap"><div class="formation-grid-inner">
+      <!-- Column Headers -->
       <div style="display:grid;grid-template-columns:${COLS};gap:0;background:rgba(201,162,39,.04);border-bottom:1px solid var(--border)">
         <div style="padding:6px 4px"></div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 4px">Type</div>
@@ -2386,7 +2358,6 @@ function renderFormations() {
           </div>
         </div>`;
       }).join('')}
-      </div></div><!-- end formation-scroll-wrap -->
       <!-- Formation BV total -->
       <div style="display:flex;align-items:center;padding:8px 14px;border-top:1px solid var(--border-gold);background:rgba(201,162,39,.03);gap:16px">
         <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Formation BV</span>

@@ -575,22 +575,14 @@
   .journal-filter-btn.active { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
   .journal-count { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 1px; margin-left: auto; }
 
-  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
-
   /* ── RESPONSIVE ── */
   @media (max-width: 700px) {
-    .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 { grid-template-columns: 1fr; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
     .nav-tabs { gap: 2px; }
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .logo-text { font-size: 20px; }
     .warchest-display { gap: 12px; }
     .journal-entry-fields { grid-template-columns: 1fr 1fr; }
-  }
-  @media (min-width: 701px) and (max-width: 900px) {
-    .grid-5 { grid-template-columns: repeat(3, 1fr); }
-    .grid-6 { grid-template-columns: repeat(3, 1fr); }
-    .grid-4 { grid-template-columns: repeat(2, 1fr); }
   }
   /* ── GIST SYNC ── */
 .gist-token-wrap {
@@ -730,7 +722,7 @@
         <input type="number" id="startWarchest" min="0" placeholder="0" oninput="recalc();save()">
       </div>
     </div>
-    <div class="grid-6">
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
       <div class="field">
         <label>Base Pay %</label>
         <input type="number" id="basePay" min="0" max="200" placeholder="50" oninput="recalc();save()">
@@ -1095,7 +1087,7 @@
         </select>
       </div>
     </div>
-    <div class="grid-5">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">
       <div class="field"><label>Scale</label>
         <select id="force-scale" onchange="saveForce()">
           <option value="">— Select —</option>
@@ -1144,8 +1136,7 @@
     <button class="btn btn-sm" onclick="addPilotRow()">+ Add Pilot</button>
   </div>
 
-  <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto">
-    <div style="min-width:900px">
+  <div class="panel" style="padding:0;margin-bottom:16px">
     <div style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
       <div style="padding:7px 8px"></div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
@@ -1165,7 +1156,6 @@
     <div id="pilot-roster-empty" style="display:none;text-align:center;color:var(--text-dim);padding:16px;font-size:13px;letter-spacing:1px">
       No pilots on roster. Add a pilot to begin.
     </div>
-    </div>
   </div>
 
   <!-- ── DEPLOYMENT ── -->
@@ -1179,7 +1169,6 @@
   </div>
 
   <div class="panel panel-gold" id="deployment-panel" style="padding:0;overflow-x:auto;margin-bottom:16px;display:none">
-    <div style="min-width:540px">
     <div style="display:grid;grid-template-columns:32px 2fr 100px 140px 1fr;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">#</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
@@ -1203,7 +1192,6 @@
         <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Deployable BSP</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)" id="deployment-bsp">—</span>
       </div>
-    </div>
     </div>
   </div>
 
@@ -3237,13 +3225,13 @@ function renderFormations() {
       ondrop="dragFormationDrop(event,${fi})"
       ondragend="dragFormationEnd(event)">
       <!-- Formation header -->
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,162,39,.08);border-bottom:1px solid var(--border-gold);flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,162,39,.08);border-bottom:1px solid var(--border-gold)">
         <span class="drag-handle" draggable="true" title="Drag to reorder"
           ondragstart="dragFormationStart(event,${fi})"
           ondragend="dragFormationEnd(event)">⠿</span>
         <input type="text" value="${esc(f.label)}" onchange="updateFormationLabel(${fi},this.value)"
-          style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;width:200px;outline:none;padding:0;min-width:120px;max-width:100%">
-        <div style="flex:1;min-width:8px"></div>
+          style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;width:200px;outline:none;padding:0">
+        <div style="flex:1"></div>
         <label onclick="event.stopPropagation()" title="Deploy entire formation" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--border)'};background:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'rgba(201,162,39,.18)' : 'transparent'};transition:all .15s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)">
           <input type="checkbox" ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'checked' : ''} onchange="deployFormation(${fi},this.checked)" style="display:none">
           <span style="width:16px;height:16px;border:2px solid ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--border)'};background:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? '<span style="color:#000;font-size:11px;font-weight:700;line-height:1">✓</span>' : ''}</span>
@@ -3252,9 +3240,6 @@ function renderFormations() {
         <button class="btn btn-sm" onclick="addFormationRow(${fi})">+ Add Unit</button>
         <button class="btn btn-sm btn-danger" onclick="removeFormation(${fi})">Remove Formation</button>
       </div>
-      <!-- Scrollable grid wrapper -->
-      <div style="overflow-x:auto">
-      <div style="min-width:860px">
       <!-- Column headers -->
       <div style="display:grid;grid-template-columns:20px 2fr 40px 80px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
         ${['', 'Unit / \'Mech', 'Tons', classic ? 'BV' : 'PV', 'Tech Base', 'Status', 'Omni', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Adv', 'Special Pilot Abilities', 'Deploy', ''].map(h=>
@@ -3287,7 +3272,7 @@ function renderFormations() {
           ].join('');
           return `
         <div data-fi="${fi}" data-ri="${ri}"
-          style="display:grid;grid-template-columns:20px 2fr 40px 80px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:860px"
+          style="display:grid;grid-template-columns:20px 2fr 40px 80px 80px 90px 44px 2fr 90px 80px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5)"
           ondragover="dragUnitOver(event)"
           ondragleave="dragUnitLeave(event)"
           ondrop="dragUnitDrop(event,${fi},${ri})"
@@ -3375,8 +3360,6 @@ function renderFormations() {
         </div>`;
         }).join('')}
       </div>
-      </div><!-- /min-width -->
-      </div><!-- /overflow-x:auto -->
     </div>`).join('');
 }
 
@@ -3482,7 +3465,7 @@ function renderDeployment() {
     const bv = +d.bv || 0;
     totalBv += bv;
     const rowBg = i % 2 === 1 ? 'background:rgba(255,255,255,.02)' : '';
-    return `<div style="display:grid;grid-template-columns:32px 2fr 100px 140px 1fr;gap:0;border-bottom:1px solid rgba(42,48,64,.4);min-width:540px;${rowBg};transition:background .15s" onmouseover="this.style.background='rgba(201,162,39,.04)'" onmouseout="this.style.background='${rowBg?'rgba(255,255,255,.02)':'transparent'}'">
+    return `<div style="display:grid;grid-template-columns:32px 2fr 100px 140px 1fr;gap:0;border-bottom:1px solid rgba(42,48,64,.4);${rowBg};transition:background .15s" onmouseover="this.style.background='rgba(201,162,39,.04)'" onmouseout="this.style.background='${rowBg?'rgba(255,255,255,.02)':'transparent'}'">
       <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);text-align:center">${i+1}</div>
       <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;color:var(--text)">${esc(d.unit)}</div>
       <div style="padding:8px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--gold);text-align:right;font-weight:700">${bv ? fmt(bv) : '—'}</div>
@@ -3774,7 +3757,7 @@ function renderPilotRoster() {
     const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06)' :
                   p.status === 'Wounded' || (p.wounds && p.wounds > 0) ? 'background:rgba(201,162,39,.05)' : '';
     return `<div draggable="true" data-pi="${i}"
-      style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:900px;${rowBg}"
+      style="display:grid;grid-template-columns:20px 1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr 1.4fr 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);${rowBg}"
       ondragstart="dragPilotStart(event,${i})"
       ondragover="dragPilotOver(event)"
       ondragleave="dragPilotLeave(event)"
