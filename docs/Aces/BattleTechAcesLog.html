@@ -742,6 +742,9 @@
       </thead>
       <tbody id="deployRows"></tbody>
     </table>
+    <div class="btn-row">
+      <button class="btn btn-sm btn-danger" onclick="resetDeployment()">✕ Reset Deployment</button>
+    </div>
   </div>
 
   <!-- Memorial -->
@@ -1597,10 +1600,21 @@ function renderDeployment() {
   }).join('');
 }
 
-// ─────────────────────────────────────────
-// CAMPAIGN LOG
-// ─────────────────────────────────────────
-// CAMPAIGN LOG
+function resetDeployment() {
+  if (!confirm('Reset deployment? This will uncheck all Deploy boxes and unassign all pilots.')) return;
+  (data.units||[]).forEach(u => {
+    u.deploy = false;
+    u.assignedPilot = '';
+    u.forceCommander = false;
+  });
+  saveData();
+  renderUnits();
+  renderDeployment();
+  updatePilotPayCalc();
+  toast('Deployment reset — all units removed and pilots unassigned.');
+}
+
+
 // ─────────────────────────────────────────
 
 // campaignRows is now a map keyed by sortie num for user-editable fields only
