@@ -613,6 +613,21 @@
 .gist-status.ok  { border-color: var(--green); color: var(--green-bright); background: rgba(42,122,74,.08); }
 .gist-status.err { border-color: var(--red);   color: var(--red);          background: var(--red-dim); }
 .gist-status.loading { border-color: var(--border-gold); color: var(--gold); }
+
+  /* ── BARRACKS (Alpha Strike only) ── */
+  .alpha-only { display: none; }
+  .mode-alpha .alpha-only { display: block; }
+  .barracks-loss-boxes {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .barracks-loss-box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--red);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .15s; cursor: pointer;
+  }
+  .barracks-loss-box.checked { background: var(--red); border-color: var(--red); }
+  .barracks-loss-box.checked::after { content: '✕'; color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
 </style>
 </head>
 <body>
@@ -626,6 +641,13 @@
         <div id="activeUnitLabel">
           <span style="font-size:14px;color:var(--text-dim)">⚔</span>
           <span id="activeUnitName"></span>
+        </div>
+        <div id="header-game-mode-badge"
+          style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+                 padding:3px 10px;border:1px solid var(--border-gold);color:var(--gold);
+                 background:rgba(201,162,39,.1);
+                 clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)">
+          Classic
         </div>
       </div>
     </div>
@@ -1138,6 +1160,33 @@
 
   <button class="btn btn-sm" onclick="addFormation()" style="margin-bottom:16px">+ Add Formation</button>
 
+  <!-- ── BARRACKS (Alpha Strike only) ── -->
+  <div class="alpha-only" id="barracks-section">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
+      <div class="section-title" style="margin:0;flex:1">Barracks</div>
+      <button class="btn btn-sm" onclick="addBarracksRow()">+ Add Unit</button>
+    </div>
+
+    <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto">
+      <div style="min-width:780px">
+      <div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 120px 100px 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Tons</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:right">PV</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Tech Base</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Skill</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Combat Losses</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Deploy</div>
+        <div style="padding:7px 8px"></div>
+      </div>
+      <div id="barracks-rows"></div>
+      <div id="barracks-empty" style="display:none;text-align:center;color:var(--text-dim);padding:16px;font-size:13px;letter-spacing:1px">
+        No units in barracks. Add a unit to begin.
+      </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── PILOT / CREW ROSTER ── -->
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
     <div class="section-title" style="margin:0;flex:1">Pilot &amp; Crew Roster</div>
@@ -1577,6 +1626,7 @@ let data = {
   contractHistory:[],
   pilotRoster:[],
   journalEntries:[],
+  barracksRows:[],
   noBsp: false,
   clanTechMult: 1.5
 };
@@ -1867,6 +1917,7 @@ function renderAll() {
   renderGameMode();
   renderPilotRoster();
   renderDeployment();
+  renderBarracks();
   renderJournal();
   const noBspEl = document.getElementById('no-bsp');
   if (noBspEl) noBspEl.checked = !!data.noBsp;
@@ -3434,7 +3485,7 @@ function renderDeployment() {
   const totalBsp = +(data.forceData && data.forceData.bsp) || 0;
   const noBsp = !!data.noBsp;
 
-  // Collect deployed units
+  // Collect deployed units from formations
   const deployed = [];
   (data.forceData.formations || []).forEach(f => {
     f.rows.forEach(r => {
@@ -3443,6 +3494,21 @@ function renderDeployment() {
       }
     });
   });
+
+  // Collect barracks units (Alpha Strike only) — add N instances per deployCount
+  if (!classic) {
+    (data.barracksRows || []).forEach(r => {
+      const losses = r.losses || [false, false, false];
+      const destroyed = losses[0] && losses[1] && losses[2];
+      if (destroyed) return; // destroyed units cannot deploy
+      const count = parseInt(r.deployCount) || 0;
+      if (count > 0 && r.unit && r.unit.trim()) {
+        for (let n = 0; n < count; n++) {
+          deployed.push({ unit: r.unit, bv: r.pv || '', formation: 'Barracks', pilot: r.skill ? `Skill ${r.skill}` : '' });
+        }
+      }
+    });
+  }
 
   const panel = document.getElementById('deployment-panel');
   const empty = document.getElementById('deployment-empty');
@@ -3566,6 +3632,15 @@ function renderGameMode() {
   const classic = mode === 'classic';
   const val = classic ? 'BV' : 'PV';
 
+  // Header game mode badge
+  const badge = document.getElementById('header-game-mode-badge');
+  if (badge) {
+    badge.textContent = classic ? 'Classic' : 'Alpha Strike';
+    badge.style.borderColor = classic ? 'var(--border-gold)' : '#1a4a6e';
+    badge.style.color = classic ? 'var(--gold)' : '#6ab0e8';
+    badge.style.background = classic ? 'rgba(201,162,39,.1)' : 'rgba(26,74,110,.25)';
+  }
+
   const classicBtn = document.getElementById('mode-classic');
   const alphaBtn = document.getElementById('mode-alpha');
   const desc = document.getElementById('mode-description');
@@ -3603,6 +3678,17 @@ function renderGameMode() {
   renderPilotRoster();
   renderDeployment();
   renderSalvageRows();
+  renderBarracks();
+
+  // Show/hide Alpha Strike-only sections
+  const forceEl = document.getElementById('page-force');
+  if (forceEl) {
+    if (!classic) {
+      forceEl.classList.add('mode-alpha');
+    } else {
+      forceEl.classList.remove('mode-alpha');
+    }
+  }
 }
 
 // ─────────────────────────────────────────
@@ -4607,6 +4693,123 @@ function renderJournal() {
     </div>`;
   }).join('');
 }
+// ─────────────────────────────────────────
+// BARRACKS (Alpha Strike)
+// ─────────────────────────────────────────
+function addBarracksRow() {
+  if (!data.barracksRows) data.barracksRows = [];
+  data.barracksRows.push({ unit:'', tons:'', pv:'', techBase:'', skill:'', losses:[false,false,false], deployCount:'0' });
+  renderBarracks();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function removeBarracksRow(i) {
+  data.barracksRows.splice(i, 1);
+  renderBarracks();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updateBarracksField(i, field, val) {
+  if (!data.barracksRows) return;
+  data.barracksRows[i][field] = val;
+  if (field === 'deployCount') {
+    renderDeployment();
+  }
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function toggleBarracksLoss(i, lossIdx, checked) {
+  if (!data.barracksRows) return;
+  if (!data.barracksRows[i].losses) data.barracksRows[i].losses = [false, false, false];
+  data.barracksRows[i].losses[lossIdx] = checked;
+  // If all three losses are now checked, force deploy off
+  const losses = data.barracksRows[i].losses;
+  if (losses[0] && losses[1] && losses[2]) {
+    data.barracksRows[i].deployCount = '0';
+  }
+  renderBarracks();
+  renderDeployment();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function renderBarracks() {
+  if (!data.barracksRows) data.barracksRows = [];
+  const cont = document.getElementById('barracks-rows');
+  const empty = document.getElementById('barracks-empty');
+  if (!cont) return;
+
+  if (!data.barracksRows.length) {
+    cont.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const TECH_BASE_COLORS = {'':'var(--text-dim)','IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'};
+
+  cont.innerHTML = data.barracksRows.map((r, i) => {
+    const tbVal = r.techBase || '';
+    const tbColor = TECH_BASE_COLORS[tbVal] || 'var(--text-dim)';
+    const losses = r.losses || [false, false, false];
+    const destroyed = losses[0] && losses[1] && losses[2];
+    const dc = destroyed ? '0' : (r.deployCount || '0');
+
+    const lossBoxes = [0,1,2].map(li => {
+      const chkClass = losses[li] ? 'barracks-loss-box checked' : 'barracks-loss-box';
+      return `<div class="${chkClass}" onclick="toggleBarracksLoss(${i},${li},${!losses[li]})"></div>`;
+    }).join('');
+
+    const deployCell = destroyed
+      ? `<span title="Unit destroyed — cannot be deployed" style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#880000;opacity:0.7">DESTROYED</span>`
+      : `<select onchange="updateBarracksField(${i},'deployCount',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px 4px;color:${dc!=='0'?'var(--gold)':'var(--text-dim)'};cursor:pointer;text-align:center">
+          <option value="0" ${dc==='0'?'selected':''} style="background:var(--panel);color:var(--text-dim)">— Off —</option>
+          <option value="1" ${dc==='1'?'selected':''} style="background:var(--panel);color:var(--gold)">× 1</option>
+          <option value="2" ${dc==='2'?'selected':''} style="background:var(--panel);color:var(--gold)">× 2</option>
+          <option value="3" ${dc==='3'?'selected':''} style="background:var(--panel);color:var(--gold)">× 3</option>
+        </select>`;
+
+    const rowStyle = destroyed ? 'opacity:0.55;background:rgba(136,0,0,.06)' : '';
+
+    return `<div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 120px 100px 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:780px;${rowStyle}">
+      <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="Atlas AS7-D"
+        onchange="updateBarracksField(${i},'unit',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
+      <div style="padding:2px 4px"><input type="number" value="${r.tons||''}" placeholder="T"
+        onchange="updateBarracksField(${i},'tons',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
+      <div style="padding:2px 4px"><input type="number" value="${r.pv||''}" placeholder="PV"
+        onchange="updateBarracksField(${i},'pv',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
+      <div style="padding:2px 2px;display:flex;align-items:center">
+        <select onchange="updateBarracksField(${i},'techBase',this.value)"
+          oninput="this.style.color=({'':'var(--text-dim)','IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'}[this.value]||'var(--text-dim)')"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${tbColor};cursor:pointer">
+          <option value="" style="background:var(--panel);color:var(--text-dim)">— Tech —</option>
+          <option value="IS" ${tbVal==='IS'?'selected':''} style="background:var(--panel);color:var(--text)">Inner Sphere</option>
+          <option value="Clan" ${tbVal==='Clan'?'selected':''} style="background:var(--panel);color:var(--gold)">Clan</option>
+          <option value="Mixed" ${tbVal==='Mixed'?'selected':''} style="background:var(--panel);color:#6ab0e8">Mixed</option>
+        </select>
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
+        <input type="text" value="${esc(r.skill)}" placeholder="4"
+          onchange="updateBarracksField(${i},'skill',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center">
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
+        <div class="barracks-loss-boxes">${lossBoxes}</div>
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
+        ${deployCell}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <button onclick="removeBarracksRow(${i})" style="padding:2px 6px;font-size:11px;border:none;background:transparent;color:var(--red);cursor:pointer">&#10005;</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ─────────────────────────────────────────
 // GITHUB GIST SYNC
 // ─────────────────────────────────────────
