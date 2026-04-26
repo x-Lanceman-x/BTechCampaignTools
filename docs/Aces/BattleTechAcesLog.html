@@ -487,15 +487,11 @@
   }
   .journal-type-ic   { background: rgba(201,162,39,.2); color: var(--gold); border: 1px solid var(--border-gold); }
   .journal-type-gm   { background: rgba(30,74,110,.35); color: #6ab0d4; border: 1px solid #1e4a6e; }
-  .journal-entry-title-input {
-    flex: 1; background: transparent; border: none;
-    border-bottom: 1px solid rgba(201,162,39,.25);
-    color: var(--text); font-family: 'Rajdhani', sans-serif;
-    font-size: 17px; font-weight: 600; padding: 2px 6px; outline: none;
-    transition: border-color .2s; min-width: 120px;
+  .journal-entry-title-heading {
+    flex: 1; color: var(--text); font-family: 'Rajdhani', sans-serif;
+    font-size: 17px; font-weight: 600; padding: 2px 6px;
+    min-width: 120px; line-height: 1.2;
   }
-  .journal-entry-title-input:focus { border-bottom-color: var(--gold); }
-  .journal-entry-title-input::placeholder { color: var(--text-dim); font-style: italic; }
   .journal-entry-date {
     font-family: 'Share Tech Mono', monospace; font-size: 12px;
     color: var(--text-dim); letter-spacing: 1px; flex-shrink: 0;
@@ -2777,10 +2773,17 @@ async function gistPush() {
   gistSetBusy(true);
   gistSetStatus('busy', '', 'Saving to GitHub Gist…');
 
+  // Bundle active force data, all saved force profiles, and the active force ID
+  const gistPayload = {
+    activeData:    data,
+    savedForces:   loadForces(),
+    activeForceId: getActiveForceId()
+  };
+
   const body = {
     description: 'BattleTech Aces — Log Sheet Data',
     public: false,
-    files: { [GIST_FILENAME]: { content: JSON.stringify(data, null, 2) } }
+    files: { [GIST_FILENAME]: { content: JSON.stringify(gistPayload, null, 2) } }
   };
 
   try {
@@ -2871,9 +2874,20 @@ async function gistPull() {
     }
 
     const imported = JSON.parse(content);
-    data = { ...data, ...imported };
+
+    // Support both new format (with savedForces) and old format (bare data object)
+    if (imported.activeData && imported.savedForces !== undefined) {
+      // New full-sync format
+      data = { ...data, ...imported.activeData };
+      saveForces(imported.savedForces);
+      setActiveForceId(imported.activeForceId || null);
+    } else {
+      // Legacy format — bare data object, no force profiles
+      data = { ...data, ...imported };
+    }
     localStorage.setItem('btAcesData', JSON.stringify(data));
     renderAll();
+    renderForcesPage();
 
     const ts = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     gistSetStatus('ok', ts, `Loaded successfully from Gist ${gistId}`);
@@ -2941,6 +2955,10 @@ function updateJournalEntry(id, field, val) {
   if (!entry) return;
   entry[field] = val;
   // Re-render header badge/title live if type or title changed
+  if (field === 'title') {
+    const heading = document.getElementById('jtitle_' + id);
+    if (heading) heading.innerHTML = val ? esc(val) : '<span style="color:var(--text-dim);font-style:italic;font-weight:400">Untitled</span>';
+  }
   if (field === 'type') {
     const badge = document.getElementById('jbadge_' + id);
     if (badge) {
@@ -2998,12 +3016,7 @@ function renderJournalEntries() {
         <span class="journal-type-badge ${isIC ? 'journal-type-ic' : 'journal-type-gm'}" id="jbadge_${e.id}">
           ${isIC ? 'In Character' : 'GM / Notes'}
         </span>
-        <input type="text"
-          class="journal-entry-title-input"
-          value="${esc(e.title)}"
-          placeholder="Untitled"
-          onchange="updateJournalEntry('${e.id}','title',this.value)"
-          oninput="updateJournalEntry('${e.id}','title',this.value)">
+        <span class="journal-entry-title-heading" id="jtitle_${e.id}">${e.title ? esc(e.title) : '<span style="color:var(--text-dim);font-style:italic;font-weight:400">Untitled</span>'}</span>
         <span class="journal-entry-date" id="jdate_display_${e.id}">${esc(displayDate)}</span>
       </div>
 
