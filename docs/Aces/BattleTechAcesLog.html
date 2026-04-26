@@ -2777,10 +2777,17 @@ async function gistPush() {
   gistSetBusy(true);
   gistSetStatus('busy', '', 'Saving to GitHub Gist…');
 
+  // Bundle active force data, all saved force profiles, and the active force ID
+  const gistPayload = {
+    activeData:    data,
+    savedForces:   loadForces(),
+    activeForceId: getActiveForceId()
+  };
+
   const body = {
     description: 'BattleTech Aces — Log Sheet Data',
     public: false,
-    files: { [GIST_FILENAME]: { content: JSON.stringify(data, null, 2) } }
+    files: { [GIST_FILENAME]: { content: JSON.stringify(gistPayload, null, 2) } }
   };
 
   try {
@@ -2871,9 +2878,20 @@ async function gistPull() {
     }
 
     const imported = JSON.parse(content);
-    data = { ...data, ...imported };
+
+    // Support both new format (with savedForces) and old format (bare data object)
+    if (imported.activeData && imported.savedForces !== undefined) {
+      // New full-sync format
+      data = { ...data, ...imported.activeData };
+      saveForces(imported.savedForces);
+      setActiveForceId(imported.activeForceId || null);
+    } else {
+      // Legacy format — bare data object, no force profiles
+      data = { ...data, ...imported };
+    }
     localStorage.setItem('btAcesData', JSON.stringify(data));
     renderAll();
+    renderForcesPage();
 
     const ts = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     gistSetStatus('ok', ts, `Loaded successfully from Gist ${gistId}`);
