@@ -930,7 +930,10 @@
     <button class="btn btn-sm" onclick="addRepairRow()" style="margin-top:8px">+ Add Unit</button>
     <div class="balance-bar" id="repair-total-bar" style="margin-top:14px">
       <span class="balance-bar-label">Total Repair Cost</span>
-      <span class="balance-bar-val" id="repair-total">0 SP</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="balance-bar-val" id="repair-total">0 SP</span>
+        <span id="repair-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+      </div>
     </div>
   </div>
 
@@ -946,7 +949,10 @@
     <button class="btn btn-sm" onclick="addRearmRow()" style="margin-top:8px">+ Add Unit</button>
     <div class="balance-bar" style="margin-top:14px">
       <span class="balance-bar-label">Total Rearm Cost</span>
-      <span class="balance-bar-val" id="rearm-total">0 SP</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="balance-bar-val" id="rearm-total">0 SP</span>
+        <span id="rearm-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+      </div>
     </div>
   </div>
 
@@ -970,9 +976,15 @@
 
   <!-- Repair & Rearm Total -->
   <div style="padding:14px 20px;border:2px solid var(--border-gold);background:rgba(201,162,39,.06);display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
-    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Repair, Rearm &amp; Omni</span>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Repair, Rearm &amp; Omni</span>
+      <span id="repair-rearm-support-line" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--green-bright)"></span>
+    </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-family:'Share Tech Mono',monospace;font-size:26px;color:var(--gold);font-weight:700" id="support-repair-rearm-total">0 SP</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <span id="repair-rearm-gross-line" style="display:none;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim);text-decoration:line-through"></span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:26px;color:var(--gold);font-weight:700" id="support-repair-rearm-total">0 SP</span>
+      </div>
       <button class="btn btn-sm" onclick="sendRepairRearmToLedger()">&#8594; Send to Ledger</button>
     </div>
   </div>
@@ -1065,7 +1077,10 @@
     <button class="btn btn-sm" onclick="addHealRow()" style="margin-top:8px">+ Add Entry</button>
     <div class="balance-bar" style="margin-top:14px">
       <span class="balance-bar-label">Total Heal Cost</span>
-      <span class="balance-bar-val" id="heal-total">0 SP</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="balance-bar-val" id="heal-total">0 SP</span>
+        <span id="heal-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+      </div>
     </div>
   </div>
 
@@ -2461,7 +2476,7 @@ function renderSalvageRows() {
       <input type="number" value="${r.bv||''}" placeholder="${bvLabel}" style="text-align:right"
         onchange="updateSalvageRow(${i},'bv',this.value)">
       <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;flex:1;text-align:right;color:${spColor};text-decoration:${claimed?'line-through':'none'}">${bv ? fmt(salvageVal)+' SP' : '—'}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;flex:1;text-align:right;color:${spColor};text-decoration:${claimed?'line-through':'none'}">${bv ? fmt(Math.round(salvageVal))+' SP' : '—'}</span>
         <button class="btn btn-sm btn-danger" onclick="removeSalvageRow(${i})">✕</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:center">
@@ -2504,12 +2519,13 @@ function updateSalvageTotals() {
   const pctDisplay = document.getElementById('salvage-pct-display');
   const netEl = document.getElementById('salvage-net-total');
 
-  if (el) el.textContent = `${fmt(rawTotal)} SP`;
-  if (grand) { grand.textContent = `${fmt(rawTotal)} SP`; grand.style.color = rawTotal ? 'var(--gold)' : 'var(--text-dim)'; }
+  if (el) el.textContent = `${fmt(Math.round(rawTotal))} SP`;
+  if (grand) { grand.textContent = `${fmt(Math.round(rawTotal))} SP`; grand.style.color = rawTotal ? 'var(--gold)' : 'var(--text-dim)'; }
   if (pctDisplay) { pctDisplay.textContent = `${pct}%`; pctDisplay.style.color = pct > 0 ? 'var(--text)' : 'var(--text-dim)'; }
   if (netEl) {
-    netEl.textContent = `${fmt(netTotal)} SP`;
-    netEl.style.color = netTotal < 0 ? 'var(--red)' : netTotal > 0 ? 'var(--green-bright)' : 'var(--text-dim)';
+    const netRounded = Math.round(netTotal);
+    netEl.textContent = `${fmt(netRounded)} SP`;
+    netEl.style.color = netRounded < 0 ? 'var(--red)' : netRounded > 0 ? 'var(--green-bright)' : 'var(--text-dim)';
   }
 }
 
@@ -2666,27 +2682,39 @@ function renderSkillRows() {
 }
 
 function updatePersonnelTotals() {
+  // support % discount (same logic as updateSupportTotals)
+  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
+  const supportDiscount = effectiveSupportPct / 100;
+
   let hireTotal = 0;
   (data.hireRows||[]).forEach(r => { hireTotal += Math.ceil((+r.count||0)*100); });
   setText('hire-total', `${fmt(hireTotal)} SP`);
 
-  let healTotal = 0;
-  (data.healRows||[]).forEach(r => { healTotal += Math.ceil((+r.wounds||0)*30); });
-  setText('heal-total', `${fmt(healTotal)} SP`);
+  let healGross = 0;
+  (data.healRows||[]).forEach(r => { healGross += Math.ceil((+r.wounds||0)*30); });
+  const healNet = Math.ceil(healGross * (1 - supportDiscount));
+  setText('heal-total', `${fmt(healNet)} SP`);
 
   let skillTotal = 0;
   (data.skillRows||[]).forEach(r => { skillTotal += Math.ceil(+r.cost||0); });
   setText('skill-total', `${fmt(skillTotal)} SP`);
 
-  const grandTotal = hireTotal + healTotal + skillTotal;
+  const grandTotal = hireTotal + healNet + skillTotal;
   const el = document.getElementById('personnel-grand-total');
   if (el) { el.textContent = `${fmt(grandTotal)} SP`; el.style.color = grandTotal ? 'var(--gold)' : 'var(--text-dim)'; }
 }
 
 function sendPersonnelToLedger() {
+  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
+  const supportDiscount = effectiveSupportPct / 100;
+
   let total = 0;
   (data.hireRows||[]).forEach(r => { total += Math.ceil((+r.count||0)*100); });
-  (data.healRows||[]).forEach(r => { total += Math.ceil((+r.wounds||0)*30); });
+  let healGross = 0;
+  (data.healRows||[]).forEach(r => { healGross += Math.ceil((+r.wounds||0)*30); });
+  total += Math.ceil(healGross * (1 - supportDiscount));
   (data.skillRows||[]).forEach(r => { total += Math.ceil(+r.cost||0); });
   if (!total) { toast('No personnel costs to send.'); return; }
   data.ledger.push({month:'', event:'Personnel & Training', cost: String(total), cover:'', paid:'', rep:''});
@@ -2792,6 +2820,10 @@ function clearSupportCosts() {
 }
 
 function sendRepairRearmToLedger() {
+  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
+  const supportDiscount = effectiveSupportPct / 100;
+
   let repairTotal = 0;
   (data.repairRows||[]).forEach(r => {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
@@ -2803,7 +2835,8 @@ function sendRepairRearmToLedger() {
   (data.rearmRows||[]).forEach(r => { rearmTotal += rearmLedgerClassic ? (+r.tons||0)*10 : 20; });
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
-  const total = Math.ceil(repairTotal + rearmTotal + omniTotal);
+  // apply support discount to repair & rearm, but not omni reconfigure
+  const total = Math.ceil(repairTotal*(1-supportDiscount) + rearmTotal*(1-supportDiscount) + omniTotal);
   if (!total) { toast('No repair/rearm costs to send.'); return; }
 
   // Update unit roster for any omni rows with new config/BV
@@ -2831,29 +2864,66 @@ function sendRepairRearmToLedger() {
 
 
 function updateSupportTotals() {
+  // support % discount (Battle support = always 100%)
+  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
+  const supportDiscount = effectiveSupportPct / 100; // fraction covered by employer
+  const supportActive = effectiveSupportPct > 0;
+  const supportLabel = data.supportType === 'battle' ? 'Battle Support (100% covered)' : `${effectiveSupportPct}% covered by employer`;
+
+  // helper to show/hide a badge element
+  function setBadge(id, show, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (show) { el.textContent = text; el.style.display = ''; }
+    else { el.style.display = 'none'; }
+  }
+
   // repair
-  let repairTotal = 0;
+  let repairGross = 0;
   (data.repairRows||[]).forEach(r => {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
     const techMult = (r.techBase === 'Clan' || r.techBase === 'Mixed') ? (data.clanTechMult !== undefined ? data.clanTechMult : 1.5) : 1;
-    repairTotal += (+r.tons||0) * mt.mult * techMult;
+    repairGross += (+r.tons||0) * mt.mult * techMult;
   });
-  setText('repair-total', `${fmt(Math.ceil(repairTotal))} SP`);
+  const repairNet = Math.ceil(repairGross * (1 - supportDiscount));
+  setText('repair-total', `${fmt(repairNet)} SP`);
+  setBadge('repair-support-badge', supportActive, supportLabel);
 
   // rearm
   const rearmClassic = (data.gameMode || 'classic') === 'classic';
-  let rearmTotal = 0;
-  (data.rearmRows||[]).forEach(r => { rearmTotal += rearmClassic ? (+r.tons||0)*10 : 20; });
-  setText('rearm-total', `${fmt(Math.ceil(rearmTotal))} SP`);
+  let rearmGross = 0;
+  (data.rearmRows||[]).forEach(r => { rearmGross += rearmClassic ? (+r.tons||0)*10 : 20; });
+  const rearmNet = Math.ceil(rearmGross * (1 - supportDiscount));
+  setText('rearm-total', `${fmt(rearmNet)} SP`);
+  setBadge('rearm-support-badge', supportActive, supportLabel);
 
-  // omni reconfigure
+  // omni reconfigure (not discounted by support)
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
   setText('omni-total', `${fmt(Math.ceil(omniTotal))} SP`);
 
-  // repair, rearm & omni section total
-  const repairRearmTotal = repairTotal + rearmTotal + omniTotal;
-  setText('support-repair-rearm-total', `${fmt(Math.ceil(repairRearmTotal))} SP`);
+  // heal (discounted)
+  let healGross = 0;
+  (data.healRows||[]).forEach(r => { healGross += Math.ceil((+r.wounds||0)*30); });
+  const healNet = Math.ceil(healGross * (1 - supportDiscount));
+  setText('heal-total', `${fmt(healNet)} SP`);
+  setBadge('heal-support-badge', supportActive, supportLabel);
+
+  // repair, rearm & omni section total (repair+rearm discounted, omni not)
+  const repairRearmGross = Math.ceil(repairGross + rearmGross + omniTotal);
+  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount) + rearmGross*(1-supportDiscount) + omniTotal);
+  setText('support-repair-rearm-total', `${fmt(repairRearmNet)} SP`);
+  // show strikethrough gross and label when discount applies
+  const grossLineEl = document.getElementById('repair-rearm-gross-line');
+  const supportLineEl = document.getElementById('repair-rearm-support-line');
+  if (supportActive && repairRearmGross !== repairRearmNet) {
+    if (grossLineEl) { grossLineEl.textContent = `${fmt(repairRearmGross)} SP`; grossLineEl.style.display = ''; }
+    if (supportLineEl) { supportLineEl.textContent = `▾ ${supportLabel}`; supportLineEl.style.display = ''; }
+  } else {
+    if (grossLineEl) grossLineEl.style.display = 'none';
+    if (supportLineEl) supportLineEl.style.display = 'none';
+  }
 
   // assets
   let assetNet = 0;
