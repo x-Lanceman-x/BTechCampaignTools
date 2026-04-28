@@ -3893,7 +3893,7 @@ function updateSkillAdv() {
 function updateCoDropdown() {
   const sel = document.getElementById('force-co');
   if (!sel) return;
-  const current = sel.value || (data.forceData && data.forceData.co) || '';
+  const current = (data.forceData && data.forceData.co) || '';
   const pilots = (data.pilotRoster || []).filter(p => p.status !== 'KIA');
   sel.innerHTML = `<option value="">— Select CO —</option>` +
     pilots.map(p => {
@@ -4915,7 +4915,27 @@ async function gistSave() {
   if (!token) { gistStatus('⚠ Enter a Personal Access Token first.', 'err'); return; }
   gistStatus('Saving…', 'loading');
   save();
-  const payload = JSON.stringify(data, null, 2);
+
+  // Bundle active force data, all saved unit profiles, and the active unit ID
+  const allProfiles = loadUnitProfiles();
+  const activeUnitId = getActiveUnitId();
+
+  // If there's an active profile, write the current in-memory data back into it
+  // so the Gist always reflects the latest state of every force
+  if (activeUnitId) {
+    const idx = allProfiles.findIndex(p => p.id === activeUnitId);
+    if (idx !== -1) {
+      allProfiles[idx].data = JSON.parse(JSON.stringify(data));
+    }
+  }
+
+  const bundle = {
+    activeContract: data,
+    unitProfiles:   allProfiles,
+    activeUnitId:   activeUnitId
+  };
+  const payload = JSON.stringify(bundle, null, 2);
+
   const gistId = localStorage.getItem('btGistId') || '';
   const body = {
     description: 'BattleTech CC Mercs Companion Data',
@@ -4942,7 +4962,8 @@ async function gistSave() {
     localStorage.setItem('btGistId', json.id);
     const idEl = document.getElementById('gist-id');
     if (idEl) idEl.value = json.id;
-    gistStatus(`✓ Saved to Gist ${json.id.slice(0,8)}…`, 'ok');
+    const forceCount = allProfiles.length;
+    gistStatus(`✓ Saved to Gist ${json.id.slice(0,8)}… (${forceCount} force${forceCount !== 1 ? 's' : ''})`, 'ok');
     toast('Saved to GitHub Gist!');
   } catch(e) {
     gistStatus(`✕ Save failed: ${e.message}`, 'err');
@@ -4964,13 +4985,35 @@ async function gistLoad() {
     if (!res.ok) throw new Error(json.message || res.status);
     const file = json.files['btmercs-data.json'];
     if (!file) throw new Error('btmercs-data.json not found in Gist.');
-    const content = file.truncated
+    const rawContent = file.truncated
       ? await (await fetch(file.raw_url)).text()
       : file.content;
-    data = { ...data, ...JSON.parse(content) };
-    localStorage.setItem('btMercContract', JSON.stringify(data));
+    const parsed = JSON.parse(rawContent);
+
+    // Support both the new bundle format and the legacy single-force format
+    if (parsed && parsed.activeContract !== undefined) {
+      // New multi-force bundle
+      data = { ...data, ...parsed.activeContract };
+      localStorage.setItem('btMercContract', JSON.stringify(data));
+
+      if (Array.isArray(parsed.unitProfiles)) {
+        saveUnitProfiles(parsed.unitProfiles);
+      }
+      if (parsed.activeUnitId !== undefined) {
+        setActiveUnitId(parsed.activeUnitId || null);
+      }
+      const forceCount = (parsed.unitProfiles || []).length;
+      gistStatus(`✓ Data loaded from Gist (${forceCount} force${forceCount !== 1 ? 's' : ''} restored).`, 'ok');
+    } else {
+      // Legacy format — just a bare data object, no unit profiles
+      data = { ...data, ...parsed };
+      localStorage.setItem('btMercContract', JSON.stringify(data));
+      gistStatus('✓ Data loaded from Gist (legacy format).', 'ok');
+    }
+
     renderAll();
-    gistStatus('✓ Data loaded from Gist.', 'ok');
+    renderUnitsPage();
+    updateActiveUnitLabel();
     toast('Loaded from GitHub Gist!');
   } catch(e) {
     gistStatus(`✕ Load failed: ${e.message}`, 'err');
