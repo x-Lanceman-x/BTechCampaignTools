@@ -1069,7 +1069,8 @@
   <!-- Heal Wounds -->
   <div class="panel">
     <div class="ref-title">&#10084; Heal Wounds (30 SP per wound)</div>
-    <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Pilot</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Wounds</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
     </div>
@@ -2200,8 +2201,12 @@ function renderRepairRows() {
     const techBadge = isClanTech
       ? `<span title="${r.techBase} tech — ×${techMult} repair multiplier" style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border:1px solid var(--gold);color:var(--gold);background:rgba(201,162,39,.12);white-space:nowrap">${r.techBase} ×${techMult}</span>`
       : '';
+    const STATUS_LABELS = {armor:'Armor Dmg', struct:'Struct/Crit', crippled:'Crippled', destroyed:'Destroyed'};
     const unitOptions = forceUnits.length
-      ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
+      ? `<option value="">— select unit —</option>` + forceUnits.map(u => {
+          const statusTag = u.unitStatus && STATUS_LABELS[u.unitStatus] ? ` [${STATUS_LABELS[u.unitStatus]}]` : '';
+          return `<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}${statusTag}</option>`;
+        }).join('')
       : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
     return `<div style="display:grid;grid-template-columns:2fr 1fr 80px 120px;gap:8px;align-items:center;margin-bottom:6px">
       <select onchange="selectRepairUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
@@ -2330,12 +2335,25 @@ function getForceUnits() {
   return units;
 }
 
+// Map Force Record unit status values to REPAIR_TYPES keys
+const STATUS_TO_REPAIR = {
+  armor:     'armor',
+  struct:    'struct',
+  crippled:  'crippled',
+  destroyed: 'destroyed'
+};
+
 function selectRepairUnit(i, unitName) {
   const forceUnits = getForceUnits();
   const match = forceUnits.find(u => u.unit === unitName);
   data.repairRows[i].unit = unitName;
-  if (match && match.tons) data.repairRows[i].tons = match.tons;
-  if (match) data.repairRows[i].techBase = match.techBase || '';
+  if (match) {
+    if (match.tons)     data.repairRows[i].tons     = match.tons;
+    if (match.techBase) data.repairRows[i].techBase  = match.techBase;
+    // Auto-select the repair level from the unit's current status
+    const mappedType = STATUS_TO_REPAIR[match.unitStatus];
+    if (mappedType) data.repairRows[i].type = mappedType;
+  }
   renderRepairRows(); save();
 }
 
@@ -2598,39 +2616,54 @@ function renderHireRows() {
 
 function addHealRow() {
   if (!data.healRows) data.healRows = [];
-  data.healRows.push({wounds:''});
+  data.healRows.push({pilot:'', pilotIdx:null});
   renderHealRows(); save();
 }
 function removeHealRow(i) { data.healRows.splice(i,1); renderHealRows(); save(); }
-function updateHealRow(i, field, val) { data.healRows[i][field]=val; renderHealRows(); save(); }
 
 function renderHealRows() {
   if (!data.healRows) data.healRows = [];
   const cont = document.getElementById('heal-rows');
   if (!cont) { updatePersonnelTotals(); return; }
 
+  // Wounded pilots only (not KIA, not Active/MIA/Retired with 0 wounds)
+  const woundedPilots = (data.pilotRoster||[])
+    .map((p, idx) => ({...p, _idx: idx}))
+    .filter(p => p.status !== 'KIA' && (+p.wounds||0) > 0);
+
   if (!data.healRows.length) {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
     updatePersonnelTotals(); return;
   }
   cont.innerHTML = data.healRows.map((r,i) => {
-    const cost = Math.ceil((+r.wounds||0) * 30);
-    return `<div style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="number" value="${r.wounds||''}" placeholder="Number of wounds" style="text-align:center"
-        onchange="updateHealRow(${i},'wounds',this.value)">
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
-        <button class="btn btn-sm btn-danger" onclick="removeHealRow(${i})">✕</button>
-      </div>
-    </div>`;
+    const pilot = r.pilotIdx !== null ? (data.pilotRoster||[])[r.pilotIdx] : null;
+    const currentWounds = pilot ? (+pilot.wounds||0) : 0;
+    const woundsColor = currentWounds >= 6 ? 'var(--red)' : currentWounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
+    const pilotOptions = '<option value="">— select pilot —</option>' +
+      woundedPilots.map(p => {
+        const label = [p.rank, p.name, p.callsign ? '"' + p.callsign + '"' : ''].filter(Boolean).join(' ');
+        return '<option value="' + p._idx + '" ' + (r.pilotIdx===p._idx?'selected':'') + '>' + esc(label) + ' [' + p.wounds + ' wound' + (p.wounds!==1?'s':'') + ']</option>';
+      }).join('');
+    return '<div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;align-items:center;margin-bottom:6px">' +
+      '<select onchange="selectHealPilot(' + i + ',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:\'Share Tech Mono\',monospace;font-size:12px;width:100%">' +
+        pilotOptions +
+      '</select>' +
+      '<div style="font-family:\'Share Tech Mono\',monospace;font-size:16px;font-weight:700;color:' + woundsColor + ';text-align:center">' +
+        (currentWounds > 0 ? currentWounds : '—') +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<span style="font-family:\'Share Tech Mono\',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">30 SP</span>' +
+        '<button class="btn btn-sm btn-danger" onclick="removeHealRow(' + i + ')">✕</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
   updatePersonnelTotals();
 }
 
-function selectHealPilot(i, name) {
-  data.healRows[i].pilot = name;
-  const match = (data.pilotRoster||[]).find(p => p.name === name);
-  if (match && match.wounds) data.healRows[i].wounds = String(match.wounds);
+function selectHealPilot(i, pilotIdxStr) {
+  const idx = pilotIdxStr === '' ? null : +pilotIdxStr;
+  data.healRows[i].pilotIdx = idx;
+  data.healRows[i].pilot = idx !== null ? ((data.pilotRoster||[])[idx]||{}).name || '' : '';
   renderHealRows(); save();
 }
 
@@ -2704,7 +2737,7 @@ function updatePersonnelTotals() {
   setText('hire-total', `${fmt(hireTotal)} SP`);
 
   let healGross = 0;
-  (data.healRows||[]).forEach(r => { healGross += Math.ceil((+r.wounds||0)*30); });
+  (data.healRows||[]).forEach(() => { healGross += 30; }); // 30 SP per row (1 wound each)
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
   setText('heal-total', `${fmt(healNet)} SP`);
 
@@ -2722,15 +2755,36 @@ function sendPersonnelToLedger() {
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
   const supportDiscount = effectiveSupportPct / 100;
 
+  const hasRows = (data.hireRows||[]).length || (data.healRows||[]).length || (data.skillRows||[]).length;
+  if (!hasRows) { toast('No personnel costs to send.'); return; }
+
   let total = 0;
   (data.hireRows||[]).forEach(r => { total += Math.ceil((+r.count||0)*100); });
   let healGross = 0;
-  (data.healRows||[]).forEach(r => { healGross += Math.ceil((+r.wounds||0)*30); });
+  (data.healRows||[]).forEach(r => { healGross += 30; }); // 30 SP per wound healed (1 wound per row)
   total += Math.ceil(healGross * (1 - supportDiscount));
   (data.skillRows||[]).forEach(r => { total += Math.ceil(+r.cost||0); });
-  if (!total) { toast('No personnel costs to send.'); return; }
+
+  // Decrement wounds by 1 for each heal row with a valid pilot
+  (data.healRows||[]).forEach(r => {
+    if (r.pilotIdx === null || r.pilotIdx === undefined) return;
+    const pilot = (data.pilotRoster||[])[r.pilotIdx];
+    if (!pilot) return;
+    const newWounds = Math.max(0, (+pilot.wounds||0) - 1);
+    pilot.wounds = newWounds;
+    if (newWounds === 0) {
+      if (pilot.status === 'Wounded' || pilot.status === 'KIA') pilot.status = 'Active';
+    } else if (newWounds >= 1) {
+      if (pilot.status !== 'KIA') pilot.status = 'Wounded';
+    }
+  });
+  data.healRows = [];
+
   data.ledger.push({month:'', event:'Personnel & Training', cost: String(total), cover:'', paid:'', rep:''});
-  renderLedger(); save();
+  renderLedger();
+  renderHealRows();
+  renderPilotRoster();
+  save();
   toast('Personnel costs added to Monthly Ledger.');
 }
 
@@ -2849,7 +2903,8 @@ function sendRepairRearmToLedger() {
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
   // apply support discount to repair & rearm, but not omni reconfigure
   const total = Math.ceil(repairTotal*(1-supportDiscount) + rearmTotal*(1-supportDiscount) + omniTotal);
-  if (!total) { toast('No repair/rearm costs to send.'); return; }
+  const hasRows = (data.repairRows||[]).length || (data.rearmRows||[]).length || (data.omniRows||[]).length;
+  if (!hasRows) { toast('No repair/rearm costs to send.'); return; }
 
   // Update unit roster for any omni rows with new config/BV
   (data.omniRows||[]).forEach(r => {
@@ -2867,8 +2922,24 @@ function sendRepairRearmToLedger() {
     });
   });
 
+  // Reset status to Operational for every repaired unit on the Force Record
+  const repairedUnitNames = new Set(
+    (data.repairRows||[]).map(r => (r.unit||'').trim()).filter(Boolean)
+  );
+  if (repairedUnitNames.size) {
+    (data.forceData.formations||[]).forEach(f => {
+      f.rows.forEach(row => {
+        if (repairedUnitNames.has((row.unit||'').trim()) && row.unitStatus && row.unitStatus !== 'operational') {
+          row.unitStatus = 'operational';
+        }
+      });
+    });
+    data.repairRows = [];
+  }
+
   data.ledger.push({month:'', event:'Repair, Rearm & Omni', cost: String(Math.round(total)), cover:'', paid:'', rep:''});
   renderLedger();
+  renderRepairRows();
   renderFormations();
   save();
   toast('Added to Monthly Ledger.');
@@ -2917,7 +2988,7 @@ function updateSupportTotals() {
 
   // heal (discounted)
   let healGross = 0;
-  (data.healRows||[]).forEach(r => { healGross += Math.ceil((+r.wounds||0)*30); });
+  (data.healRows||[]).forEach(() => { healGross += 30; }); // 30 SP per row (1 wound each)
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
   setText('heal-total', `${fmt(healNet)} SP`);
   setBadge('heal-support-badge', supportActive, supportLabel);
