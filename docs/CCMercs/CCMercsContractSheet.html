@@ -1707,10 +1707,22 @@ function importData(input) {
 function clearAll() {
   if (!confirm('Clear ALL data? This cannot be undone.')) return;
   localStorage.removeItem('btMercContract');
-  data = {unitName:'',contractName:'',actionType:'',contractLength:'',contractStatus:'active',
-    scale:'',startWarchest:'',basePay:'',supportType:'none',supportPct:'',transportPct:'',salvagePct:'',
-    command:'',contactTerms:'',combatBonus:'0',ledger:[],repairRows:[],rearmRows:[],assetRows:[],contractHistory:[],pilotRoster:[],journalEntries:[]};
-  renderAll(); toast('All data cleared.');
+  localStorage.removeItem(UNITS_KEY);
+  localStorage.removeItem(ACTIVE_UNIT_KEY);
+  data = {
+    unitName:'', contractName:'', actionType:'', contractLength:'', contractStatus:'active',
+    scale:'', startWarchest:'', basePay:'', supportType:'none', supportPct:'', transportPct:'', salvagePct:'',
+    command:'', contactTerms:'', combatBonus:'0',
+    ledger:[], repairRows:[], rearmRows:[], assetRows:[], contractHistory:[], pilotRoster:[], journalEntries:[],
+    forceData: {
+      name:'', co:'', scale:'', bvUsed:'', bvAvail:'', bsp:'', skillAdv:'', sca:'',
+      formations:[{label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',pilot:'',tons:'',sz:'',bv:'',gp:'',adv:'',spa:''}))}]
+    }
+  };
+  renderAll();
+  renderUnitsPage();
+  updateActiveUnitLabel();
+  toast('All data cleared.');
 }
 
 // ─────────────────────────────────────────
