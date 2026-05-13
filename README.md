@@ -30,3 +30,20 @@ Access at: https://x-lanceman-x.github.io/BTechCampaignTools/
 * Manual data export and import
 * Import MekBay CSV files to quickly populate your forces
 * Multiple device syncing using GitHub Gists
+
+
+-------
+
+##Draconis Reach Update Roadmap
+
+The app will be updated to fully support Draconis Reach as the current definitive version of Chaos Campaign Mercenaries. 
+
+I do not intend to preserve "legacy" Hinterlands options in the live app, but will retain a copy of the HTML file of the current release as a "final" Hinterlands only version.
+
+Roadmap (not necessarily in order of planned implementation:
+
+* Named Pilots, done in a similar manner as the Aces app
+* Updates to SP Costs
+* New Battle Support Reimbursement Calculator
+* Implement _Le Lion d'Or_
+* Improvements to Deployment function to track wins/losses and record track rewards.
