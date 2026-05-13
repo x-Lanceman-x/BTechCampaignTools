@@ -40,9 +40,9 @@ The app will be updated to fully support Draconis Reach as the current definitiv
 
 I do not intend to preserve "legacy" Hinterlands options in the live app, but will retain a copy of the HTML file of the current release as a "final" Hinterlands only version.
 
-Roadmap (not necessarily in order of planned implementation:
+Roadmap (not necessarily in order of planned implementation):
 
-* Named Pilots, done in a similar manner as the Aces app
+* ~Named Pilots, done in a similar manner as the Aces app~
 * Updates to SP Costs
 * New Battle Support Reimbursement Calculator
 * Implement _Le Lion d'Or_
