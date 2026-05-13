@@ -40,6 +40,8 @@ The app will be updated to fully support Draconis Reach as the current definitiv
 
 I do not intend to preserve "legacy" Hinterlands options in the live app, but will retain a copy of the HTML file of the current release as a "final" Hinterlands only version.
 
+A test version can be accessed at: https://x-lanceman-x.github.io/BTechCampaignTools/CCMercs_DraconisReachBeta/CCMercsContractSheet_Beta.html
+
 Roadmap (not necessarily in order of planned implementation):
 
 * ~Named Pilots, done in a similar manner as the Aces app~
