@@ -256,6 +256,7 @@
   .status-active { background: rgba(42,122,74,.3); border: 1px solid var(--green); color: var(--green-bright); }
   .status-complete { background: rgba(201,162,39,.15); border: 1px solid var(--border-gold); color: var(--gold); }
   .status-failed { background: var(--red-dim); border: 1px solid var(--red); color: var(--red); }
+  .status-downtime { background: rgba(106,176,232,.1); border: 1px solid #6ab0e8; color: #6ab0e8; }
 
   /* ── LEDGER TABLE ── */
   table { width: 100%; border-collapse: collapse; }
@@ -592,6 +593,8 @@
     .grid-6 { grid-template-columns: repeat(3, 1fr); }
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
   }
+  .hall-disabled { opacity: 0.35; pointer-events: none; user-select: none; }
+
   /* ── PILOT CARDS ── */
   .pilot-card {
     background: var(--panel2);
@@ -723,13 +726,46 @@
       <div id="display-status" class="contract-status status-active" style="display:inline-block;margin-top:4px">Active</div>
     </div>
   </div>
-  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+  <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;margin-bottom:16px">
+    <label class="check-label" style="margin:0">
+      <input type="checkbox" id="at-hiring-hall" onchange="toggleHiringHall(this.checked)">
+      <span class="checkmark"></span>
+      At Hiring Hall
+    </label>
     <button class="btn" onclick="newContract()" style="border-color:var(--green);color:var(--green-bright)">＋ New Contract</button>
+  </div>
+
+  <!-- Hiring Hall Options (hidden unless At Hiring Hall checked) -->
+  <div id="hiring-hall-row" style="display:none;margin-bottom:16px">
+    <div class="panel panel-gold" style="border-color:rgba(201,162,39,.6)">
+      <div style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap">
+        <div class="field" style="margin:0;min-width:180px">
+          <label>Hiring Hall Rating</label>
+          <select id="hiringHallRating" onchange="data.hiringHallRating=this.value;save()">
+            <option value="">— Select Rating —</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px">
+          <label class="check-label" style="margin:0">
+            <input type="checkbox" id="reduced-maintenance" onchange="toggleReducedMaintenance(this.checked)">
+            <span class="checkmark"></span>
+            More than six months reduced maintenance
+          </label>
+          <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.7">
+            When checked, monthly maintenance returns to normal levels (500 × scale).
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Identity -->
   <div class="section-title">Contract Identity</div>
-  <div class="panel panel-gold">
+  <div class="panel panel-gold" id="contract-identity-panel">
     <div class="grid-2">
       <div class="field"><label>Mercenary Unit Name <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">(set on Force Record)</span></label>
         <input type="text" id="unitName" placeholder="Set Force Name on Force Record tab" readonly
@@ -769,6 +805,7 @@
           <option value="active">Active</option>
           <option value="complete">Complete</option>
           <option value="failed">Failed / Breached</option>
+          <option value="downtime">Downtime at Hiring Hall</option>
         </select>
       </div>
     </div>
@@ -781,7 +818,7 @@
 
   <!-- Financial Terms -->
   <div class="section-title">Financial Terms</div>
-  <div class="panel panel-gold">
+  <div class="panel panel-gold" id="financial-terms-panel">
     <div class="grid-2">
       <div class="field"><label>Force Scale <span style="font-size:9px;color:var(--text-dim);letter-spacing:1px">(set on Force Record)</span></label>
         <input type="number" id="scale" min="1" placeholder="Set Scale on Force Record" readonly
@@ -901,6 +938,8 @@
       <div id="ledger-contract-name" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:1px;margin-top:3px;padding-left:2px"></div>
     </div>
     <button class="btn btn-sm" onclick="addLedgerRow()" style="margin-left:auto">+ Add Entry</button>
+    <button class="btn btn-sm" onclick="payMonthlyMaintenance()" style="border-color:var(--red);color:var(--red)" title="Add a Monthly Maintenance cost entry from contract values">Pay Monthly Maintenance</button>
+    <button class="btn btn-sm" onclick="payTravel()" style="border-color:#6ab0e8;color:#6ab0e8" title="Add a Travel cost entry from contract values">Pay Travel</button>
   </div>
 
   <div class="warchest-display" style="margin-bottom:16px">
@@ -1266,8 +1305,23 @@
   </div>
 
   <!-- ── DEPLOYMENT ── -->
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
-    <div class="section-title" style="margin:0;flex:1">Deployment</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px;flex-wrap:wrap">
+    <div class="section-title" style="margin:0">Deployment</div>
+    <div class="field" style="margin:0;flex:2;min-width:160px">
+      <input type="text" id="deploy-track-name" placeholder="Track Name…"
+        style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none">
+    </div>
+    <div class="field" style="margin:0;min-width:180px">
+      <select id="deploy-combat-bonus"
+        style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
+        <option value="">— Combat Bonus —</option>
+        <option value="broke">Broke Contract</option>
+        <option value="unsuccessful">Unsuccessful</option>
+        <option value="success">Success</option>
+        <option value="allobjectives">All Objectives</option>
+      </select>
+    </div>
+    <button class="btn btn-sm" onclick="completeDeployment()" style="border-color:var(--green);color:var(--green-bright);white-space:nowrap">✓ Complete Deployment</button>
     <button class="btn btn-sm btn-danger" onclick="clearAllDeploy()">✕ Reset Deployment</button>
   </div>
 
@@ -1757,7 +1811,7 @@ let data = {
   barracksRows:[],
   pilotCards:[], pilotMemorial:[],
   pilotMemorial:[],
-  noBsp: false, handicapOption: false,
+  noBsp: false, handicapOption: false, atHiringHall: false, hiringHallRating: '', reducedMaintenance: false,
   clanTechMult: 1.5
 };
 
@@ -2067,6 +2121,26 @@ function renderAll() {
   if (noBspEl) noBspEl.checked = !!data.noBsp;
   const handicapOptEl = document.getElementById('handicap-option');
   if (handicapOptEl) handicapOptEl.checked = !!data.handicapOption;
+  const hiringHallEl = document.getElementById('at-hiring-hall');
+  if (hiringHallEl) {
+    hiringHallEl.checked = !!data.atHiringHall;
+    const hallRow  = document.getElementById('hiring-hall-row');
+    const idPanel  = document.getElementById('contract-identity-panel');
+    const finPanel = document.getElementById('financial-terms-panel');
+    if (data.atHiringHall) {
+      if (hallRow)  hallRow.style.display = 'block';
+      if (idPanel)  idPanel.classList.add('hall-disabled');
+      if (finPanel) finPanel.classList.add('hall-disabled');
+    } else {
+      if (hallRow)  hallRow.style.display = 'none';
+      if (idPanel)  idPanel.classList.remove('hall-disabled');
+      if (finPanel) finPanel.classList.remove('hall-disabled');
+    }
+  }
+  const ratingEl = document.getElementById('hiringHallRating');
+  if (ratingEl) ratingEl.value = data.hiringHallRating || '';
+  const reducedEl = document.getElementById('reduced-maintenance');
+  if (reducedEl) reducedEl.checked = !!data.reducedMaintenance;
   const clanMultEl = document.getElementById('clan-tech-mult');
   if (clanMultEl) clanMultEl.value = data.clanTechMult !== undefined ? data.clanTechMult : 1.5;
   recalc();
@@ -2101,7 +2175,7 @@ function recalc() {
   const transportPct = Math.min(100, Math.max(0, +data.transportPct || 0));
   const travelCovered = Math.round(travelGross * (transportPct / 100));
   const travel = travelGross - travelCovered;
-  const maintGrossPerMonth = 500 * scale;
+  const maintGrossPerMonth = (data.atHiringHall && !data.reducedMaintenance) ? 100 : 500 * scale;
   const supportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : supportPct;
   const maintCoveredPerMonth = Math.round(maintGrossPerMonth * (effectiveSupportPct / 100));
@@ -2176,6 +2250,7 @@ function updateStatus() {
   statusEl.className = 'contract-status';
   if (val === 'complete') { statusEl.classList.add('status-complete'); statusEl.textContent = 'Complete'; }
   else if (val === 'failed') { statusEl.classList.add('status-failed'); statusEl.textContent = 'Failed'; }
+  else if (val === 'downtime') { statusEl.classList.add('status-downtime'); statusEl.textContent = 'Downtime at Hiring Hall'; }
   else { statusEl.classList.add('status-active'); statusEl.textContent = 'Active'; }
   updateLedgerBanner();
 }
@@ -2196,7 +2271,7 @@ function updateLedgerBanner() {
   const status = (statusSel && statusSel.value) || data.contractStatus || 'active';
 
   const STATUS_LABELS = { active:'Active', complete:'Complete', failed:'Failed / Breached' };
-  const STATUS_CLASSES = { active:'status-active', complete:'status-complete', failed:'status-failed' };
+  const STATUS_CLASSES = { active:'status-active', complete:'status-complete', failed:'status-failed', downtime:'status-downtime' };
 
   nameEl.textContent = name !== '(No contract name set)' ? `Contract: ${name}` : '';
   if (unitEl) unitEl.textContent = unit;
@@ -2222,6 +2297,55 @@ function updateBonusHighlight() {
 // ─────────────────────────────────────────
 function addLedgerRow() {
   data.ledger.push({month:'', event:'', cost:'', cover:'', paid:'', rep:''});
+  renderLedger(); save();
+}
+
+function nextLedgerMonth() {
+  // Find the highest numeric month in existing entries and return next
+  let max = 0;
+  data.ledger.forEach(r => {
+    const m = parseInt(r.month);
+    if (!isNaN(m) && m > max) max = m;
+  });
+  return String(max + 1);
+}
+
+function payMonthlyMaintenance() {
+  const scale = +data.scale || 0;
+  if (!scale && !data.atHiringHall) { toast('Set a Force Scale on the Contract tab first.'); return; }
+  const maintGross = (data.atHiringHall && !data.reducedMaintenance) ? 100 : 500 * scale;
+  const supportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : supportPct;
+  const maintCovered = Math.round(maintGross * (effectiveSupportPct / 100));
+  const basePay = Math.round(500 * scale * ((+data.basePay || 0) / 100));
+  data.ledger.push({
+    month: '',
+    event: 'Monthly Maintenance',
+    cost:  String(maintGross),
+    cover: maintCovered ? String(maintCovered) : '',
+    paid:  basePay ? String(basePay) : '',
+    rep:   ''
+  });
+  renderLedger(); save();
+}
+
+function payTravel() {
+  const scale = +data.scale || 0;
+  if (!scale) { toast('Set a Force Scale on the Contract tab first.'); return; }
+  const numJumps = +data.numJumps || 0;
+  const travelGross = data.trackJumps
+    ? Math.ceil(50 + (50 * numJumps))
+    : 300 * scale;
+  const transportPct = Math.min(100, Math.max(0, +data.transportPct || 0));
+  const travelCovered = Math.round(travelGross * (transportPct / 100));
+  data.ledger.push({
+    month: '',
+    event: 'Travel',
+    cost:  String(travelGross),
+    cover: travelCovered ? String(travelCovered) : '',
+    paid:  '',
+    rep:   ''
+  });
   renderLedger(); save();
 }
 function removeLedgerRow(i) { data.ledger.splice(i,1); renderLedger(); save(); }
@@ -3195,7 +3319,7 @@ function newContract() {
   data.actionType = '';
   data.contractLength = '';
   data.contractStatus = 'active';
-  data.scale = '';
+  data.scale = (data.forceData && data.forceData.scale) ? data.forceData.scale : '';
   data.startWarchest = String(Math.round(endingBalance));
   data.basePay = '';
   data.supportType = 'none';
@@ -3229,8 +3353,8 @@ function renderContractHistory() {
   if (!hist.length) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
-  const STATUS_LABELS = { active:'Active', complete:'Complete', failed:'Failed' };
-  const STATUS_CLASSES = { active:'status-active', complete:'status-complete', failed:'status-failed' };
+  const STATUS_LABELS = { active:'Active', complete:'Complete', failed:'Failed', downtime:'Downtime' };
+  const STATUS_CLASSES = { active:'status-active', complete:'status-complete', failed:'status-failed', downtime:'status-downtime' };
 
   list.innerHTML = hist.map((c, i) => {
     const name = c.contractName || '(Unnamed Contract)';
@@ -3292,12 +3416,88 @@ function renderContractHistory() {
         <span class="contract-status ${statusClass}" style="font-size:10px;padding:3px 10px">${statusLabel}</span>
         <span style="color:var(--text-dim);font-size:18px;margin-left:8px;transition:transform .2s" id="hist-chevron-${i}">▸</span>
       </div>
-      <div id="hist-body-${i}" style="display:none;padding:16px;border-top:1px solid var(--border-gold)">
-        ${detailGrid}
-        ${ledgerHTML}
-        <div style="margin-top:14px;display:flex;justify-content:flex-end">
-          <button class="btn btn-sm" onclick="restoreContract(${i})" style="border-color:#4a8a6a;color:var(--green-bright)">↩ Restore for Editing</button>
+      <div id="hist-body-${i}" style="display:none;border-top:1px solid var(--border-gold)">
+
+        <!-- Summary read-only view -->
+        <div id="hist-summary-${i}" style="padding:16px">
+          ${detailGrid}
         </div>
+
+        <!-- Full edit form (hidden by default) -->
+        <div id="hist-edit-${i}" style="display:none;padding:16px;border-top:1px solid var(--border)">
+          <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px">Contract Identity</div>
+          <div class="grid-2" style="gap:10px;margin-bottom:10px">
+            <div class="field" style="margin:0"><label>Contract Name</label>
+              <input type="text" id="hf-name-${i}" value="${esc(c.contractName||'')}" placeholder="e.g. Operation Hesperus Strike"></div>
+            <div class="field" style="margin:0"><label>Employer</label>
+              <input type="text" id="hf-employer-${i}" value="${esc(c.employer||'')}" placeholder="e.g. Federated Suns — AFFS"></div>
+          </div>
+          <div class="grid-2" style="gap:10px;margin-bottom:10px">
+            <div class="field" style="margin:0"><label>Planet</label>
+              <input type="text" id="hf-planet-${i}" value="${esc(c.planet||'')}" placeholder="e.g. Hesperus II"></div>
+            <div class="field" style="margin:0"><label>Type of Action</label>
+              <select id="hf-action-${i}" style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:7px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
+                <option value="">— Select —</option>
+                ${['Raid','Recon','Guerrilla','Extraction','Planetary Assault','Garrison','Cadre','Pirate Hunting'].map(t=>`<option value="${t}" ${c.actionType===t?'selected':''}>${t}</option>`).join('')}
+              </select></div>
+          </div>
+          <div class="grid-3" style="gap:10px;margin-bottom:16px">
+            <div class="field" style="margin:0"><label>Length (Months)</label>
+              <input type="number" id="hf-length-${i}" value="${esc(String(c.contractLength||''))}" placeholder="6" min="1"></div>
+            <div class="field" style="margin:0"><label>Status</label>
+              <select id="hf-status-${i}" style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:7px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
+                <option value="active"   ${status==='active'   ?'selected':''}>Active</option>
+                <option value="complete" ${status==='complete' ?'selected':''}>Complete</option>
+                <option value="failed"   ${status==='failed'   ?'selected':''}>Failed / Breached</option>
+                <option value="downtime" ${status==='downtime' ?'selected':''}>Downtime at Hiring Hall</option>
+              </select></div>
+            <div class="field" style="margin:0"><label>Command</label>
+              <select id="hf-command-${i}" style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:7px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
+                <option value="">— Select —</option>
+                ${['Independent','Liaison','House Command','Integrated'].map(t=>`<option value="${t}" ${c.command===t?'selected':''}>${t}</option>`).join('')}
+              </select></div>
+          </div>
+
+          <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px">Financial Terms</div>
+          <div class="grid-3" style="gap:10px;margin-bottom:10px">
+            <div class="field" style="margin:0"><label>Starting Warchest (SP)</label>
+              <input type="number" id="hf-warchest-${i}" value="${esc(String(c.startWarchest||''))}" placeholder="0" min="0"></div>
+            <div class="field" style="margin:0"><label>Base Pay %</label>
+              <input type="number" id="hf-basepay-${i}" value="${esc(String(c.basePay||''))}" placeholder="50" min="0" max="200"></div>
+            <div class="field" style="margin:0"><label>Support Type</label>
+              <select id="hf-supptype-${i}" style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:7px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
+                <option value="none"     ${(c.supportType||'none')==='none'   ?'selected':''}>None</option>
+                <option value="straight" ${c.supportType==='straight'?'selected':''}>Straight</option>
+                <option value="battle"   ${c.supportType==='battle'  ?'selected':''}>Battle</option>
+              </select></div>
+          </div>
+          <div class="grid-3" style="gap:10px;margin-bottom:10px">
+            <div class="field" style="margin:0"><label>Support %</label>
+              <input type="number" id="hf-supppct-${i}" value="${esc(String(c.supportPct||''))}" placeholder="0" min="0" max="100"></div>
+            <div class="field" style="margin:0"><label>Transport %</label>
+              <input type="number" id="hf-transport-${i}" value="${esc(String(c.transportPct||''))}" placeholder="0" min="0" max="100"></div>
+            <div class="field" style="margin:0"><label>Salvage %</label>
+              <input type="number" id="hf-salvage-${i}" value="${esc(String(c.salvagePct||''))}" placeholder="0" min="0" max="100"></div>
+          </div>
+          <div class="field" style="margin-bottom:16px"><label>Contact Terms / Notes</label>
+            <input type="text" id="hf-terms-${i}" value="${esc(c.contactTerms||'')}" placeholder="e.g. Quarterly payment, no salvage clause"></div>
+        </div>
+
+        <!-- Ledger view (always shown) -->
+        <div id="hist-ledger-${i}" style="padding:0 16px 16px">
+          ${ledgerHTML}
+        </div>
+
+        <!-- Action bar -->
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between;background:rgba(0,0,0,.15)">
+          <button class="btn btn-sm btn-danger" onclick="deleteHistoryContract(${i})">✕ Delete</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" id="hist-edit-btn-${i}" onclick="toggleHistoryEdit(${i})" style="border-color:#6ab0e8;color:#6ab0e8">✎ Edit</button>
+            <button class="btn btn-sm" id="hist-save-btn-${i}" onclick="saveHistoryContract(${i})" style="display:none;border-color:var(--green);color:var(--green-bright)">✓ Save</button>
+            <button class="btn btn-sm" id="hist-cancel-btn-${i}" onclick="cancelHistoryEdit(${i})" style="display:none">✕ Cancel</button>
+          </div>
+        </div>
+
       </div>
     </div>`;
   }).join('');
@@ -3310,6 +3510,71 @@ function toggleHistory(i) {
   const open = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'block';
   if (chev) chev.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+function toggleHistoryEdit(i) {
+  const summary  = document.getElementById(`hist-summary-${i}`);
+  const editForm = document.getElementById(`hist-edit-${i}`);
+  const editBtn  = document.getElementById(`hist-edit-btn-${i}`);
+  const saveBtn  = document.getElementById(`hist-save-btn-${i}`);
+  const cancelBtn= document.getElementById(`hist-cancel-btn-${i}`);
+  if (!editForm) return;
+  editForm.style.display = 'block';
+  if (summary)   summary.style.display   = 'none';
+  if (editBtn)   editBtn.style.display   = 'none';
+  if (saveBtn)   saveBtn.style.display   = 'inline-block';
+  if (cancelBtn) cancelBtn.style.display = 'inline-block';
+}
+
+function cancelHistoryEdit(i) {
+  const summary  = document.getElementById(`hist-summary-${i}`);
+  const editForm = document.getElementById(`hist-edit-${i}`);
+  const editBtn  = document.getElementById(`hist-edit-btn-${i}`);
+  const saveBtn  = document.getElementById(`hist-save-btn-${i}`);
+  const cancelBtn= document.getElementById(`hist-cancel-btn-${i}`);
+  if (editForm)  editForm.style.display  = 'none';
+  if (summary)   summary.style.display   = 'block';
+  if (editBtn)   editBtn.style.display   = 'inline-block';
+  if (saveBtn)   saveBtn.style.display   = 'none';
+  if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
+function saveHistoryContract(i) {
+  if (!data.contractHistory[i]) return;
+  const g = id => { const el = document.getElementById(`hf-${id}-${i}`); return el ? el.value : null; };
+  const c = data.contractHistory[i];
+  if (g('name')     !== null) c.contractName  = g('name');
+  if (g('employer') !== null) c.employer      = g('employer');
+  if (g('planet')   !== null) c.planet        = g('planet');
+  if (g('action')   !== null) c.actionType    = g('action');
+  if (g('length')   !== null) c.contractLength= g('length');
+  if (g('status')   !== null) c.contractStatus= g('status');
+  if (g('command')  !== null) c.command       = g('command');
+  if (g('warchest') !== null) c.startWarchest = g('warchest');
+  if (g('basepay')  !== null) c.basePay       = g('basepay');
+  if (g('supptype') !== null) c.supportType   = g('supptype');
+  if (g('supppct')  !== null) c.supportPct    = g('supppct');
+  if (g('transport')!== null) c.transportPct  = g('transport');
+  if (g('salvage')  !== null) c.salvagePct    = g('salvage');
+  if (g('terms')    !== null) c.contactTerms  = g('terms');
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderContractHistory();
+  // Re-open and keep expanded after re-render
+  const body = document.getElementById(`hist-body-${i}`);
+  const chev = document.getElementById(`hist-chevron-${i}`);
+  if (body) body.style.display = 'block';
+  if (chev) chev.style.transform = 'rotate(90deg)';
+  toast('Contract saved.');
+}
+
+function deleteHistoryContract(i) {
+  const c = data.contractHistory[i];
+  const name = (c && c.contractName) || '(Unnamed Contract)';
+  if (!confirm(`Delete "${name}" from contract history?\n\nThis will not affect the current warchest balance.`)) return;
+  data.contractHistory.splice(i, 1);
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderContractHistory();
+  toast('Contract deleted from history.');
 }
 
 function restoreContract(i) {
@@ -3728,6 +3993,49 @@ function deployFormation(fi, checked) {
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
+function completeDeployment() {
+  const trackName    = (document.getElementById('deploy-track-name')  || {}).value || '';
+  const bonusKey     = (document.getElementById('deploy-combat-bonus') || {}).value || '';
+  const scale        = +(data.forceData && data.forceData.scale) || +data.scale || 0;
+
+  const BONUS_PAY = {
+    broke:         0,
+    unsuccessful:  250 * scale,
+    success:       500 * scale,
+    allobjectives: 750 * scale
+  };
+
+  if (!trackName) { toast('Enter a Track Name before completing deployment.'); return; }
+  if (!bonusKey)  { toast('Select a Combat Bonus result before completing deployment.'); return; }
+
+  const paid = BONUS_PAY[bonusKey] ?? 0;
+  const bonusLabels = {
+    broke:'Broke Contract', unsuccessful:'Unsuccessful', success:'Success', allobjectives:'All Objectives'
+  };
+  const event = trackName + (bonusKey ? ` — ${bonusLabels[bonusKey]}` : '');
+
+  // Add ledger entry
+  if (!data.ledger) data.ledger = [];
+  data.ledger.push({ month:'', event, cost:'', cover:'', paid: paid ? String(paid) : '', rep:'' });
+
+  // Clear deployment
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => { r.deploy = false; });
+  });
+
+  // Reset inputs
+  const tn = document.getElementById('deploy-track-name');
+  const cb = document.getElementById('deploy-combat-bonus');
+  if (tn) tn.value = '';
+  if (cb) cb.value = '';
+
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderFormations();
+  renderDeployment();
+  renderLedger();
+  toast(`Track "${trackName}" completed — ${bonusLabels[bonusKey]} (${paid ? fmt(paid) + ' SP' : '0 SP'}) added to ledger.`);
+}
+
 function clearAllDeploy() {
   if (!confirm('Clear all deployment selections?')) return;
   (data.forceData.formations || []).forEach(f => {
@@ -3908,6 +4216,60 @@ function toggleNoBsp(checked) {
   data.noBsp = checked;
   localStorage.setItem('btMercContract', JSON.stringify(data));
   saveForce();
+}
+
+function toggleHiringHall(checked) {
+  data.atHiringHall = checked;
+  const hallRow    = document.getElementById('hiring-hall-row');
+  const idPanel    = document.getElementById('contract-identity-panel');
+  const finPanel   = document.getElementById('financial-terms-panel');
+  const ratingEl   = document.getElementById('hiringHallRating');
+  const reducedEl  = document.getElementById('reduced-maintenance');
+
+  if (checked) {
+    // Show hiring hall options
+    if (hallRow)  hallRow.style.display  = 'block';
+    // Disable and clear identity + financial panels
+    if (idPanel)  idPanel.classList.add('hall-disabled');
+    if (finPanel) finPanel.classList.add('hall-disabled');
+    // Clear contract identity fields
+    ['contractName','employer','planet','actionType','contractLength','contactTerms','command'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else el.value = '';
+    });
+    // Clear financial fields
+    ['basePay','supportType','supportPct','transportPct','salvagePct'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else el.value = '';
+    });
+    // Reset reduced maintenance
+    data.reducedMaintenance = false;
+    if (reducedEl) reducedEl.checked = false;
+    save();
+    recalc();
+  } else {
+    // Hide hiring hall options, restore panels
+    if (hallRow)  hallRow.style.display  = 'none';
+    if (idPanel)  idPanel.classList.remove('hall-disabled');
+    if (finPanel) finPanel.classList.remove('hall-disabled');
+    // Reset hiring hall rating
+    data.hiringHallRating  = '';
+    data.reducedMaintenance = false;
+    if (ratingEl)  ratingEl.value   = '';
+    if (reducedEl) reducedEl.checked = false;
+    save();
+    recalc();
+  }
+}
+
+function toggleReducedMaintenance(checked) {
+  data.reducedMaintenance = checked;
+  save();
+  recalc();
 }
 
 function toggleHandicapOption(checked) {
