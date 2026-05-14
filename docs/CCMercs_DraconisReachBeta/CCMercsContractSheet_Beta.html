@@ -694,12 +694,12 @@
     </div>
     <nav class="nav-tabs">
       <button class="nav-tab active" onclick="showPage('force',this)">Force Record</button>
+      <button class="nav-tab" onclick="showPage('pilotcards',this)">Pilots</button>
       <button class="nav-tab" onclick="showPage('contract',this)">Contract</button>
       <button class="nav-tab" onclick="showPage('ledger',this)">Monthly Ledger</button>
       <button class="nav-tab" onclick="showPage('support',this)">Support Costs</button>
       <button class="nav-tab" onclick="showPage('ref',this)">Reference</button>
       <button class="nav-tab" onclick="showPage('units',this)">Forces</button>
-      <button class="nav-tab" onclick="showPage('pilotcards',this)">Pilot Cards</button>
       <button class="nav-tab" onclick="showPage('journal',this)">Journal</button>
       <button class="nav-tab" onclick="showPage('settings',this)">Settings</button>
     </nav>
@@ -1128,42 +1128,26 @@
   <!-- SECTION 4: Personnel & Training -->
   <div class="section-title" style="font-size:15px;letter-spacing:4px">Personnel &amp; Training</div>
 
-  <!-- Hire Personnel -->
+  <!-- Hire Named Pilot -->
   <div class="panel panel-gold">
-    <div class="ref-title">&#128101; Hire Personnel (100 SP each)</div>
-    <div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;margin-bottom:6px">
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Description</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Count</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    <div class="ref-title">👤 Hire Named Pilot (150 SP each)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 90px 1.4fr 90px 36px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Name</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Callsign</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Rank</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Type</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost</div>
+      <div></div>
     </div>
     <div id="hire-rows"></div>
-    <button class="btn btn-sm" onclick="addHireRow()" style="margin-top:8px">+ Add Entry</button>
+    <button class="btn btn-sm" onclick="addHireRow()" style="margin-top:8px">+ Add Pilot</button>
     <div class="balance-bar" style="margin-top:14px">
-      <span class="balance-bar-label">Total Hire Cost</span>
+      <span class="balance-bar-label">Total Hiring Cost</span>
       <span class="balance-bar-val" id="hire-total">0 SP</span>
     </div>
   </div>
 
-  <!-- Heal Wounds -->
-  <div class="panel">
-    <div class="ref-title">&#10084; Heal Wounds (30 SP per wound)</div>
-    <div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;margin-bottom:6px">
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Pilot</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Wounds</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
-    </div>
-    <div id="heal-rows"></div>
-    <button class="btn btn-sm" onclick="addHealRow()" style="margin-top:8px">+ Add Entry</button>
-    <div class="balance-bar" style="margin-top:14px">
-      <span class="balance-bar-label">Total Heal Cost</span>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="balance-bar-val" id="heal-total">0 SP</span>
-        <span id="heal-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Skill Improvements -->
+  <!-- Training -->
   <div class="panel">
     <div class="ref-title">&#11088; Training</div>
     <div style="display:grid;grid-template-columns:2fr 1fr 36px;gap:8px;margin-bottom:6px">
@@ -1185,6 +1169,52 @@
     <div style="display:flex;align-items:center;gap:12px">
       <span style="font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700;color:var(--gold)" id="personnel-grand-total">0 SP</span>
       <button class="btn btn-sm" onclick="sendPersonnelToLedger()">&#8594; Send to Ledger</button>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Medical -->
+  <div class="section-title" style="font-size:15px;letter-spacing:4px">Medical</div>
+
+  <!-- Heal Wounds -->
+  <div class="panel">
+    <div class="ref-title">&#10084; Heal Wounds (30 SP per wound)</div>
+    <div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Pilot</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Wounds</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    </div>
+    <div id="heal-rows"></div>
+    <button class="btn btn-sm" onclick="addHealRow()" style="margin-top:8px">+ Add Entry</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total Medical Cost</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="balance-bar-val" id="heal-total">0 SP</span>
+        <span id="heal-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heal Battle Armor Troopers -->
+  <div class="panel">
+    <div class="ref-title">🛡️ Heal Battle Armor Troopers (10 SP per trooper)</div>
+    <div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">BA Commander</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Troopers</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    </div>
+    <div id="heal-ba-rows"></div>
+    <button class="btn btn-sm" onclick="addHealBARow()" style="margin-top:8px">+ Add Entry</button>
+    <div class="balance-bar" style="margin-top:14px">
+      <span class="balance-bar-label">Total BA Medical Cost</span>
+      <span class="balance-bar-val" id="heal-ba-total">0 SP</span>
+    </div>
+  </div>
+
+  <div style="padding:14px 20px;border:2px solid var(--border-gold);background:rgba(201,162,39,.06);display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+    <span style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Medical</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700;color:var(--gold)" id="medical-grand-total">0 SP</span>
+      <button class="btn btn-sm" onclick="sendMedicalToLedger()">&#8594; Send to Ledger</button>
     </div>
   </div>
 
@@ -1230,6 +1260,23 @@
         <input type="number" id="force-bsp" placeholder="0" oninput="saveForce()">
       </div>
     </div>
+    <div class="grid-2" style="gap:12px;margin-top:10px;align-items:end">
+      <div class="field" style="margin:0">
+        <label>Parent Command</label>
+        <input type="text" id="force-parent-command" placeholder="e.g. AFFS, DCMS, ComStar" oninput="saveForce()">
+      </div>
+      <div class="field" style="margin:0;padding-bottom:6px">
+        <label class="check-label">
+          <input type="checkbox" id="force-regular-military" onchange="saveForce()">
+          <span class="checkmark"></span>
+          Regular Military Command
+        </label>
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Manufacturing Sponsor</label>
+      <input type="text" id="force-manufacturing-sponsor" placeholder="e.g. Defiance Industries, Irian Technologies" oninput="saveForce()">
+    </div>
     <div class="field" style="margin-top:10px">
       <label>Special Command Abilities</label>
       <input type="text" id="force-sca" placeholder="e.g. Overrun Combat, Fire for Effect" oninput="saveForce()">
@@ -1259,12 +1306,13 @@
 
     <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto">
       <div style="min-width:780px">
-      <div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 120px 100px 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 1.4fr 120px 100px 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Tons</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:right">PV</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Tech Base</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Skill</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Crew</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Combat Losses</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Deploy</div>
         <div style="padding:7px 8px"></div>
@@ -1732,9 +1780,28 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
     <div class="section-title" style="margin:0;flex:1">Named Pilot Cards</div>
     <button class="btn" onclick="addPilotCard()" style="border-color:var(--green);color:var(--green-bright)">+ Add Pilot Card</button>
+    <button class="btn" onclick="addTemporaryPilot()" style="border-color:#6ab0e8;color:#6ab0e8">+ Add Temporary Pilot</button>
   </div>
 
   <div id="pilotCardsContainer" class="pilot-cards-grid"></div>
+
+  <!-- Nameless Pilots -->
+  <div style="border-top:2px solid var(--border-gold);margin:32px 0 24px"></div>
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="section-title" style="margin:0;flex:1">Nameless Pilots</div>
+    <button class="btn btn-sm" onclick="addNamelessPilot()" style="border-color:var(--green);color:var(--green-bright)">+ Add Pilot</button>
+  </div>
+
+  <div class="panel" style="padding:0;overflow-x:auto">
+    <div style="min-width:640px">
+      <div id="nameless-pilot-header" style="display:grid;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)"></div>
+      <div id="nameless-pilot-rows"></div>
+      <div id="nameless-pilot-empty" style="text-align:center;color:var(--text-dim);padding:20px;font-size:13px;letter-spacing:1px">
+        No nameless pilots tracked yet.
+      </div>
+    </div>
+  </div>
 
 </div><!-- /page-pilotcards -->
 
@@ -1809,7 +1876,7 @@ let data = {
   pilotRoster:[],
   journalEntries:[],
   barracksRows:[],
-  pilotCards:[], pilotMemorial:[],
+  pilotCards:[], pilotMemorial:[], namelessPilots:[],
   pilotMemorial:[],
   noBsp: false, handicapOption: false, atHiringHall: false, hiringHallRating: '', reducedMaintenance: false,
   clanTechMult: 1.5
@@ -2107,6 +2174,7 @@ function renderAll() {
   renderOmniRows();
   renderHireRows();
   renderHealRows();
+  renderHealBARows();
   renderSkillRows();
   renderContractHistory();
   renderForce();
@@ -2116,6 +2184,7 @@ function renderAll() {
   renderBarracks();
   renderJournal();
   renderPilotCards();
+  renderNamelessPilots();
   renderMemorial();
   const noBspEl = document.getElementById('no-bsp');
   if (noBspEl) noBspEl.checked = !!data.noBsp;
@@ -2621,7 +2690,7 @@ const ASSET_MULT = {'buy':1,'buy_pv':40,'sell':0.5,'sell_pv':20};
 
 function addAssetRow() {
   const types = getAssetTypes();
-  data.assetRows.push({unit:'', bv:'', type: types[0].key});
+  data.assetRows.push({unit:'', bv:'', type: types[0].key, modifier:'none'});
   renderAssetRows(); save();
 }
 function removeAssetRow(i) { data.assetRows.splice(i,1); renderAssetRows(); save(); }
@@ -2663,7 +2732,9 @@ function renderAssetRows() {
     const mult = ASSET_MULT[r.type]||40;
     const bv = +r.bv||0;
     const at = ASSET_TYPES.find(t=>t.key===r.type)||ASSET_TYPES[0];
-    const val = bv * mult;
+    const baseVal = bv * mult;
+    const modVal  = (r.modifier === 'half') ? bv * 0.5 : 0;
+    const val     = baseVal + modVal;
     const sign = at.sign;
     const isSellRow = r.type === 'sell';
     // Check if selected unit is non-Operational on a sell row
@@ -2671,12 +2742,16 @@ function renderAssetRows() {
     const nonOpSell = isSellRow && matchedUnit && matchedUnit.unitStatus && matchedUnit.unitStatus !== 'operational';
     const color = nonOpSell ? 'var(--red)' : sign > 0 ? 'var(--green-bright)' : 'var(--red)';
     const listId = isSellRow ? datalistSellId : datalistId;
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 180px 130px;gap:8px;align-items:center;margin-bottom:6px${nonOpSell?';opacity:0.6':''}">
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 160px 180px 130px;gap:8px;align-items:center;margin-bottom:6px${nonOpSell?';opacity:0.6':''}">
       <div style="position:relative">
         <input type="text" list="${listId}" value="${esc(r.unit)}" onchange="selectAssetUnit(${i},this.value)" placeholder="Unit name or custom" style="width:100%${nonOpSell?';border-color:var(--red)':''}">
         ${nonOpSell ? `<div style="font-size:10px;color:var(--red);letter-spacing:1px;margin-top:2px">Not Operational — cannot sell</div>` : ''}
       </div>
       <input type="number" value="${r.bv||''}" onchange="updateAssetRow(${i},'bv',this.value)" placeholder="${classic ? 'BV' : 'PV'}" style="text-align:center">
+      <select onchange="updateAssetRow(${i},'modifier',this.value)" style="background:var(--darker);border:1px solid var(--border);color:${r.modifier==='half'?'var(--gold)':'var(--text-dim)'};padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
+        <option value="none" ${(r.modifier||'none')==='none'?'selected':''}>No Modifier</option>
+        <option value="half" ${r.modifier==='half'?'selected':''} style="color:var(--gold)">+ Additional Half</option>
+      </select>
       <select onchange="updateAssetRow(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
         ${ASSET_TYPES.map(t=>`<option value="${t.key}" ${r.type===t.key?'selected':''}>${t.label}</option>`).join('')}
       </select>
@@ -2826,9 +2901,11 @@ function sendSalvageToLedger() {
 // ─────────────────────────────────────────
 // PERSONNEL & TRAINING
 // ─────────────────────────────────────────
+const PILOT_TYPES = ['MechWarrior','Vehicle Commander','Battle Armor Commander','Conventional Infantry Commander','Aerospace Pilot'];
+
 function addHireRow() {
   if (!data.hireRows) data.hireRows = [];
-  data.hireRows.push({desc:'', count:''});
+  data.hireRows.push({name:'', callsign:'', rank:'', type:'MechWarrior'});
   renderHireRows(); save();
 }
 function removeHireRow(i) { data.hireRows.splice(i,1); renderHireRows(); save(); }
@@ -2839,18 +2916,19 @@ function renderHireRows() {
   const cont = document.getElementById('hire-rows');
   if (!cont) { updatePersonnelTotals(); return; }
   if (!data.hireRows.length) {
-    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
+    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No pilots to hire.</div>`;
     updatePersonnelTotals(); return;
   }
   cont.innerHTML = data.hireRows.map((r,i) => {
-    const cost = Math.ceil((+r.count||0) * 100);
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="text" value="${esc(r.desc)}" placeholder="e.g. MechWarriors" onchange="updateHireRow(${i},'desc',this.value)" style="width:100%">
-      <input type="number" value="${r.count||''}" placeholder="n" style="text-align:center" onchange="updateHireRow(${i},'count',this.value)">
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
-        <button class="btn btn-sm btn-danger" onclick="removeHireRow(${i})">✕</button>
-      </div>
+    return `<div style="display:grid;grid-template-columns:1fr 1fr 90px 1.4fr 90px 36px;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="text" value="${esc(r.name||'')}" placeholder="Full name" onchange="updateHireRow(${i},'name',this.value)" style="width:100%">
+      <input type="text" value="${esc(r.callsign||'')}" placeholder="Callsign" onchange="updateHireRow(${i},'callsign',this.value)" style="width:100%">
+      <input type="text" value="${esc(r.rank||'')}" placeholder="Rank" onchange="updateHireRow(${i},'rank',this.value)" style="width:100%">
+      <select onchange="updateHireRow(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
+        ${PILOT_TYPES.map(t=>`<option value="${t}" ${(r.type||'MechWarrior')===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;text-align:right">150 SP</span>
+      <button class="btn btn-sm btn-danger" onclick="removeHireRow(${i})">✕</button>
     </div>`;
   }).join('');
   updatePersonnelTotals();
@@ -2858,54 +2936,63 @@ function renderHireRows() {
 
 function addHealRow() {
   if (!data.healRows) data.healRows = [];
-  data.healRows.push({pilot:'', pilotIdx:null});
+  data.healRows.push({pilot:'', pilotKey:null});
   renderHealRows(); save();
 }
 function removeHealRow(i) { data.healRows.splice(i,1); renderHealRows(); save(); }
+
+const HEAL_TYPES = ['MechWarrior','Vehicle Commander','Conventional Infantry Commander','Aerospace Pilot'];
 
 function renderHealRows() {
   if (!data.healRows) data.healRows = [];
   const cont = document.getElementById('heal-rows');
   if (!cont) { updatePersonnelTotals(); return; }
 
-  // Wounded pilots only (not KIA, not Active/MIA/Retired with 0 wounds)
-  const woundedPilots = (data.pilotRoster||[])
-    .map((p, idx) => ({...p, _idx: idx}))
-    .filter(p => p.status !== 'KIA' && (+p.wounds||0) > 0);
+  // Build eligible pilot list: named + nameless, wounded, of healable types
+  const eligible = [];
+  (data.pilotRoster||[]).forEach((p, idx) => {
+    if (!HEAL_TYPES.includes(p.type)) return;
+    if (p.status === 'KIA') return;
+    if ((+p.wounds||0) === 0) return;
+    eligible.push({ key: String(idx), label: [p.rank, p.name, p.callsign ? `"${p.callsign}"` : ''].filter(Boolean).join(' '), wounds: +p.wounds||0 });
+  });
+  (data.namelessPilots||[]).forEach((p, ni) => {
+    if (!HEAL_TYPES.includes(p.type)) return;
+    if (p.status === 'KIA') return;
+    if ((+p.wounds||0) === 0) return;
+    const label = `${p.type} #${p.id || ni+1}`;
+    eligible.push({ key: `n:${ni}`, label, wounds: +p.wounds||0 });
+  });
 
   if (!data.healRows.length) {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
     updatePersonnelTotals(); return;
   }
-  cont.innerHTML = data.healRows.map((r,i) => {
-    const pilot = r.pilotIdx !== null ? (data.pilotRoster||[])[r.pilotIdx] : null;
-    const currentWounds = pilot ? (+pilot.wounds||0) : 0;
+  cont.innerHTML = data.healRows.map((r, i) => {
+    const selKey = r.pilotKey != null ? String(r.pilotKey) : '';
+    const matched = eligible.find(e => e.key === selKey);
+    const currentWounds = matched ? matched.wounds : 0;
     const woundsColor = currentWounds >= 6 ? 'var(--red)' : currentWounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
-    const pilotOptions = '<option value="">— select pilot —</option>' +
-      woundedPilots.map(p => {
-        const label = [p.rank, p.name, p.callsign ? '"' + p.callsign + '"' : ''].filter(Boolean).join(' ');
-        return '<option value="' + p._idx + '" ' + (r.pilotIdx===p._idx?'selected':'') + '>' + esc(label) + ' [' + p.wounds + ' wound' + (p.wounds!==1?'s':'') + ']</option>';
-      }).join('');
-    return '<div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;align-items:center;margin-bottom:6px">' +
-      '<select onchange="selectHealPilot(' + i + ',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:\'Share Tech Mono\',monospace;font-size:12px;width:100%">' +
-        pilotOptions +
-      '</select>' +
-      '<div style="font-family:\'Share Tech Mono\',monospace;font-size:16px;font-weight:700;color:' + woundsColor + ';text-align:center">' +
-        (currentWounds > 0 ? currentWounds : '—') +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:6px">' +
-        '<span style="font-family:\'Share Tech Mono\',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">30 SP</span>' +
-        '<button class="btn btn-sm btn-danger" onclick="removeHealRow(' + i + ')">✕</button>' +
-      '</div>' +
-    '</div>';
+    const opts = '<option value="">— Select Pilot —</option>' +
+      eligible.map(e => `<option value="${e.key}" ${selKey===e.key?'selected':''}>${esc(e.label)} [${e.wounds} wound${e.wounds!==1?'s':''}]</option>`).join('');
+    return `<div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;align-items:center;margin-bottom:6px">
+      <select onchange="selectHealPilot(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
+        ${opts}
+      </select>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;color:${woundsColor};text-align:center">
+        ${currentWounds > 0 ? currentWounds : '—'}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">30 SP</span>
+        <button class="btn btn-sm btn-danger" onclick="removeHealRow(${i})">✕</button>
+      </div>
+    </div>`;
   }).join('');
   updatePersonnelTotals();
 }
 
-function selectHealPilot(i, pilotIdxStr) {
-  const idx = pilotIdxStr === '' ? null : +pilotIdxStr;
-  data.healRows[i].pilotIdx = idx;
-  data.healRows[i].pilot = idx !== null ? ((data.pilotRoster||[])[idx]||{}).name || '' : '';
+function selectHealPilot(i, key) {
+  data.healRows[i].pilotKey = key === '' ? null : key;
   renderHealRows(); save();
 }
 
@@ -2924,26 +3011,10 @@ function renderSkillRows() {
 
   const classic = (data.gameMode || 'classic') === 'classic';
   const trainingOptions = [
-    // Unit Training — Gunnery (Classic only)
-    ...(classic ? [
-      'Gunnery 6 to 5 (50 SP)', 'Gunnery 5 to 4 (100 SP)', 'Gunnery 4 to 3 (200 SP)',
-      'Gunnery 3 to 2 (400 SP)', 'Gunnery 2 to 1 (800 SP)', 'Gunnery 1 to 0 (1000 SP)',
-    ] : []),
-    // Unit Training — Piloting (Classic only)
-    ...(classic ? [
-      'Piloting 6 to 5 (25 SP)', 'Piloting 5 to 4 (50 SP)', 'Piloting 4 to 3 (100 SP)',
-      'Piloting 3 to 2 (200 SP)', 'Piloting 2 to 1 (500 SP)', 'Piloting 1 to 0 (750 SP)',
-    ] : []),
-    // Unit Training — Alpha Strike Skill (Alpha Strike only)
-    ...(!classic ? [
-      'Skill AS 6 to 5 (50 SP)', 'Skill AS 5 to 4 (125 SP)', 'Skill AS 4 to 3 (250 SP)',
-      'Skill AS 3 to 2 (500 SP)', 'Skill AS 2 to 1 (1000 SP)', 'Skill AS 1 to 0 (1500 SP)',
-    ] : []),
-    // SPA
-    'Special Pilot Ability (SPA × 200)',
-    // Force Training
-    'Create New Formation (10 SP/unit)', 'Change Existing Formation (5 SP/unit)',
-    // Command Training
+    // Force Training Activities
+    'Train Named Pilot as Formation Commander (500 SP)',
+    'Change Named Pilot\'s Formation Training (250 SP)',
+    // Command Training Activities
     'Learn 1st Special Command Ability (250 SP)',
     'Learn 2nd Special Command Ability (500 SP)',
     'Learn 3rd+ Special Command Ability (750 SP)',
@@ -2974,60 +3045,261 @@ function updatePersonnelTotals() {
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
   const supportDiscount = effectiveSupportPct / 100;
 
-  let hireTotal = 0;
-  (data.hireRows||[]).forEach(r => { hireTotal += Math.ceil((+r.count||0)*100); });
+  let hireTotal = (data.hireRows||[]).length * 150;
   setText('hire-total', `${fmt(hireTotal)} SP`);
 
   let healGross = 0;
   (data.healRows||[]).forEach(() => { healGross += 30; }); // 30 SP per row (1 wound each)
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
   setText('heal-total', `${fmt(healNet)} SP`);
+  updateMedicalGrandTotal();
 
   let skillTotal = 0;
   (data.skillRows||[]).forEach(r => { skillTotal += Math.ceil(+r.cost||0); });
   setText('skill-total', `${fmt(skillTotal)} SP`);
 
-  const grandTotal = hireTotal + healNet + skillTotal;
+  const grandTotal = hireTotal + skillTotal;
   const el = document.getElementById('personnel-grand-total');
   if (el) { el.textContent = `${fmt(grandTotal)} SP`; el.style.color = grandTotal ? 'var(--gold)' : 'var(--text-dim)'; }
 }
 
-function sendPersonnelToLedger() {
+// ── HEAL BATTLE ARMOR ──
+function addHealBARow() {
+  if (!data.healBARows) data.healBARows = [];
+  data.healBARows.push({ pilotKey: null, troopers: '' });
+  renderHealBARows(); save();
+}
+function removeHealBARow(i) {
+  data.healBARows.splice(i, 1);
+  renderHealBARows(); save();
+}
+function selectHealBAPilot(i, key) {
+  data.healBARows[i].pilotKey = key === '' ? null : key;
+  renderHealBARows(); save();
+}
+function updateHealBARow(i, val) {
+  data.healBARows[i].troopers = val;
+  renderHealBARows(); save();
+}
+
+function getBACandidates() {
+  const candidates = [];
+  (data.pilotRoster||[]).forEach((p, idx) => {
+    if (p.type !== 'Battle Armor Commander') return;
+    if (p.status === 'KIA') return;
+    if ((+p.wounds||0) === 0) return;
+    const label = [p.rank, p.name, p.callsign ? `"${p.callsign}"` : ''].filter(Boolean).join(' ') || `Pilot ${idx+1}`;
+    candidates.push({ key: String(idx), label, wounds: +p.wounds||0 });
+  });
+  (data.namelessPilots||[]).forEach((p, ni) => {
+    if (p.type !== 'Battle Armor Commander') return;
+    if (p.status === 'KIA') return;
+    if ((+p.wounds||0) === 0) return;
+    candidates.push({ key: `n:${ni}`, label: `Battle Armor Commander #${p.id || ni+1}`, wounds: +p.wounds||0 });
+  });
+  return candidates;
+}
+
+function renderHealBARows() {
+  if (!data.healBARows) data.healBARows = [];
+  const cont = document.getElementById('heal-ba-rows');
+  const totalEl = document.getElementById('heal-ba-total');
+  if (!cont) return;
+
+  const candidates = getBACandidates();
+  let grandTotal = 0;
+
+  if (!data.healBARows.length) {
+    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
+    if (totalEl) totalEl.textContent = '0 SP';
+    updateMedicalGrandTotal();
+    return;
+  }
+
+  cont.innerHTML = data.healBARows.map((r, i) => {
+    const selKey = r.pilotKey != null ? String(r.pilotKey) : '';
+    const matched = candidates.find(e => e.key === selKey);
+    const currentWounds = matched ? matched.wounds : 0;
+    const troopers = +r.troopers || 0;
+    const cost = troopers * 10;
+    grandTotal += cost;
+    const woundsColor = currentWounds >= 6 ? 'var(--red)' : currentWounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
+    const opts = `<option value="">— Select BA Commander —</option>` +
+      candidates.map(e => `<option value="${e.key}" ${selKey===e.key?'selected':''}>${esc(e.label)} [${e.wounds} wound${e.wounds!==1?'s':''}]</option>`).join('');
+    return `<div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;align-items:center;margin-bottom:6px">
+      <select onchange="selectHealBAPilot(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
+        ${opts}
+      </select>
+      <input type="number" value="${r.troopers||''}" onchange="updateHealBARow(${i},this.value)" placeholder="0" min="0" style="text-align:center;font-family:'Share Tech Mono',monospace;color:var(--gold)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
+        <button class="btn btn-sm btn-danger" onclick="removeHealBARow(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (totalEl) totalEl.textContent = `${fmt(grandTotal)} SP`;
+  updateMedicalGrandTotal();
+}
+
+function updateMedicalGrandTotal() {
+  // Sum heal wounds + heal BA for the combined medical grand total
+  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
+  const discount = effectiveSupportPct / 100;
+  let healGross = 0;
+  (data.healRows||[]).forEach(() => { healGross += 30; });
+  const healNet = Math.ceil(healGross * (1 - discount));
+  let baTotal = 0;
+  (data.healBARows||[]).forEach(r => { baTotal += (+r.troopers||0) * 10; });
+  const combined = healNet + baTotal;
+  const el = document.getElementById('medical-grand-total');
+  if (el) { el.textContent = `${fmt(combined)} SP`; el.style.color = combined ? 'var(--gold)' : 'var(--text-dim)'; }
+}
+
+function sendMedicalToLedger() {
   const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
   const supportDiscount = effectiveSupportPct / 100;
 
-  const hasRows = (data.hireRows||[]).length || (data.healRows||[]).length || (data.skillRows||[]).length;
-  if (!hasRows) { toast('No personnel costs to send.'); return; }
+  const hasHeal = (data.healRows||[]).length;
+  const hasBA   = (data.healBARows||[]).length;
+  if (!hasHeal && !hasBA) { toast('No medical costs to send.'); return; }
 
-  let total = 0;
-  (data.hireRows||[]).forEach(r => { total += Math.ceil((+r.count||0)*100); });
+  // Heal Wounds cost
   let healGross = 0;
-  (data.healRows||[]).forEach(r => { healGross += 30; }); // 30 SP per wound healed (1 wound per row)
-  total += Math.ceil(healGross * (1 - supportDiscount));
-  (data.skillRows||[]).forEach(r => { total += Math.ceil(+r.cost||0); });
+  (data.healRows||[]).forEach(() => { healGross += 30; });
+  const healNet = Math.ceil(healGross * (1 - supportDiscount));
 
-  // Decrement wounds by 1 for each heal row with a valid pilot
+  // BA Troopers cost (not support-discounted)
+  let baTotal = 0;
+  (data.healBARows||[]).forEach(r => { baTotal += (+r.troopers||0) * 10; });
+
+  const totalMedical = healNet + baTotal;
+
+  // Heal wounds — decrement wounds on pilots
   (data.healRows||[]).forEach(r => {
-    if (r.pilotIdx === null || r.pilotIdx === undefined) return;
-    const pilot = (data.pilotRoster||[])[r.pilotIdx];
-    if (!pilot) return;
-    const newWounds = Math.max(0, (+pilot.wounds||0) - 1);
-    pilot.wounds = newWounds;
-    if (newWounds === 0) {
-      if (pilot.status === 'Wounded' || pilot.status === 'KIA') pilot.status = 'Active';
-    } else if (newWounds >= 1) {
-      if (pilot.status !== 'KIA') pilot.status = 'Wounded';
+    const key = r.pilotKey != null ? String(r.pilotKey) : null;
+    if (!key) return;
+    if (key.startsWith('n:')) {
+      const ni = +key.slice(2);
+      const np = (data.namelessPilots||[])[ni];
+      if (!np) return;
+      const nw = Math.max(0, (+np.wounds||0) - 1);
+      np.wounds = nw;
+      if (nw === 0 && np.status === 'Wounded') np.status = 'Active';
+      else if (nw >= 1 && np.status !== 'KIA') np.status = 'Wounded';
+    } else {
+      const pilot = (data.pilotRoster||[])[+key];
+      if (!pilot) return;
+      const nw = Math.max(0, (+pilot.wounds||0) - 1);
+      pilot.wounds = nw;
+      const pc = (data.pilotCards||[]).find(p => p.name && pilot.name && p.name.trim() === pilot.name.trim());
+      if (pc) pc.wounds = nw;
+      if (nw === 0) {
+        if (pilot.status === 'Wounded') pilot.status = 'Active';
+        if (pc && pc.status === 'Wounded') pc.status = 'Active';
+      } else {
+        if (pilot.status !== 'KIA') pilot.status = 'Wounded';
+        if (pc && pc.status !== 'KIA') pc.status = 'Wounded';
+      }
     }
   });
-  data.healRows = [];
 
-  data.ledger.push({month:'', event:'Personnel & Training', cost: String(total), cover:'', paid:'', rep:''});
+  // BA heal — decrement wounds on BA commanders by number of troopers healed
+  (data.healBARows||[]).forEach(r => {
+    const key = r.pilotKey != null ? String(r.pilotKey) : null;
+    const troopers = +r.troopers || 0;
+    if (!key || !troopers) return;
+    if (key.startsWith('n:')) {
+      const ni = +key.slice(2);
+      const np = (data.namelessPilots||[])[ni];
+      if (!np) return;
+      const nw = Math.max(0, (+np.wounds||0) - troopers);
+      np.wounds = nw;
+      if (nw === 0 && np.status === 'Wounded') np.status = 'Active';
+      else if (nw >= 1 && np.status !== 'KIA') np.status = 'Wounded';
+    } else {
+      const pilot = (data.pilotRoster||[])[+key];
+      if (!pilot) return;
+      const nw = Math.max(0, (+pilot.wounds||0) - troopers);
+      pilot.wounds = nw;
+      const pc = (data.pilotCards||[]).find(p => p.name && pilot.name && p.name.trim() === pilot.name.trim());
+      if (pc) pc.wounds = nw;
+      if (nw === 0) {
+        if (pilot.status === 'Wounded') pilot.status = 'Active';
+        if (pc && pc.status === 'Wounded') pc.status = 'Active';
+      } else {
+        if (pilot.status !== 'KIA') pilot.status = 'Wounded';
+        if (pc && pc.status !== 'KIA') pc.status = 'Wounded';
+      }
+    }
+  });
+
+  data.healRows = [];
+  data.healBARows = [];
+  if (totalMedical) data.ledger.push({month:'', event:'Medical', cost: String(totalMedical), cover:'', paid:'', rep:''});
   renderLedger();
   renderHealRows();
+  renderHealBARows();
   renderPilotRoster();
+  renderNamelessPilots();
+  renderPilotCards();
   save();
-  toast('Personnel costs added to Monthly Ledger.');
+  toast('Medical costs added to Monthly Ledger.');
+}
+
+function sendPersonnelToLedger() {
+  if (!data.pilotCards) data.pilotCards = [];
+  const hireRows  = data.hireRows  || [];
+  const skillRows = data.skillRows || [];
+
+  if (!hireRows.length && !skillRows.length) { toast('No personnel costs to send.'); return; }
+
+  // Check named pilot limit for hire rows (temporary pilots don't count against limit)
+  if (hireRows.length) {
+    const currentNamed = data.pilotCards.filter(p => !p.temporary).length;
+    const wouldTotal = currentNamed + hireRows.length;
+    if (wouldTotal > 4) {
+      const slots = 4 - currentNamed;
+      if (slots <= 0) {
+        toast('Cannot hire — your unit already has the maximum of four Named Pilots.');
+      } else {
+        toast(`Cannot hire ${hireRows.length} pilot${hireRows.length>1?'s':''} — only ${slots} slot${slots>1?'s':''} remaining. Remove some hire entries and try again.`);
+      }
+      return;
+    }
+  }
+
+  // Create pilot cards for each hire row
+  hireRows.forEach(r => {
+    data.pilotCards.push({
+      callsign: r.callsign || '',
+      name:     r.name     || '',
+      rank:     r.rank     || '',
+      type:     r.type     || 'MechWarrior',
+      portrait: '', temporary: false,
+      totalSP:0, spGun:0, spPil:0, spET:0, spEA:0,
+      wounds:0, mvpCount:0, wounded:false, status:'Active',
+      abilities:[], notes:'', campaigns:''
+    });
+  });
+
+  // Calculate total cost
+  const hireCost  = hireRows.length * 150;
+  const skillCost = skillRows.reduce((sum, r) => sum + Math.ceil(+r.cost||0), 0);
+  const total     = hireCost + skillCost;
+
+  data.hireRows = [];
+  if (total) data.ledger.push({month:'', event:'Personnel & Training', cost: String(total), cover:'', paid:'', rep:''});
+  renderLedger();
+  renderHireRows();
+  renderPilotCards();
+  save();
+  const msg = hireRows.length
+    ? `${hireRows.length} pilot${hireRows.length>1?'s':''} hired and added to the Pilots tab.`
+    : 'Training costs added to Monthly Ledger.';
+  toast(msg);
 }
 
 function sendAssetToLedger() {
@@ -3046,7 +3318,9 @@ function sendAssetToLedger() {
   (data.assetRows||[]).forEach(r => {
     const mult = ASSET_MULT[r.type] || 1;
     const at = ASSET_TYPES_CUR.find(t => t.key === r.type) || ASSET_TYPES_CUR[0];
-    net += at.sign * (+r.bv||0) * mult;
+    const baseVal = at.sign * (+r.bv||0) * mult;
+    const modVal  = (r.modifier === 'half') ? (+r.bv||0) * 0.5 * at.sign : 0;
+    net += baseVal + modVal;
   });
   if (!net) { toast('No unit purchase/sale value to send.'); return; }
 
@@ -3233,6 +3507,7 @@ function updateSupportTotals() {
   (data.healRows||[]).forEach(() => { healGross += 30; }); // 30 SP per row (1 wound each)
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
   setText('heal-total', `${fmt(healNet)} SP`);
+  updateMedicalGrandTotal();
   setBadge('heal-support-badge', supportActive, supportLabel);
 
   // repair, rearm & omni section total (repair+rearm discounted, omni not)
@@ -3256,7 +3531,9 @@ function updateSupportTotals() {
   (data.assetRows||[]).forEach(r => {
     const mult = ASSET_MULT[r.type]||40;
     const at = ASSET_TYPES_CUR.find(t=>t.key===r.type)||ASSET_TYPES_CUR[0];
-    assetNet += at.sign * (+r.bv||0) * mult;
+    const baseVal = at.sign * (+r.bv||0) * mult;
+    const modVal  = (r.modifier === 'half') ? (+r.bv||0) * 0.5 * at.sign : 0;
+    assetNet += baseVal + modVal;
   });
   const assetEl = document.getElementById('asset-net');
   if (assetEl) {
@@ -3646,6 +3923,32 @@ function saveForce() {
   }
   fd.skillAdv = +(document.getElementById('force-skill-adv') && document.getElementById('force-skill-adv').value) || 0;
   fd.sca = v('force-sca') || '';
+  fd.parentCommand   = v('force-parent-command') || '';
+  fd.manufacturingSponsor = v('force-manufacturing-sponsor') || '';
+  fd.regularMilitary = !!(document.getElementById('force-regular-military') && document.getElementById('force-regular-military').checked);
+
+  // Lock contract fields when Regular Military Command is active
+  const basePayEl   = document.getElementById('basePay');
+  const transportEl = document.getElementById('transportPct');
+  if (fd.regularMilitary) {
+    if (basePayEl)   { basePayEl.value   = '100'; basePayEl.readOnly   = true; basePayEl.style.opacity   = '0.6'; }
+    if (transportEl) { transportEl.value = '100'; transportEl.readOnly = true; transportEl.style.opacity = '0.6'; }
+    const suppTypeEl = document.getElementById('supportType');
+    const suppPctEl  = document.getElementById('supportPct');
+    if (suppTypeEl)  { suppTypeEl.value = 'straight'; suppTypeEl.disabled = true; suppTypeEl.style.opacity = '0.6'; }
+    if (suppPctEl)   { suppPctEl.value  = '100';      suppPctEl.readOnly  = true; suppPctEl.style.opacity  = '0.6'; }
+    data.basePay      = '100';
+    data.transportPct = '100';
+    data.supportType  = 'straight';
+    data.supportPct   = '100';
+  } else {
+    if (basePayEl)   { basePayEl.readOnly   = false; basePayEl.style.opacity   = '1'; }
+    if (transportEl) { transportEl.readOnly = false; transportEl.style.opacity = '1'; }
+    const suppTypeEl = document.getElementById('supportType');
+    const suppPctEl  = document.getElementById('supportPct');
+    if (suppTypeEl)  { suppTypeEl.disabled = false; suppTypeEl.style.opacity = '1'; }
+    if (suppPctEl)   { suppPctEl.readOnly  = false;  suppPctEl.style.opacity  = '1'; }
+  }
   localStorage.setItem('btMercContract', JSON.stringify(data));
   updateForceCalc();
   renderDeployment();
@@ -3683,6 +3986,29 @@ function renderForce() {
   sv('force-bsp', data.forceData.bsp);
   sv('force-skill-adv', data.forceData.skillAdv);
   sv('force-sca', data.forceData.sca || '');
+  sv('force-parent-command', data.forceData.parentCommand || '');
+  sv('force-manufacturing-sponsor', data.forceData.manufacturingSponsor || '');
+  const rmEl = document.getElementById('force-regular-military');
+  if (rmEl) {
+    rmEl.checked = !!data.forceData.regularMilitary;
+    const basePayEl   = document.getElementById('basePay');
+    const transportEl = document.getElementById('transportPct');
+    if (data.forceData.regularMilitary) {
+      if (basePayEl)   { basePayEl.value   = '100'; basePayEl.readOnly   = true; basePayEl.style.opacity   = '0.6'; }
+      if (transportEl) { transportEl.value = '100'; transportEl.readOnly = true; transportEl.style.opacity = '0.6'; }
+      const suppTypeEl = document.getElementById('supportType');
+      const suppPctEl  = document.getElementById('supportPct');
+      if (suppTypeEl)  { suppTypeEl.value = 'straight'; suppTypeEl.disabled = true; suppTypeEl.style.opacity = '0.6'; }
+      if (suppPctEl)   { suppPctEl.value  = '100';      suppPctEl.readOnly  = true; suppPctEl.style.opacity  = '0.6'; }
+    } else {
+      if (basePayEl)   { basePayEl.readOnly   = false; basePayEl.style.opacity   = '1'; }
+      if (transportEl) { transportEl.readOnly = false; transportEl.style.opacity = '1'; }
+      const suppTypeEl = document.getElementById('supportType');
+      const suppPctEl  = document.getElementById('supportPct');
+      if (suppTypeEl)  { suppTypeEl.disabled = false; suppTypeEl.style.opacity = '1'; }
+      if (suppPctEl)   { suppPctEl.readOnly  = false;  suppPctEl.style.opacity  = '1'; }
+    }
+  }
   updateCoDropdown();
   renderFormations();
   updateForceCalc();
@@ -3755,14 +4081,47 @@ function assignPilotToFormation(fi, ri, pilotIdx) {
   if (pilotIdx === '' || pilotIdx === undefined) {
     // Clear the Assigned Unit on the previously assigned pilot
     if (row.pilotIdx !== '' && row.pilotIdx !== undefined) {
-      const prev = (data.pilotRoster || [])[row.pilotIdx];
-      if (prev) prev.unit = '';
+      if (String(row.pilotIdx).startsWith('n:')) {
+        const ni = +String(row.pilotIdx).slice(2);
+        if ((data.namelessPilots||[])[ni]) data.namelessPilots[ni].unit = '';
+      } else {
+        const prev = (data.pilotRoster || [])[row.pilotIdx];
+        if (prev) prev.unit = '';
+      }
     }
     row.pilotIdx = '';
     row.pilot = '';
     row.gp = '';
     row.adv = '';
     row.spa = '';
+  } else if (String(pilotIdx).startsWith('n:')) {
+    // Nameless pilot
+    const ni = +String(pilotIdx).slice(2);
+    const alreadyAssigned = data.forceData.formations.some((f, ffi) =>
+      f.rows.some((r, rri) =>
+        (ffi !== fi || rri !== ri) && String(r.pilotIdx) === String(pilotIdx)
+      )
+    );
+    if (alreadyAssigned) { toast('Pilot already assigned to another unit.'); renderFormations(); return; }
+    const np = (data.namelessPilots||[])[ni];
+    if (np && np.status === 'KIA') { toast('KIA pilots cannot be assigned to a unit.'); renderFormations(); return; }
+    if (np) {
+      if (row.pilotIdx !== '' && row.pilotIdx !== undefined) {
+        if (String(row.pilotIdx).startsWith('n:')) {
+          const pni = +String(row.pilotIdx).slice(2);
+          if ((data.namelessPilots||[])[pni]) data.namelessPilots[pni].unit = '';
+        } else {
+          const prev = (data.pilotRoster||[])[row.pilotIdx];
+          if (prev) prev.unit = '';
+        }
+      }
+      row.pilotIdx = pilotIdx;
+      row.pilot = `${np.type || 'Pilot'} #${np.id || ni+1}`;
+      row.gp    = np.gunnery && np.piloting ? `${np.gunnery}/${np.piloting}` : '';
+      row.adv   = '';
+      row.spa   = '';
+      np.unit   = row.unit || '';
+    }
   } else {
     // Check if this pilot is already assigned elsewhere
     const alreadyAssigned = data.forceData.formations.some((f, ffi) =>
@@ -3807,12 +4166,18 @@ function renderFormations() {
   const classic = (data.gameMode || 'classic') === 'classic';
   const roster = data.pilotRoster || [];
 
-  // Build pilot options list from roster
+  // Build pilot options list from named roster + nameless pilots
+  const nameless = data.namelessPilots || [];
   const pilotOptions = [
     `<option value="">— Unassigned —</option>`,
     ...roster.map((p, idx) => {
       const label = [p.name, p.callsign ? `"${p.callsign}"` : '', p.rank].filter(Boolean).join(' ');
       return `<option value="${idx}">${esc(label || `Pilot ${idx+1}`)}</option>`;
+    }),
+    ...(nameless.length ? [`<option disabled>── Nameless Pilots ──</option>`] : []),
+    ...nameless.map((p, idx) => {
+      const label = `${p.type || 'Pilot'} #${p.id || idx+1}`;
+      return `<option value="n:${idx}">${esc(label)}</option>`;
     })
   ].join('');
 
@@ -3870,6 +4235,16 @@ function renderFormations() {
               const disabled = taken || kia;
               const suffix = kia ? ' [KIA]' : taken ? ' ✕' : '';
               return `<option value="${idx}" ${String(selIdx)===String(idx)?'selected':''} ${disabled?'disabled':''} style="background:var(--panel);color:${disabled?'var(--text-dim)':'inherit'}">${esc(label || `Pilot ${idx+1}`)}${suffix}</option>`;
+            }),
+            ...(nameless.length ? [`<option disabled style="background:var(--panel)">── Nameless Pilots ──</option>`] : []),
+            ...nameless.map((np, ni) => {
+              const nkey = `n:${ni}`;
+              const label = `${np.type || 'Pilot'} #${np.id || ni+1}`;
+              const taken = assignedElsewhere.has(nkey);
+              const kia   = np.status === 'KIA';
+              const disabled = taken || kia;
+              const suffix = kia ? ' [KIA]' : taken ? ' ✕' : '';
+              return `<option value="${nkey}" ${String(selIdx)===nkey?'selected':''} ${disabled?'disabled':''} style="background:var(--panel);color:${disabled?'var(--text-dim)':'inherit'}">${esc(label)}${suffix}</option>`;
             })
           ].join('');
           return `
@@ -4170,10 +4545,10 @@ function renderDeployment() {
     const hValues = deployed.map(d => {
       const bv = +d.bv || 0;
       if (d.pilotIdx !== null && d.pilotIdx !== undefined && roster[d.pilotIdx]) {
-        // Named pilot — use their handicap (halved for Infantry Commander)
+        // Named pilot — use their handicap (halved for Battle Armor Commander)
         const p = roster[d.pilotIdx];
         const h = +p.adv || 0;
-        return p.type === 'Infantry Commander' ? h / 2 : h;
+        return p.type === 'Battle Armor Commander' ? h / 2 : h;
       } else if (useHandicapOption && bv >= 500) {
         // Non-named pilot in a qualifying unit counts as 0
         return 0;
@@ -4575,6 +4950,34 @@ function renderPilotRoster() {
       <div style="padding:6px 8px;display:flex;align-items:center;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;color:${statusColor};text-transform:uppercase">${esc(p.status)}</div>
     </div>`;
   }).join('');
+
+  // Append nameless pilots as a secondary section
+  const nameless = data.namelessPilots || [];
+  if (nameless.length) {
+    const divider = `<div style="display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.04);min-width:900px">
+      <div style="grid-column:1/-1;padding:5px 8px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Nameless Pilots</div>
+    </div>`;
+    const namelessRows = nameless.map(p => {
+      const statusColor = PILOT_STATUS_COLORS[p.status] || 'var(--text)';
+      const woundsColor = +p.wounds >= 6 ? 'var(--red)' : +p.wounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
+      const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06);' : p.status === 'Wounded' ? 'background:rgba(201,162,39,.05);' : '';
+      const label = `${p.type || ''} #${p.id || '?'}`;
+      const skill = p.gunnery && p.piloting ? `${p.gunnery}/${p.piloting}` : '—';
+      return `<div style="display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1.2fr 1.6fr 0.8fr 0.5fr 1.2fr 0.6fr 0.8fr;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:900px;${rowBg}">
+        ${cell(label, {color:'var(--text-dim)'})}
+        ${cell('—')}
+        ${cell('—')}
+        ${cell('—')}
+        ${cell(p.unit || '—')}
+        ${cell(skill, {center:true, bold:true})}
+        ${cell('—', {center:true, color:'var(--text-dim)'})}
+        ${cell('—')}
+        ${cell(p.wounds||0, {center:true, color:woundsColor, bold:true})}
+        <div style="padding:6px 8px;display:flex;align-items:center;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;color:${statusColor};text-transform:uppercase">${esc(p.status||'Active')}</div>
+      </div>`;
+    }).join('');
+    cont.innerHTML += divider + namelessRows;
+  }
 
   updateSkillAdv();
   updateCoDropdown();
@@ -5181,7 +5584,7 @@ if ('serviceWorker' in navigator) {
         newSW.addEventListener('statechange', () => {
           if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
             // A new version is waiting — prompt the user
-            if (confirm('A new version of BattleTech Aces is available. Reload to update?')) {
+            if (confirm('A new version of the app is available. Reload to update?')) {
               newSW.postMessage({ type: 'SKIP_WAITING' });
               window.location.reload();
             }
@@ -5355,7 +5758,7 @@ function renderJournal() {
 // ─────────────────────────────────────────
 function addBarracksRow() {
   if (!data.barracksRows) data.barracksRows = [];
-  data.barracksRows.push({ unit:'', tons:'', pv:'', techBase:'', skill:'', losses:[false,false,false], deployCount:'0' });
+  data.barracksRows.push({ unit:'', tons:'', pv:'', techBase:'', skill:'', crew:'', losses:[false,false,false], deployCount:'0' });
   renderBarracks();
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
@@ -5429,7 +5832,15 @@ function renderBarracks() {
 
     const rowStyle = destroyed ? 'opacity:0.55;background:rgba(136,0,0,.06)' : '';
 
-    return `<div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 120px 100px 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:780px;${rowStyle}">
+    const BA_TYPES = ['Battle Armor Commander','Conventional Infantry Commander'];
+    const crewCandidates = [
+      ...( data.pilotRoster||[] ).map((p,idx) => BA_TYPES.includes(p.type) && p.status!=='KIA' ? { key:String(idx), label:[p.rank,p.name,p.callsign?`"${p.callsign}"`:''].filter(Boolean).join(' ')||`Pilot ${idx+1}` } : null).filter(Boolean),
+      ...( data.namelessPilots||[] ).map((p,ni) => BA_TYPES.includes(p.type) && p.status!=='KIA' ? { key:`n:${ni}`, label:`${p.type} #${p.id||ni+1}` } : null).filter(Boolean)
+    ];
+    const crewSelKey = r.crew || '';
+    const crewOpts = `<option value="">— None —</option>` + crewCandidates.map(c => `<option value="${c.key}" ${crewSelKey===c.key?'selected':''}>${esc(c.label)}</option>`).join('');
+
+    return `<div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 1.4fr 120px 100px 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:860px;${rowStyle}">
       <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="Atlas AS7-D"
         onchange="updateBarracksField(${i},'unit',this.value)"
         style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
@@ -5454,6 +5865,12 @@ function renderBarracks() {
           onchange="updateBarracksField(${i},'skill',this.value)"
           style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center">
       </div>
+      <div style="padding:2px 4px;display:flex;align-items:center">
+        <select onchange="updateBarracksField(${i},'crew',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:4px 4px;color:${crewSelKey?'var(--gold)':'var(--text-dim)'};cursor:pointer">
+          ${crewOpts}
+        </select>
+      </div>
       <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
         <div class="barracks-loss-boxes">${lossBoxes}</div>
       </div>
@@ -5472,6 +5889,19 @@ function renderBarracks() {
 // ─────────────────────────────────────────
 // Classic: Gunnery — # is skill level, SP is cumulative to reach that level from 4
 // Row order matches table: 3, 2, 1, 0
+
+function addTemporaryPilot() {
+  if (!data.pilotCards) data.pilotCards = [];
+  data.pilotCards.push({
+    callsign:'', name:'', rank:'', type:'MechWarrior',
+    portrait:'', temporary: true,
+    totalSP:0, spGun:0, spPil:0, spET:0, spEA:0,
+    wounds:0, mvpCount:0, wounded:false, status:'Active',
+    abilities:[], notes:'', campaigns:''
+  });
+  renderPilotCards();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
 
 function addPilotCard() {
   if (!data.pilotCards) data.pilotCards = [];
@@ -5822,7 +6252,13 @@ function renderPilotCards() {
       : `<div><div class="calc-label" style="text-align:center;height:28px;display:flex;align-items:center;justify-content:center">Skill (AS)</div><div class="calc-field" style="font-size:20px;text-align:center">${asSkill}</div></div>`;
 
     return `
-    <div class="pilot-card" id="pc-${i}">
+    <div class="pilot-card" id="pc-${i}" style="${p.temporary ? 'border-top-color:#6ab0e8;' : ''}">
+      <!-- Temporary banner -->
+      ${p.temporary ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:5px 12px;background:rgba(106,176,232,.1);border:1px solid #6ab0e8;">
+        <span style="font-size:13px">⏱</span>
+        <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6ab0e8;font-weight:600">Temporary Pilot</span>
+      </div>` : ''}
+
       <!-- Total Handicap banner -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:8px 14px;background:rgba(201,162,39,.08);border:1px solid var(--border-gold)">
         <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Total Handicap</span>
@@ -5863,7 +6299,7 @@ function renderPilotCards() {
             <div class="field" style="margin:0">
               <label>Type</label>
               <select onchange="updatePC(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
-                ${['MechWarrior','Vehicle Commander','Infantry Commander','Aerospace Pilot'].map(t=>`<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('')}
+                ${['MechWarrior','Vehicle Commander','Battle Armor Commander','Conventional Infantry Commander','Aerospace Pilot'].map(t=>`<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('')}
               </select>
             </div>
             <div class="field" style="margin:0">
@@ -5965,6 +6401,169 @@ function renderMemorial() {
       <button onclick="removeMemorialEntry(${i})" title="Remove entry" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0;opacity:0.5;transition:opacity .15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">✕</button>
     </div>`;
   }).join('');
+}
+
+// ─────────────────────────────────────────
+// NAMELESS PILOTS
+// ─────────────────────────────────────────
+function addNamelessPilot() {
+  if (!data.namelessPilots) data.namelessPilots = [];
+  const nextId = data.namelessPilots.length > 0
+    ? Math.max(...data.namelessPilots.map(p => +p.id || 0)) + 1
+    : 1;
+  data.namelessPilots.push({ id: nextId, type:'MechWarrior', skillLevel:'', gunnery:'', piloting:'', wounds:0, status:'Active' });
+  renderNamelessPilots();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function removeNamelessPilot(i) {
+  data.namelessPilots.splice(i, 1);
+  renderNamelessPilots();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updateNPWounds(i, val) {
+  if (!data.namelessPilots[i]) return;
+  const n = +val;
+  data.namelessPilots[i].wounds = n;
+  if (n >= 1 && n <= 5) {
+    data.namelessPilots[i].status = 'Wounded';
+  } else if (n === 6) {
+    data.namelessPilots[i].status = 'KIA';
+  } else if (n === 0 && data.namelessPilots[i].status === 'Wounded') {
+    data.namelessPilots[i].status = 'Active';
+  }
+  renderNamelessPilots();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updateNP(i, field, val) {
+  if (!data.namelessPilots[i]) return;
+  data.namelessPilots[i][field] = val;
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updateNPSkill(i, val) {
+  if (!data.namelessPilots[i]) return;
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const CLASSIC_MAP = { Green: {gunnery:5, piloting:6}, Regular: {gunnery:4, piloting:5} };
+  const AS_MAP      = { Green: {skill:5},                Regular: {skill:4} };
+  data.namelessPilots[i].skillLevel = val;
+  if (classic) {
+    if (CLASSIC_MAP[val]) {
+      data.namelessPilots[i].gunnery  = CLASSIC_MAP[val].gunnery;
+      data.namelessPilots[i].piloting = CLASSIC_MAP[val].piloting;
+      data.namelessPilots[i].skill    = '';
+    } else {
+      data.namelessPilots[i].gunnery  = '';
+      data.namelessPilots[i].piloting = '';
+      data.namelessPilots[i].skill    = '';
+    }
+  } else {
+    if (AS_MAP[val]) {
+      data.namelessPilots[i].skill    = AS_MAP[val].skill;
+      data.namelessPilots[i].gunnery  = '';
+      data.namelessPilots[i].piloting = '';
+    } else {
+      data.namelessPilots[i].skill    = '';
+    }
+  }
+  renderNamelessPilots();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function renderNamelessPilots() {
+  if (!data.namelessPilots) data.namelessPilots = [];
+  const rows   = document.getElementById('nameless-pilot-rows');
+  const header = document.getElementById('nameless-pilot-header');
+  const empty  = document.getElementById('nameless-pilot-empty');
+  if (!rows) return;
+
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const hCol = `font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 10px`;
+
+  // Dynamic header
+  if (header) {
+    if (classic) {
+      header.style.gridTemplateColumns = '48px 1.8fr 1fr 80px 80px 100px 1.2fr 36px';
+      header.innerHTML = `
+        <div style="${hCol}">ID#</div><div style="${hCol}">Type</div>
+        <div style="${hCol}">Skill Level</div><div style="${hCol}">Gunnery</div>
+        <div style="${hCol}">Piloting</div><div style="${hCol}">Wounds</div>
+        <div style="${hCol}">Status</div><div></div>`;
+    } else {
+      header.style.gridTemplateColumns = '48px 1.8fr 1fr 90px 100px 1.2fr 36px';
+      header.innerHTML = `
+        <div style="${hCol}">ID#</div><div style="${hCol}">Type</div>
+        <div style="${hCol}">Skill Level</div><div style="${hCol}">Skill</div>
+        <div style="${hCol}">Wounds</div><div style="${hCol}">Status</div><div></div>`;
+    }
+  }
+
+  if (!data.namelessPilots.length) {
+    rows.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (document.getElementById('pilot-roster-rows')) renderPilotRoster();
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const TYPES    = ['MechWarrior','Vehicle Commander','Battle Armor Commander','Conventional Infantry Commander','Aerospace Pilot'];
+  const STATUSES = ['Active','Wounded','MIA','KIA','Retired'];
+  const STATUS_COLOR_MAP = JSON.stringify(PILOT_STATUS_COLORS).replace(/"/g,"'");
+
+  const sel = (id, opts, val, color) => {
+    const optHTML = opts.map(o => {
+      const oc = PILOT_STATUS_COLORS[o] || 'var(--text)';
+      const isStatus = PILOT_STATUS_COLORS.hasOwnProperty(o);
+      return `<option value="${o}" ${val===o?'selected':''} style="background:var(--panel);color:${isStatus ? oc : 'var(--text)'}">${o}</option>`;
+    }).join('');
+    const onInput = id.f === 'status' ? `this.style.color=(${STATUS_COLOR_MAP})[this.value]||'var(--text)';` : '';
+    return `<select onchange="updateNP(${id.i},'${id.f}',this.value)" oninput="${onInput}"
+      style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;outline:none;${color?`color:${color};font-weight:600;`:''}">${optHTML}</select>`;
+  };
+
+  const gridCols = classic ? '48px 1.8fr 1fr 80px 80px 100px 1.2fr 36px' : '48px 1.8fr 1fr 90px 100px 1.2fr 36px';
+  const skillSelect = `<select onchange="updateNPSkill(${0}, this.value)"`;  // placeholder, replaced per row
+
+  rows.innerHTML = data.namelessPilots.map((p, i) => {
+    const sc = PILOT_STATUS_COLORS[p.status] || 'var(--text)';
+    const woundsColor = +p.wounds >= 6 ? 'var(--red)' : +p.wounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
+    const rowBg = p.status === 'KIA' ? 'background:rgba(204,34,51,.06);' : p.status === 'Wounded' ? 'background:rgba(201,162,39,.05);' : '';
+
+    const skillCols = classic ? `
+      <div style="padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);text-align:center;display:flex;align-items:center;justify-content:center">${p.gunnery||'—'}</div>
+      <div style="padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);text-align:center;display:flex;align-items:center;justify-content:center">${p.piloting||'—'}</div>
+    ` : `
+      <div style="padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);text-align:center;display:flex;align-items:center;justify-content:center">${p.skill||'—'}</div>
+    `;
+
+    return `<div style="display:grid;grid-template-columns:${gridCols};gap:0;border-bottom:1px solid rgba(42,48,64,.5);${rowBg}">
+      <div style="padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--gold);font-weight:700;display:flex;align-items:center">${p.id || i+1}</div>
+      <div style="padding:2px 4px">${sel({i,f:'type'}, TYPES, p.type)}</div>
+      <div style="padding:2px 4px">
+        <select onchange="updateNPSkill(${i}, this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;outline:none;color:var(--text)">
+          <option value="">— Select —</option>
+          <option value="Green"   ${p.skillLevel==='Green'  ?'selected':''}>Green</option>
+          <option value="Regular" ${p.skillLevel==='Regular'?'selected':''}>Regular</option>
+        </select>
+      </div>
+      ${skillCols}
+      <div style="padding:2px 4px">
+        <select onchange="updateNPWounds(${i}, this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;outline:none;font-weight:700;color:${woundsColor}">
+          ${[0,1,2,3,4,5,6].map(n=>`<option value="${n}" ${(+p.wounds||0)===n?'selected':''} style="color:${n===0?'var(--text-dim)':n>=6?'var(--red)':'var(--gold)'}">${n}</option>`).join('')}
+        </select>
+      </div>
+      <div style="padding:2px 4px">${sel({i,f:'status'}, STATUSES, p.status, sc)}</div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <button onclick="removeNamelessPilot(${i})" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  // Keep roster in sync with nameless pilot changes
+  if (document.getElementById('pilot-roster-rows')) renderPilotRoster();
 }
 
 // ─────────────────────────────────────────
