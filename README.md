@@ -48,4 +48,4 @@ Roadmap (not necessarily in order of planned implementation):
 * Updates to SP Costs
 * New Battle Support Reimbursement Calculator
 * Implement _Le Lion d'Or_
-* Improvements to Deployment function to track wins/losses and record track rewards.
+* ~Improvements to Deployment function to track wins/losses and record track rewards.~
