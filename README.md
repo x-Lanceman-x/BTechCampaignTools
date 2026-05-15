@@ -45,7 +45,7 @@ A test version can be accessed at: https://x-lanceman-x.github.io/BTechCampaignT
 Roadmap (not necessarily in order of planned implementation):
 
 * ~Named Pilots, done in a similar manner as the Aces app~
-* Updates to SP Costs
-* New Battle Support Reimbursement Calculator
-* Implement _Le Lion d'Or_
+* ~Updates to SP Costs~
+* ~New Battle Support Reimbursement Calculator~
+* ~Implement _Le Lion d'Or_~
 * ~Improvements to Deployment function to track wins/losses and record track rewards.~
