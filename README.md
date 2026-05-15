@@ -49,3 +49,4 @@ Roadmap (not necessarily in order of planned implementation):
 * ~New Battle Support Reimbursement Calculator~
 * ~Implement _Le Lion d'Or_~
 * ~Improvements to Deployment function to track wins/losses and record track rewards.~
+* Implement Changes to Formation and Special Command Abilities
