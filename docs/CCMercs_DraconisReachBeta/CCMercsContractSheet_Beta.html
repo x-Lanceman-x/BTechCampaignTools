@@ -748,6 +748,7 @@
             <option value="B">B</option>
             <option value="C">C</option>
             <option value="D">D</option>
+            <option value="F">F</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;padding-top:22px">
@@ -1013,6 +1014,7 @@
       <div style="display:flex;align-items:center;gap:10px">
         <span class="balance-bar-val" id="repair-total">0 SP</span>
         <span id="repair-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+        <span id="repair-hall-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#6ab0e8;border:1px solid #6ab0e8;padding:2px 7px;opacity:0.85"></span>
       </div>
     </div>
   </div>
@@ -1032,6 +1034,7 @@
       <div style="display:flex;align-items:center;gap:10px">
         <span class="balance-bar-val" id="rearm-total">0 SP</span>
         <span id="rearm-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+        <span id="rearm-hall-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#6ab0e8;border:1px solid #6ab0e8;padding:2px 7px;opacity:0.85"></span>
       </div>
     </div>
   </div>
@@ -1050,7 +1053,10 @@
     <button class="btn btn-sm" onclick="addOmniRow()" style="margin-top:8px">+ Add Unit</button>
     <div class="balance-bar" style="margin-top:14px">
       <span class="balance-bar-label">Total Reconfigure Cost</span>
-      <span class="balance-bar-val" id="omni-total">0 SP</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="omni-hall-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#6ab0e8;border:1px solid #6ab0e8;padding:2px 7px;opacity:0.85"></span>
+        <span class="balance-bar-val" id="omni-total">0 SP</span>
+      </div>
     </div>
   </div>
 
@@ -1497,7 +1503,7 @@
     </div>
   </div>
   <div style="margin-top:8px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.7;font-style:italic">
-    Mark killed pilots as KIA and adjust unit assignments before pressing Complete Deployment to ensure appropriate pilot pay distribution.
+    Pilots KIA during a deployment receive their final pay. Do not mark the pilot KIA until you have pressed Complete Deployment to ensure proper pay disbursement.
   </div>
   <!-- ── MEMORIAL ── -->
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
@@ -1889,6 +1895,7 @@
 
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
     <div class="section-title" style="margin:0;flex:1">Named Pilot Cards</div>
+    <div id="pilot-slot-counter" style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)"></div>
     <button class="btn" onclick="addPilotCard()" style="border-color:var(--green);color:var(--green-bright)">+ Add Pilot Card</button>
     <button class="btn" onclick="addTemporaryPilot()" style="border-color:#6ab0e8;color:#6ab0e8">+ Add Temporary Pilot</button>
   </div>
@@ -3081,6 +3088,12 @@ function sendSalvageToLedger() {
 // ─────────────────────────────────────────
 const PILOT_TYPES = ['MechWarrior','Vehicle Commander','Battle Armor Commander','Conventional Infantry Commander','Aerospace Pilot'];
 
+function namedPilotSlotsUsed(cards) {
+  return (cards || []).filter(p => !p.temporary).reduce((s, p) => {
+    return s + (p.type === 'Battle Armor Commander' ? 0.5 : 1);
+  }, 0);
+}
+
 function addHireRow() {
   if (!data.hireRows) data.hireRows = [];
   data.hireRows.push({name:'', callsign:'', rank:'', type:'MechWarrior'});
@@ -3697,12 +3710,11 @@ function sendPersonnelToLedger() {
 
   // Check named pilot limit
   if (hireRows.length) {
-    const currentNamed = data.pilotCards.filter(p => !p.temporary).length;
-    const wouldTotal   = currentNamed + hireRows.length;
-    if (wouldTotal > 4) {
-      const slots = 4 - currentNamed;
-      if (slots <= 0) toast('Cannot hire — your unit already has the maximum of four Named Pilots.');
-      else toast(`Cannot hire ${hireRows.length} pilot${hireRows.length>1?'s':''} — only ${slots} slot${slots>1?'s':''} remaining. Remove some hire entries and try again.`);
+    const currentSlots = namedPilotSlotsUsed(data.pilotCards);
+    const newSlots = hireRows.reduce((s, r) => s + (r.type === 'Battle Armor Commander' ? 0.5 : 1), 0);
+    if (currentSlots + newSlots > 4) {
+      const remaining = 4 - currentSlots;
+      toast(`Not enough pilot slots — ${remaining <= 0 ? 'no slots' : remaining + ' slot' + (remaining !== 1 ? 's' : '')} remaining (BA Commanders use \u00bd slot each). Adjust your hire list and try again.`);
       return;
     }
   }
@@ -3866,6 +3878,10 @@ function sendRepairRearmToLedger() {
   const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
   const supportDiscount = effectiveSupportPct / 100;
+  const hallRating = (data.hiringHallRating || '').toUpperCase();
+  const hallRepairDiscount = data.atHiringHall
+    ? (hallRating === 'A' || hallRating === 'B') ? 0.5 : hallRating === 'C' ? 0.25 : 0
+    : 0;
 
   // Check Mech Bay capacity
   const mechBaySlots = (data.dropShipUpgrades||[]).filter(id => id === 'mech_bay_standard' || id === 'mech_bay_deluxe').length;
@@ -3886,8 +3902,8 @@ function sendRepairRearmToLedger() {
   (data.rearmRows||[]).forEach(r => { rearmTotal += rearmLedgerClassic ? (+r.tons||0)*10 : 20; });
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
-  // apply support discount to repair & rearm, but not omni reconfigure
-  const total = Math.ceil(repairTotal*(1-supportDiscount) + rearmTotal*(1-supportDiscount) + omniTotal);
+  // apply support discount + hall discount to repair & rearm, hall discount to omni
+  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
   const hasRows = (data.repairRows||[]).length || (data.rearmRows||[]).length || (data.omniRows||[]).length;
   if (!hasRows) { toast('No repair/rearm costs to send.'); return; }
 
@@ -3939,6 +3955,15 @@ function updateSupportTotals() {
   const supportActive = effectiveSupportPct > 0;
   const supportLabel = data.supportType === 'battle' ? 'Battle Support (100% covered)' : `${effectiveSupportPct}% covered by employer`;
 
+  // Hiring Hall repair/rearm discount (separate from support discount)
+  const hallRating = (data.hiringHallRating || '').toUpperCase();
+  const hallRepairDiscount = data.atHiringHall
+    ? (hallRating === 'A' || hallRating === 'B') ? 0.5 : hallRating === 'C' ? 0.25 : 0
+    : 0;
+  const hallBadgeText = hallRepairDiscount > 0
+    ? `Hall ${hallRating}: \u2212${hallRepairDiscount * 100}% Repair/Rearm`
+    : '';
+
   // helper to show/hide a badge element
   function setBadge(id, show, text) {
     const el = document.getElementById(id);
@@ -3958,24 +3983,28 @@ function updateSupportTotals() {
     const mechBayMult  = (hasMechBay && r.inMechBay === true) ? 0.8 : 1;
     repairGross += (+r.tons||0) * mt.mult * techMult * unitTypeMult * mechBayMult;
   });
-  const repairNet = Math.ceil(repairGross * (1 - supportDiscount));
+  const repairNet = Math.ceil(repairGross * (1 - supportDiscount) * (1 - hallRepairDiscount));
   setText('repair-total', `${fmt(repairNet)} SP`);
   setBadge('repair-support-badge', supportActive, supportLabel);
+  setBadge('repair-hall-badge', hallRepairDiscount > 0, hallBadgeText);
 
   // rearm
   const rearmClassic = (data.gameMode || 'classic') === 'classic';
   let rearmGross = 0;
   (data.rearmRows||[]).forEach(r => { rearmGross += rearmClassic ? (+r.tons||0)*10 : 20; });
-  const rearmNet = Math.ceil(rearmGross * (1 - supportDiscount));
+  const rearmNet = Math.ceil(rearmGross * (1 - supportDiscount) * (1 - hallRepairDiscount));
   setText('rearm-total', `${fmt(rearmNet)} SP`);
   setBadge('rearm-support-badge', supportActive, supportLabel);
+  setBadge('rearm-hall-badge', hallRepairDiscount > 0, hallBadgeText);
 
-  // omni reconfigure (not discounted by support)
+  // omni reconfigure (hall discount applies, support discount does not)
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
-  setText('omni-total', `${fmt(Math.ceil(omniTotal))} SP`);
+  const omniNet = Math.ceil(omniTotal * (1 - hallRepairDiscount));
+  setText('omni-total', `${fmt(omniNet)} SP`);
+  setBadge('omni-hall-badge', hallRepairDiscount > 0, hallBadgeText);
 
-  // heal (discounted)
+  // heal (discounted by support only, not hall)
   let healGross = 0;
   (data.healRows||[]).forEach(() => { healGross += 30; }); // 30 SP per row (1 wound each)
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
@@ -3985,7 +4014,7 @@ function updateSupportTotals() {
 
   // repair, rearm & omni section total (repair+rearm discounted, omni not)
   const repairRearmGross = Math.ceil(repairGross + rearmGross + omniTotal);
-  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount) + rearmGross*(1-supportDiscount) + omniTotal);
+  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
   setText('support-repair-rearm-total', `${fmt(repairRearmNet)} SP`);
   // show strikethrough gross and label when discount applies
   const grossLineEl = document.getElementById('repair-rearm-gross-line');
@@ -4883,36 +4912,58 @@ function completeDeployment() {
   if (!data.ledger) data.ledger = [];
   data.ledger.push({ month:'', event, cost:'', cover:'', paid: netPaid ? String(netPaid) : '', rep:'' });
 
-  // Distribute pilot pay evenly among deployed non-temporary Named Pilots
+  // Distribute pilot pay among deployed non-temporary Named Pilots
+  // BA Commanders get a half-share; remainder goes to non-BA pilots or back to ledger
   if (pilotPay > 0 && data.pilotCards) {
-    // Find which named pilots are deployed: check formation rows for assigned pilotIdx matching a non-temp pilot card
-    const deployedPilotCardIndices = new Set();
+    const deployedIndices = [];
     (data.forceData.formations || []).forEach(f => {
       f.rows.forEach(r => {
         if (!r.deploy) return;
         const pi = r.pilotIdx;
         if (pi === '' || pi === undefined || pi === null) return;
         const piStr = String(pi);
-        if (piStr.startsWith('n:')) return; // nameless pilot, skip
+        if (piStr.startsWith('n:')) return;
         const rosterIdx = +piStr;
         const rp = (data.pilotRoster || [])[rosterIdx];
         if (!rp) return;
-        // Match roster entry back to a non-temporary pilot card by name
-        const cardIdx = data.pilotCards.findIndex(pc => !pc.temporary && pc.status !== 'KIA' && pc.name && rp.name && pc.name.trim() === rp.name.trim());
-        if (cardIdx !== -1) deployedPilotCardIndices.add(cardIdx);
+        const cardIdx = data.pilotCards.findIndex(pc => !pc.temporary && pc.name && rp.name && pc.name.trim() === rp.name.trim());
+        if (cardIdx !== -1 && !deployedIndices.includes(cardIdx)) deployedIndices.push(cardIdx);
       });
     });
 
-    const pilotCount = deployedPilotCardIndices.size;
+    const pilotCount = deployedIndices.length;
     if (pilotCount > 0) {
-      const spPerPilot = Math.floor(pilotPay / pilotCount);
-      const remainder  = pilotPay - (spPerPilot * pilotCount);
-      let first = true;
-      deployedPilotCardIndices.forEach(idx => {
-        const bonus = spPerPilot + (first ? remainder : 0);
-        first = false;
-        data.pilotCards[idx].totalSP = (+data.pilotCards[idx].totalSP || 0) + bonus;
-      });
+      const nonBAIndices = deployedIndices.filter(idx => data.pilotCards[idx].type !== 'Battle Armor Commander');
+      const baIndices    = deployedIndices.filter(idx => data.pilotCards[idx].type === 'Battle Armor Commander');
+      const totalShares  = nonBAIndices.length + baIndices.length * 0.5;
+      const shareValue   = pilotPay / totalShares;
+
+      if (nonBAIndices.length === 0 && baIndices.length > 0) {
+        // Only BA Commanders — each gets half the pool split among them, rest refunded
+        const totalBAShare = Math.floor(pilotPay / 2);
+        const baShare      = Math.floor(totalBAShare / baIndices.length);
+        const refund       = pilotPay - baShare * baIndices.length;
+        baIndices.forEach(idx => {
+          data.pilotCards[idx].totalSP = (+data.pilotCards[idx].totalSP || 0) + baShare;
+        });
+        if (refund > 0) {
+          data.ledger.push({ month:'', event:`${event} \u2014 Pilot Pay Refund (BA only)`, cost:'', cover:'', paid: String(refund), rep:'' });
+        }
+      } else {
+        // Mixed — BA gets half-share, non-BA split the remainder
+        baIndices.forEach(idx => {
+          const baShare = Math.floor(shareValue * 0.5);
+          data.pilotCards[idx].totalSP = (+data.pilotCards[idx].totalSP || 0) + baShare;
+        });
+        const baTotal        = baIndices.reduce((s) => s + Math.floor(shareValue * 0.5), 0);
+        const nonBAPool      = pilotPay - baTotal;
+        const nonBAShare     = Math.floor(nonBAPool / nonBAIndices.length);
+        const nonBARemainder = nonBAPool - nonBAShare * nonBAIndices.length;
+        nonBAIndices.forEach((idx, j) => {
+          const bonus = nonBAShare + (j === 0 ? nonBARemainder : 0);
+          data.pilotCards[idx].totalSP = (+data.pilotCards[idx].totalSP || 0) + bonus;
+        });
+      }
     }
   }
 
@@ -4934,7 +4985,7 @@ function completeDeployment() {
   renderDeployment();
   renderPilotCards();
   renderLedger();
-  const pilotMsg = pilotPay > 0 ? ` ${fmt(pilotPay)} SP distributed to ${pilotCount} pilot${pilotCount!==1?'s':''}.` : '';
+  const pilotMsg = pilotPay > 0 ? ` ${fmt(pilotPay)} SP distributed to ${(deployedIndices||[]).length} pilot${(deployedIndices||[]).length!==1?'s':''}.` : '';
   toast(`Track "${trackName}" completed — ${bonusLabels[bonusKey]} (${netPaid ? fmt(netPaid) + ' SP' : '0 SP'} to ledger).${pilotMsg}`);
 }
 
@@ -6431,8 +6482,9 @@ function addTemporaryPilot() {
 
 function addPilotCard() {
   if (!data.pilotCards) data.pilotCards = [];
-  if (data.pilotCards.length >= 4) {
-    toast('A unit may only have four Named Pilots.');
+  const slotsUsed = namedPilotSlotsUsed(data.pilotCards);
+  if (slotsUsed + 1 > 4) {
+    toast('A unit may only have four Named Pilot slots. (Each Battle Armor Commander uses \u00bd a slot.)');
     return;
   }
   data.pilotCards.push({
@@ -6534,6 +6586,17 @@ function updatePCWounds(i, count) {
 
 function updatePC(i, field, val) {
   if (!data.pilotCards[i]) return;
+  if (field === 'type' && !data.pilotCards[i].temporary) {
+    const oldType = data.pilotCards[i].type;
+    const oldSlot = oldType === 'Battle Armor Commander' ? 0.5 : 1;
+    const newSlot = val   === 'Battle Armor Commander' ? 0.5 : 1;
+    const newTotal = namedPilotSlotsUsed(data.pilotCards) - oldSlot + newSlot;
+    if (newTotal > 4) {
+      toast("Changing this pilot\u2019s type would exceed 4 Named Pilot slots. Free up a slot first.");
+      renderPilotCards();
+      return;
+    }
+  }
   data.pilotCards[i][field] = val;
   renderPilotCards();
   localStorage.setItem('btMercContract', JSON.stringify(data));
@@ -6572,13 +6635,15 @@ function calcEdgeAbil(sp)  { let a=0; PC_EA_TABLE.forEach(r=>{ if(sp>=r.sp) a=r.
 function getH(table, sp)   { let h=0; table.forEach(r=>{ if(sp>=r.sp) h=r.h; }); return h; }
 
 // Helper: render a lit/unlit SP progress row of cells
-function pcSpRow(table, valueKey, spVal) {
+function pcSpRow(table, valueKey, spVal, costMult) {
+  const m = costMult || 1;
   return table.map(entry => {
-    const lit = spVal >= entry.sp;
+    const effectiveCost = Math.ceil(entry.sp * m);
+    const lit = spVal >= effectiveCost;
     const label = entry[valueKey];
     return `<div class="pilot-sp-entry" style="${lit?'border-color:var(--gold);background:var(--gold);':''}">
       <div class="pilot-sp-skill" style="${lit?'color:#000;':''}">${label}</div>
-      <div class="pilot-sp-cost"  style="${lit?'color:#000;':''}">${entry.sp}</div>
+      <div class="pilot-sp-cost"  style="${lit?'color:#000;':''}">${effectiveCost}</div>
     </div>`;
   }).join('');
 }
@@ -6587,6 +6652,13 @@ function renderPilotCards() {
   if (!data.pilotCards) data.pilotCards = [];
   const c = document.getElementById('pilotCardsContainer');
   if (!c) return;
+
+  const slotEl = document.getElementById('pilot-slot-counter');
+  if (slotEl) {
+    const used = namedPilotSlotsUsed(data.pilotCards);
+    const color = used >= 4 ? 'var(--red)' : used >= 3 ? 'var(--gold)' : 'var(--text-dim)';
+    slotEl.innerHTML = `<span style="color:${color}">${used}</span> / 4 Slots`;
+  }
 
   if (!data.pilotCards.length) {
     c.innerHTML = `
@@ -6612,23 +6684,25 @@ function renderPilotCards() {
     const totalSP = +p.totalSP || 0;
 
     // --- Classic fields ---
+    const isBA = p.type === 'Battle Armor Commander';
+    const costMult = isBA ? 0.5 : 1;
     const spGun = +p.spGun || 0;
     const spPil = +p.spPil || 0;
     const spET  = +p.spET  || 0;
     const spEA  = +p.spEA  || 0;
-    const gunSkill = calcGunSkill(spGun);
-    const pilSkill = calcPilSkill(spPil);
-    const etCount  = calcEdgeTokens(spET);
-    const eaCount  = calcEdgeAbil(spEA);
-    const spentClassic = spGun + spPil + spET + spEA;
+    const gunSkill = calcGunSkill(spGun / costMult);
+    const pilSkill = calcPilSkill(spPil / costMult);
+    const etCount  = calcEdgeTokens(spET / costMult);
+    const eaCount  = calcEdgeAbil(spEA / costMult);
+    const spentClassic = (spGun + spPil + spET + spEA) * costMult;
     const totalH = classic
-      ? getH(PC_GUN_TABLE, spGun) + getH(PC_PIL_TABLE, spPil) + getH(PC_ET_TABLE, spET) + getH(PC_EA_TABLE, spEA)
-      : getH(PC_ET_TABLE, spET) + getH(PC_EA_TABLE, spEA);
+      ? getH(PC_GUN_TABLE, spGun / costMult) + getH(PC_PIL_TABLE, spPil / costMult) + getH(PC_ET_TABLE, spET / costMult) + getH(PC_EA_TABLE, spEA / costMult)
+      : getH(PC_ET_TABLE, spET / costMult) + getH(PC_EA_TABLE, spEA / costMult);
 
     // --- Alpha Strike field ---
     const spAS = +p.spAS || 0;
-    const asSkill = calcASSkill(spAS);
-    const spentAS = spAS + spET + spEA;
+    const asSkill = calcASSkill(spAS / costMult);
+    const spentAS = (spAS + spET + spEA) * costMult;
 
     const spent     = classic ? spentClassic : spentAS;
     const remaining = totalSP - spent;
@@ -6672,7 +6746,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spGun',spGun,'SP')}
       </div>
-      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_GUN_TABLE,'skill',spGun)}</div>
+      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_GUN_TABLE,'skill',spGun,costMult)}</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:2px">
         ${PC_GUN_TABLE.map(r=>`<div style="text-align:center;font-size:9px;color:var(--text-dim);letter-spacing:0.5px">H:${r.h}</div>`).join('')}
       </div>
@@ -6685,7 +6759,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spPil',spPil,'SP')}
       </div>
-      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_PIL_TABLE,'skill',spPil)}</div>
+      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_PIL_TABLE,'skill',spPil,costMult)}</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:2px">
         ${PC_PIL_TABLE.map(r=>`<div style="text-align:center;font-size:9px;color:var(--text-dim);letter-spacing:0.5px">H:${r.h}</div>`).join('')}
       </div>
@@ -6698,7 +6772,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spET',spET,'SP')}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px">${pcSpRow(PC_ET_TABLE,'t',spET)}</div>
+      <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px">${pcSpRow(PC_ET_TABLE,'t',spET,costMult)}</div>
       <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:2px">
         ${PC_ET_TABLE.map(r=>`<div style="text-align:center;font-size:9px;color:var(--text-dim);letter-spacing:0.5px">H:${r.h}</div>`).join('')}
       </div>
@@ -6711,7 +6785,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spEA',spEA,'SP')}
       </div>
-      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_EA_TABLE,'a',spEA)}</div>
+      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_EA_TABLE,'a',spEA,costMult)}</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:2px">
         ${PC_EA_TABLE.map(r=>`<div style="text-align:center;font-size:9px;color:var(--text-dim);letter-spacing:0.5px">H:${r.h}</div>`).join('')}
       </div>
@@ -6746,7 +6820,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spAS',spAS,'SP')}
       </div>
-      <div class="pilot-sp-chart" style="grid-template-columns:repeat(4,1fr)">${pcSpRow(PC_AS_SKILL_TABLE,'skill',spAS)}</div>
+      <div class="pilot-sp-chart" style="grid-template-columns:repeat(4,1fr)">${pcSpRow(PC_AS_SKILL_TABLE,'skill',spAS,costMult)}</div>
       
 
       <!-- EDGE TOKENS (shared) -->
@@ -6756,7 +6830,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spET',spET,'SP')}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px">${pcSpRow(PC_ET_TABLE,'t',spET)}</div>
+      <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px">${pcSpRow(PC_ET_TABLE,'t',spET,costMult)}</div>
       <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:2px">
         ${PC_ET_TABLE.map(r=>`<div style="text-align:center;font-size:9px;color:var(--text-dim);letter-spacing:0.5px">H:${r.h}</div>`).join('')}
       </div>
@@ -6768,7 +6842,7 @@ function renderPilotCards() {
         </div>
         ${spInput(i,'spEA',spEA,'SP')}
       </div>
-      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_EA_TABLE,'a',spEA)}</div>
+      <div class="pilot-sp-chart" style="grid-template-columns:repeat(5,1fr)">${pcSpRow(PC_EA_TABLE,'a',spEA,costMult)}</div>
       
     `;
 
@@ -6863,7 +6937,10 @@ function renderPilotCards() {
 
       <!-- SP Remaining -->
       <div style="margin-top:14px;padding:10px 14px;border:1px solid ${over?'var(--red)':'var(--green)'};background:${over?'rgba(204,34,51,.08)':'rgba(42,122,74,.08)'};display:flex;align-items:center;justify-content:space-between">
-        <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">SP ${over?'Overage':'Remaining'}</span>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">SP ${over?'Overage':'Remaining'}</span>
+          ${isBA ? `<span style="font-size:9px;color:#6ab0e8;letter-spacing:1px;font-family:'Share Tech Mono',monospace">\u2605 Battle Armor \u2014 \u00bd upgrade costs</span>` : ''}
+        </div>
         <span style="font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:${over?'var(--red)':'var(--green-bright)'}">${over?'+':''}${Math.abs(remaining)}</span>
       </div>
 
