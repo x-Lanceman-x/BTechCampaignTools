@@ -1042,11 +1042,12 @@
   <!-- Reconfigure Omni Calculator -->
   <div class="panel">
     <div class="ref-title">&#9645; Reconfigure Omni Costs (Ton ÷ 4)</div>
-    <div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 120px;gap:8px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 1fr 120px;gap:8px;margin-bottom:6px">
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">New Configuration</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">New BV</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">New Role</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
     </div>
     <div id="omni-rows"></div>
@@ -1329,7 +1330,7 @@
       </div>
     </div>
     <div class="grid-5">
-      <div class="field"><label>Scale</label>
+      <div class="field"><label>Contract Scale</label>
         <select id="force-scale" onchange="saveForce()">
           <option value="">— Select —</option>
           <option value="1">1</option>
@@ -1383,6 +1384,11 @@
   <div id="force-formations"></div>
 
   <button class="btn btn-sm" onclick="addFormation()" style="margin-bottom:16px">+ Add Formation</button>
+
+  <!-- ── MOTHBALLED UNITS ── -->
+  <div id="mothballed-section" style="margin-bottom:16px">
+    <div id="mothballed-pane"></div>
+  </div>
 
   <!-- ── BARRACKS (Alpha Strike only) ── -->
   <div class="alpha-only" id="barracks-section">
@@ -1446,6 +1452,16 @@
       <input type="text" id="deploy-track-name" placeholder="Track Name…"
         style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none">
     </div>
+    <div class="field" style="margin:0;min-width:120px">
+      <select id="deploy-track-scale" onchange="data.deployTrackScale=this.value;save();renderDeployment()"
+        style="width:100%;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none;font-weight:700"
+        title="Track Scale — determines unit limit and combat pay">
+        <option value="">— Track Scale —</option>
+        <option value="1">Scale 1</option>
+        <option value="2">Scale 2</option>
+        <option value="3">Scale 3</option>
+      </select>
+    </div>
     <div class="field" style="margin:0;min-width:180px">
       <select id="deploy-combat-bonus"
         style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
@@ -1493,6 +1509,11 @@
       <div style="display:flex;flex-direction:column;gap:2px">
         <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Deployable BSP</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)" id="deployment-bsp">—</span>
+      </div>
+      <div style="width:1px;height:36px;background:var(--border-gold);flex-shrink:0"></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim)">Units Deployed</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;color:var(--gold)" id="deployment-unit-count">0 / —</span>
       </div>
       <div style="width:1px;height:36px;background:var(--border-gold);flex-shrink:0"></div>
       <div style="display:flex;flex-direction:column;gap:2px">
@@ -1719,6 +1740,14 @@
     </label>
     <div style="margin-top:6px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
       When checked, non-named pilots count as a 0 handicap for Handicap averaging if the piloted unit is at least 500 BV.
+    </div>
+    <label class="check-label" style="margin-top:14px">
+      <input type="checkbox" id="verbose-mode" onchange="toggleVerboseMode(this.checked)">
+      <span class="checkmark"></span>
+      Verbose Mode
+    </label>
+    <div style="margin-top:6px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
+      When checked, ledger entries from Send to Ledger include full details — expense type, unit or pilot name — instead of just the section title.
     </div>
     <hr class="divider" style="margin:16px 0">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
@@ -2006,14 +2035,25 @@ let data = {
   ledger:[],
   repairRows:[],
   rearmRows:[],
+  omniRows:[],
   assetRows:[],
+  salvageRows:[],
+  healRows:[],
+  healBARows:[],
+  skillRows:[],
+  hireRows:[],
+  hireNamelessRows:[],
+  simTrainingRows:[],
+  bflRows:[],
   contractHistory:[],
   pilotRoster:[],
+  pilotCards:[], pilotMemorial:[], namelessPilots:[],
   journalEntries:[],
   barracksRows:[],
-  pilotCards:[], pilotMemorial:[], namelessPilots:[], bflRows:[], dropShipHired: false, dropShipUpgrades:[], dropShipImage:'',
-  pilotMemorial:[],
-  noBsp: false, handicapOption: false, atHiringHall: false, hiringHallRating: '', reducedMaintenance: false,
+  dropShipHired: false, dropShipUpgrades:[], dropShipImage:'',
+  noBsp: false, handicapOption: false, verboseMode: false,
+  atHiringHall: false, hiringHallRating: '', reducedMaintenance: false,
+  regularMilitary: false, deployTrackScale: '',
   clanTechMult: 1.5
 };
 
@@ -2329,6 +2369,8 @@ function renderAll() {
   if (noBspEl) noBspEl.checked = !!data.noBsp;
   const handicapOptEl = document.getElementById('handicap-option');
   if (handicapOptEl) handicapOptEl.checked = !!data.handicapOption;
+  const verboseModeEl = document.getElementById('verbose-mode');
+  if (verboseModeEl) verboseModeEl.checked = !!data.verboseMode;
   const hiringHallEl = document.getElementById('at-hiring-hall');
   if (hiringHallEl) {
     hiringHallEl.checked = !!data.atHiringHall;
@@ -2777,7 +2819,7 @@ function renderRearmRows() {
 // ─────────────────────────────────────────
 function addOmniRow() {
   if (!data.omniRows) data.omniRows = [];
-  data.omniRows.push({unit:'', tons:'', newConfig:'', newBv:''});
+  data.omniRows.push({unit:'', tons:'', newConfig:'', newBv:'', newRole:''});
   renderOmniRows(); save();
 }
 function removeOmniRow(i) { data.omniRows.splice(i,1); renderOmniRows(); save(); }
@@ -2803,13 +2845,14 @@ function renderOmniRows() {
     const unitOptions = forceUnits.length
       ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
       : `<option value="">— No Omni units in roster —</option>`;
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 2fr 1fr 1fr 120px;gap:8px;align-items:center;margin-bottom:6px">
       <select onchange="selectOmniUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
         ${unitOptions}
       </select>
       <input type="number" value="${r.tons||''}" onchange="updateOmniRow(${i},'tons',this.value)" placeholder="Tons" style="text-align:center">
       <input type="text" value="${esc(r.newConfig||'')}" onchange="updateOmniRow(${i},'newConfig',this.value)" placeholder="e.g. Atlas AS7-K" style="width:100%">
       <input type="number" value="${r.newBv||''}" onchange="updateOmniRow(${i},'newBv',this.value)" placeholder="BV" style="text-align:center">
+      <input type="text" value="${esc(r.newRole||'')}" onchange="updateOmniRow(${i},'newRole',this.value)" placeholder="Role…" style="width:100%">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
         <button class="btn btn-sm btn-danger" onclick="removeOmniRow(${i})">✕</button>
@@ -3079,12 +3122,25 @@ function sendSalvageToLedger() {
   const netTotal = rawTotal * (pct / 100) - claimedTotal;
   if (netTotal === 0) { toast(pct === 0 ? 'Salvage % is 0 on the Contract tab.' : 'No salvage value to send.'); return; }
   const rounded = Math.round(netTotal);
-  if (rounded >= 0) {
-    data.ledger.push({month:'', event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
+  if (isVerbose()) {
+    const units = (data.salvageRows||[]).filter(r => r.unit).map(r => r.unit).join(', ');
+    const prefix = units ? `Salvage (${units})` : 'Salvage';
+    if (rounded >= 0) {
+      data.ledger.push({month:'', event: prefix, cost:'', cover:'', paid: String(rounded), rep:''});
+    } else {
+      data.ledger.push({month:'', event: `${prefix} — net cost`, cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+    }
   } else {
-    data.ledger.push({month:'', event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+    if (rounded >= 0) {
+      data.ledger.push({month:'', event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
+    } else {
+      data.ledger.push({month:'', event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+    }
   }
-  renderLedger(); save();
+  data.salvageRows = [];
+  renderLedger();
+  renderSalvageRows();
+  save();
   toast('Salvage added to Monthly Ledger.');
 }
 
@@ -3554,9 +3610,31 @@ function sendMedicalToLedger() {
     }
   });
 
+  // Build verbose label BEFORE rows are cleared
+  let medEventLabel;
+  if (isVerbose()) {
+    const parts = [];
+    (data.healRows||[]).forEach(r => {
+      const key = r.pilotKey != null ? String(r.pilotKey) : null;
+      if (!key) return;
+      let name = key.startsWith('n:') ? `Nameless #${+key.slice(2)+1}` : ((data.pilotRoster||[])[+key]||{}).name || `Pilot ${+key+1}`;
+      parts.push(`Heal ${name} (30 SP)`);
+    });
+    (data.healBARows||[]).forEach(r => {
+      const key = r.pilotKey != null ? String(r.pilotKey) : null;
+      const troopers = +r.troopers || 0;
+      if (!key || !troopers) return;
+      let name = key.startsWith('n:') ? `Nameless #${+key.slice(2)+1}` : ((data.pilotRoster||[])[+key]||{}).name || `BA Cmdr`;
+      parts.push(`Heal ${troopers} BA Trooper${troopers!==1?'s':''} for ${name}`);
+    });
+    medEventLabel = parts.length ? parts.join('; ') : 'Medical';
+  } else {
+    medEventLabel = 'Medical';
+  }
+
   data.healRows = [];
   data.healBARows = [];
-  if (totalMedical) data.ledger.push({month:'', event:'Medical', cost: String(totalMedical), cover:'', paid:'', rep:''});
+  if (totalMedical) data.ledger.push({month:'', event: medEventLabel, cost: String(totalMedical), cover:'', paid:'', rep:''});
   renderLedger();
   renderHealRows();
   renderHealBARows();
@@ -3663,6 +3741,17 @@ function sendSimTrainingToLedger() {
   if (new Set(indices).size !== indices.length) { toast('A pilot cannot train twice in the same session.'); return; }
 
   let total = 0;
+  let simLabel;
+  if (isVerbose()) {
+    const parts = data.simTrainingRows.map(r => {
+      const pc = (data.pilotCards||[])[+r.pilotIdx];
+      const name = pc ? (pc.name || `Pilot ${+r.pilotIdx+1}`) : `Pilot ${+r.pilotIdx+1}`;
+      return `${name} (${r.sp} SP)`;
+    });
+    simLabel = `Simulator Training: ${parts.join(', ')}`;
+  } else {
+    simLabel = 'Simulator Training';
+  }
   data.simTrainingRows.forEach(r => {
     const sp = Math.min(200, Math.max(0, +r.sp || 0));
     total += sp;
@@ -3671,7 +3760,9 @@ function sendSimTrainingToLedger() {
   });
 
   data.simTrainingRows = [];
-  if (total) data.ledger.push({ month:'', event:'Simulator Training', cost: String(total), cover:'', paid:'', rep:'' });
+  if (total) {
+    data.ledger.push({ month:'', event: simLabel, cost: String(total), cover:'', paid:'', rep:'' });
+  }
   renderLedger();
   renderSimTrainingRows();
   renderPilotCards();
@@ -3756,8 +3847,15 @@ function sendBFLToLedger() {
   let total = 0;
   data.bflRows.forEach(r => { total += Math.ceil((+r.bv||0) * (supportPct / 100)); });
   if (!total) { toast('Total compensation is 0 SP — check your BV/PV values and Support %.'); return; }
+  let bflEventLabel;
+  if (isVerbose()) {
+    const parts = data.bflRows.map(r => r.unit ? `${r.unit} (${fmt(Math.ceil((+r.bv||0)*(supportPct/100)))} SP)` : null).filter(Boolean);
+    bflEventLabel = parts.length ? `Battlefield Loss: ${parts.join(', ')}` : 'Battlefield Loss Compensation';
+  } else {
+    bflEventLabel = 'Battlefield Loss Compensation';
+  }
   data.bflRows = [];
-  data.ledger.push({month:'', event:'Battlefield Loss Compensation', cost:'', cover:'', paid: String(total), rep:''});
+  data.ledger.push({month:'', event: bflEventLabel, cost:'', cover:'', paid: String(total), rep:''});
   renderLedger();
   renderBFLRows();
   save();
@@ -3855,7 +3953,22 @@ function sendPersonnelToLedger() {
   data.skillRows        = [];
   if (hireBACountEl) hireBACountEl.value = '';
 
-  if (total) data.ledger.push({month:'', event:'Personnel & Training', cost:String(total), cover:'', paid:'', rep:''});
+  let personnelEventLabel;
+  if (isVerbose()) {
+    const parts = [];
+    hireRows.forEach(r => { parts.push(`Hire ${r.name||'Named Pilot'} (${r.type||'MechWarrior'}, 150 SP)`); });
+    hireNamelessRows.forEach(r => { parts.push(`Hire ${r.type||'MechWarrior'} ${r.skillLevel||'Regular'} (${r.skillLevel==='Green'?'0':'100'} SP)`); });
+    if (hireBACount) parts.push(`Hire ${hireBACount} BA Trooper${hireBACount!==1?'s':''} (${hireBACount*20} SP)`);
+    skillRows.forEach(r => {
+      const pc = r.pilotIdx !== '' ? (data.pilotCards||[])[+r.pilotIdx] : null;
+      const pilotName = pc ? (pc.name||`Pilot ${+r.pilotIdx+1}`) : '';
+      parts.push(pilotName ? `${r.desc||'Training'}: ${pilotName}` : (r.desc||'Training'));
+    });
+    personnelEventLabel = parts.length ? parts.join('; ') : 'Personnel & Training';
+  } else {
+    personnelEventLabel = 'Personnel & Training';
+  }
+  if (total) data.ledger.push({month:'', event: personnelEventLabel, cost:String(total), cover:'', paid:'', rep:''});
   renderLedger();
   renderHireRows();
   renderHireNamelessRows();
@@ -3936,12 +4049,28 @@ function sendAssetToLedger() {
     }
   });
 
-  if (net > 0) {
-    data.ledger.push({month:'', event:'Unit Sales', cost:'', cover:'', paid: String(Math.round(net)), rep:''});
+  if (isVerbose()) {
+    const ASSET_TYPES_V = getAssetTypes();
+    const verboseParts = (data.assetRows||[]).map(r => {
+      const at = ASSET_TYPES_V.find(t=>t.key===r.type)||ASSET_TYPES_V[0];
+      return r.unit ? `${at.label}: ${r.unit}` : at.label;
+    }).filter(Boolean);
+    const verboseLabel = verboseParts.join('; ') || (net > 0 ? 'Unit Sales' : 'Unit Purchases');
+    if (net > 0) {
+      data.ledger.push({month:'', event: verboseLabel, cost:'', cover:'', paid: String(Math.round(net)), rep:''});
+    } else {
+      data.ledger.push({month:'', event: verboseLabel, cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
+    }
   } else {
-    data.ledger.push({month:'', event:'Unit Purchases', cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
+    if (net > 0) {
+      data.ledger.push({month:'', event:'Unit Sales', cost:'', cover:'', paid: String(Math.round(net)), rep:''});
+    } else {
+      data.ledger.push({month:'', event:'Unit Purchases', cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
+    }
   }
+  data.assetRows = [];
   renderLedger();
+  renderAssetRows();
   renderFormations();
   renderPilotRoster();
   renderDeployment();
@@ -4004,21 +4133,35 @@ function sendRepairRearmToLedger() {
   const hasRows = (data.repairRows||[]).length || (data.rearmRows||[]).length || (data.omniRows||[]).length;
   if (!hasRows) { toast('No repair/rearm costs to send.'); return; }
 
-  // Update unit roster for any omni rows with new config/BV
+  // Update unit roster for any omni rows with new config/BV/Role
   (data.omniRows||[]).forEach(r => {
     if (!r.unit) return;
     const newConfig = (r.newConfig||'').trim();
-    const newBv = r.newBv !== '' && r.newBv !== undefined ? r.newBv : null;
-    if (!newConfig && newBv === null) return;
+    const newBv     = r.newBv !== '' && r.newBv !== undefined ? r.newBv : null;
+    const newRole   = (r.newRole||'').trim();
+    if (!newConfig && newBv === null && !newRole) return;
     (data.forceData.formations||[]).forEach(f => {
       f.rows.forEach(row => {
         if ((row.unit||'').trim() === r.unit.trim()) {
           if (newConfig) row.unit = newConfig;
           if (newBv !== null) row.bv = String(newBv);
+          if (newRole) row.role = newRole;
         }
       });
     });
   });
+
+  // Build verbose label BEFORE rows are cleared
+  let eventLabel;
+  if (isVerbose()) {
+    const parts = [];
+    (data.repairRows||[]).forEach(r => { if (r.unit) { const mt = REPAIR_TYPES.find(t=>t.key===r.type); parts.push(`Repair ${r.unit} (${mt?mt.label:''})`); } });
+    (data.rearmRows||[]).forEach(r => { if (r.unit) parts.push(`Rearm ${r.unit}`); });
+    (data.omniRows||[]).forEach(r => { if (r.unit) parts.push(`Omni ${r.unit}${r.newConfig?` \u2192 ${r.newConfig}`:''}`); });
+    eventLabel = parts.length ? parts.join('; ') : 'Repair, Rearm & Omni';
+  } else {
+    eventLabel = 'Repair, Rearm & Omni';
+  }
 
   // Reset status to Operational for every repaired unit on the Force Record
   const repairedUnitNames = new Set(
@@ -4032,12 +4175,15 @@ function sendRepairRearmToLedger() {
         }
       });
     });
-    data.repairRows = [];
   }
-
-  data.ledger.push({month:'', event:'Repair, Rearm & Omni', cost: String(Math.round(total)), cover:'', paid:'', rep:''});
+  data.repairRows = [];
+  data.rearmRows  = [];
+  data.omniRows   = [];
+  data.ledger.push({month:'', event: eventLabel, cost: String(Math.round(total)), cover:'', paid:'', rep:''});
   renderLedger();
   renderRepairRows();
+  renderRearmRows();
+  renderOmniRows();
   renderFormations();
   save();
   toast('Added to Monthly Ledger.');
@@ -4208,12 +4354,22 @@ function newContract() {
   data.exchangeSalvage = false;
   data.employer = '';
   data.planet = '';
+  data.deployTrackScale = '';
   data.ledger = endingRep !== 0
     ? [{month:'1', event:'Carried Rep', cost:'', cover:'', paid:'', rep: String(endingRep)}]
     : [];
   data.repairRows = [];
   data.rearmRows = [];
+  data.omniRows = [];
   data.assetRows = [];
+  data.salvageRows = [];
+  data.healRows = [];
+  data.healBARows = [];
+  data.skillRows = [];
+  data.hireRows = [];
+  data.hireNamelessRows = [];
+  data.simTrainingRows = [];
+  data.bflRows = [];
 
   localStorage.setItem('btMercContract', JSON.stringify(data));
   renderAll();
@@ -4485,8 +4641,11 @@ function restoreContract(i) {
 // ─────────────────────────────────────────
 if (!data.forceData) data.forceData = {
   name:'', co:'', scale:'', bvUsed:'', bvAvail:'', bsp:'', skillAdv:'',
-  formations: [{label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',pilot:'',tons:'',sz:'',bv:'',gp:'',adv:'',spa:''}))}]
+  sca:'', parentCommand:'', manufacturingSponsor:'', regularMilitary: false,
+  mothballedRows: [],
+  formations: [{label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',unitType:'',role:'',tons:'',bv:'',techBase:'',unitStatus:'',omni:false,pilotIdx:'',gp:'',spa:''}))}]
 };
+if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
 
 function syncForceName() {
   const name = v('force-name');
@@ -4948,7 +5107,167 @@ function renderFormations() {
       </div><!-- /min-width -->
       </div><!-- /overflow-x:auto -->
     </div>`).join('');
+  renderMothballed();
 }
+
+// ─────────────────────────────────────────
+// MOTHBALLED UNITS
+// ─────────────────────────────────────────
+function addMothballedRow() {
+  if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
+  data.forceData.mothballedRows.push({unit:'', unitType:'', role:'', tons:'', bv:'', techBase:'', unitStatus:'', omni:false});
+  renderMothballed();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+function removeMothballedRow(i) {
+  data.forceData.mothballedRows.splice(i, 1);
+  renderMothballed();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+function updateMothballedField(i, field, val) {
+  if (!data.forceData.mothballedRows[i]) return;
+  data.forceData.mothballedRows[i][field] = val;
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function renderMothballed() {
+  if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
+  const pane = document.getElementById('mothballed-pane');
+  if (!pane) return;
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const rows = data.forceData.mothballedRows;
+
+  const UNIT_TYPES = ['BattleMech','Combat Vehicle','Support Vehicle','Battle Armor','Conventional Infantry','Aerospace'];
+  const hCol = `font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px`;
+  const gridCols = '20px 2fr 110px 90px 40px 80px 80px 90px 32px';
+
+  const rowsHtml = rows.length === 0
+    ? `<div style="color:var(--text-dim);font-size:13px;padding:14px 16px;letter-spacing:1px">No mothballed units. Drag units here from formations above, or use the + Add button.</div>`
+    : rows.map((r, i) => {
+        const tbVal  = r.techBase || '';
+        const tbColor = tbVal === 'Clan' ? 'var(--gold)' : tbVal === 'Mixed' ? '#6ab0e8' : tbVal === 'IS' ? 'var(--text)' : 'var(--text-dim)';
+        const uType  = r.unitType || '';
+        return `<div style="display:grid;grid-template-columns:${gridCols};gap:0;border-bottom:1px solid rgba(42,48,64,.5);opacity:0.8"
+          draggable="true"
+          ondragstart="dragMothballedStart(event,${i})"
+          ondragend="dragUnitEnd(event)">
+          <div style="display:flex;align-items:center;justify-content:center">
+            <span class="drag-handle" style="font-size:13px;padding:0 3px;color:var(--text-dim);cursor:grab">⠿</span>
+          </div>
+          <div style="padding:2px 4px"><input type="text" value="${esc(r.unit||'')}" placeholder="Unit name"
+            onchange="updateMothballedField(${i},'unit',this.value)"
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
+          <div style="padding:2px 2px;display:flex;align-items:center">
+            <select onchange="updateMothballedField(${i},'unitType',this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 2px;color:${uType?'var(--text)':'var(--text-dim)'};cursor:pointer">
+              <option value="" style="background:var(--panel);color:var(--text-dim)">— Type —</option>
+              ${UNIT_TYPES.map(t=>`<option value="${t}" ${uType===t?'selected':''} style="background:var(--panel);color:var(--text)">${t}</option>`).join('')}
+            </select>
+          </div>
+          <div style="padding:2px 4px"><input type="text" value="${esc(r.role||'')}" placeholder="Role…"
+            onchange="updateMothballedField(${i},'role',this.value)"
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:var(--text)"></div>
+          <div style="padding:2px 4px"><input type="number" value="${r.tons||''}" placeholder="T"
+            onchange="updateMothballedField(${i},'tons',this.value)"
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
+          <div style="padding:2px 4px"><input type="number" value="${r.bv||''}" placeholder="${classic?'BV':'PV'}"
+            onchange="updateMothballedField(${i},'bv',this.value)"
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
+          <div style="padding:2px 2px;display:flex;align-items:center">
+            <select onchange="updateMothballedField(${i},'techBase',this.value)"
+              style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;padding:4px 2px;color:${tbColor};cursor:pointer">
+              <option value="" style="background:var(--panel);color:var(--text-dim)">— Tech —</option>
+              <option value="IS" ${tbVal==='IS'?'selected':''} style="background:var(--panel);color:var(--text)">Inner Sphere</option>
+              <option value="Clan" ${tbVal==='Clan'?'selected':''} style="background:var(--panel);color:var(--gold)">Clan</option>
+              <option value="Mixed" ${tbVal==='Mixed'?'selected':''} style="background:var(--panel);color:#6ab0e8">Mixed</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center">
+            <span style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);padding:2px 6px;border:1px solid var(--border)">Mothballed</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center">
+            <button onclick="removeMothballedRow(${i})" style="padding:2px 6px;font-size:11px;border:none;background:transparent;color:var(--red);cursor:pointer">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  pane.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;margin-top:8px">
+      <div class="section-title" style="margin:0;flex:1">Mothballed Units</div>
+      <button class="btn btn-sm" onclick="addMothballedRow()">+ Add Unit</button>
+    </div>
+    <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto;border-top:3px solid var(--text-dim)"
+      ondragover="dragMothballedOver(event)"
+      ondragleave="dragMothballedLeave(event)"
+      ondrop="dragMothballedDrop(event)">
+      <div style="min-width:820px">
+        <div style="display:grid;grid-template-columns:${gridCols};gap:0;border-bottom:1px solid var(--border-gold);background:rgba(60,64,80,.18)">
+          <div style="${hCol}"></div>
+          <div style="${hCol}">Unit / 'Mech</div>
+          <div style="${hCol}">Type</div>
+          <div style="${hCol}">Role</div>
+          <div style="${hCol}">Tons</div>
+          <div style="${hCol}">${classic?'BV':'PV'}</div>
+          <div style="${hCol}">Tech Base</div>
+          <div style="${hCol}">Status</div>
+          <div style="${hCol}"></div>
+        </div>
+        ${rowsHtml}
+      </div>
+    </div>
+    <div style="margin-top:4px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.7;font-style:italic">
+      Contract Unit Limit is 3 times the Contract Scale. Units are selected prior to Contract starting, all others should be mothballed.
+    </div>`;
+}
+
+// Drag: mothballed source
+function dragMothballedStart(event, i) {
+  event.dataTransfer.setData('application/x-mothballed', String(i));
+  event.dataTransfer.setData('application/x-source', 'mothballed');
+  event.target.closest('[draggable]').style.opacity = '0.4';
+}
+
+// Drag: drop INTO mothballed zone from a formation row
+function dragMothballedOver(event) {
+  event.preventDefault();
+  event.currentTarget.style.boxShadow = '0 0 0 2px var(--text-dim)';
+}
+function dragMothballedLeave(event) {
+  event.currentTarget.style.boxShadow = '';
+}
+function dragMothballedDrop(event) {
+  event.preventDefault();
+  event.currentTarget.style.boxShadow = '';
+  const source = event.dataTransfer.getData('application/x-source');
+  if (source === 'mothballed') return; // dragging within mothballed — ignore
+
+  const fi = event.dataTransfer.getData('application/x-fi');
+  const ri = event.dataTransfer.getData('application/x-ri');
+  if (fi === '' || ri === '') return;
+
+  const fIdx = +fi, rIdx = +ri;
+  const formation = (data.forceData.formations||[])[fIdx];
+  if (!formation) return;
+  const row = formation.rows[rIdx];
+  if (!row || !row.unit || !row.unit.trim()) return;
+
+  // Copy unit to mothballed
+  if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
+  data.forceData.mothballedRows.push({
+    unit: row.unit, unitType: row.unitType||'', role: row.role||'',
+    tons: row.tons||'', bv: row.bv||'', techBase: row.techBase||'',
+    unitStatus: '', omni: !!row.omni
+  });
+
+  // Clear the source row
+  formation.rows[rIdx] = {unit:'',unitType:'',role:'',tons:'',bv:'',techBase:'',unitStatus:'',omni:false,pilotIdx:'',gp:'',spa:''};
+
+  renderFormations();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+// Allow dropping a mothballed unit back into a formation row
+// Wire into existing dragUnitDrop — detect application/x-mothballed source
 
 // ─────────────────────────────────────────
 // DEPLOYMENT
@@ -4983,7 +5302,10 @@ function completeDeployment() {
   const bonusKey     = (document.getElementById('deploy-combat-bonus') || {}).value || '';
   const pilotPayEl   = document.getElementById('deploy-pilot-pay');
   const pilotPayRaw  = Math.min(200, Math.max(0, +(pilotPayEl || {}).value || 0));
-  const scale        = +(data.forceData && data.forceData.scale) || +data.scale || 0;
+  const trackScaleEl = document.getElementById('deploy-track-scale');
+  const scale        = +(trackScaleEl && trackScaleEl.value) || +(data.forceData && data.forceData.scale) || +data.scale || 0;
+
+  if (!scale) { toast('Set a Track Scale before completing deployment.'); return; }
 
   const BONUS_PAY = {
     broke:         0,
@@ -5074,9 +5396,13 @@ function completeDeployment() {
   const tn = document.getElementById('deploy-track-name');
   const cb = document.getElementById('deploy-combat-bonus');
   const pp = document.getElementById('deploy-pilot-pay');
+  const ts = document.getElementById('deploy-track-scale');
   if (tn) tn.value = '';
   if (cb) cb.value = '';
   if (pp) pp.value = '';
+  const contractScale = (data.forceData && data.forceData.scale) ? data.forceData.scale : '';
+  if (ts) ts.value = contractScale;
+  data.deployTrackScale = contractScale;
 
   localStorage.setItem('btMercContract', JSON.stringify(data));
   renderFormations();
@@ -5108,10 +5434,25 @@ function renderDeployment() {
   if (hdr) hdr.textContent = bvLabel;
   if (lbl) lbl.textContent = bvLabel;
 
-  // BSP helper — always reflects current force settings
-  const bspEl = document.getElementById('deployment-bsp');
-  const totalBsp = +(data.forceData && data.forceData.bsp) || 0;
-  const noBsp = !!data.noBsp;
+  // Resolve track scale — restore saved value, default to contract scale if blank
+  const scale = +(data.forceData && data.forceData.scale) || +data.scale || 0;
+  const trackScaleEl = document.getElementById('deploy-track-scale');
+  if (trackScaleEl) {
+    // Restore persisted value; if none saved yet default to contract scale
+    const saved = data.deployTrackScale || (scale ? String(scale) : '');
+    if (trackScaleEl.value !== saved) trackScaleEl.value = saved;
+  }
+  const trackScale = +(trackScaleEl && trackScaleEl.value) || scale;
+
+  // BSP helper — use track scale if set, otherwise contract scale
+  const bspEl    = document.getElementById('deployment-bsp');
+  const noBsp    = !!data.noBsp;
+  const scaleBvMap  = classic ? {'1':3000,'2':6000,'3':9000} : {'1':100,'2':200,'3':300};
+  const scaleBspMap = classic ? {'1':32,'2':64,'3':96} : {'1':5,'2':10,'3':15};
+  const bvAvailBase  = trackScale > 0 ? (+(scaleBvMap[String(trackScale)] || 0)) : +(data.forceData && data.forceData.bvAvail) || 0;
+  const bonus500     = data.noBsp ? (trackScale > 0 ? 500 * trackScale : 0) : 0;
+  const trackBvAvail = bvAvailBase + bonus500;
+  const totalBsp     = noBsp ? 0 : (trackScale > 0 ? (scaleBspMap[String(trackScale)] || 0) : +(data.forceData && data.forceData.bsp) || 0);
 
   // Collect deployed units from formations
   const deployed = [];
@@ -5139,6 +5480,30 @@ function renderDeployment() {
     });
   }
 
+  // Unit count: BA and CI count as 0.5, all others count as 1
+  const HALF_UNIT_TYPES = ['Battle Armor', 'Conventional Infantry'];
+  let deployedUnitCount = 0;
+  (data.forceData.formations || []).forEach(f => {
+    f.rows.forEach(r => {
+      if (!r.deploy || !r.unit || !r.unit.trim()) return;
+      deployedUnitCount += HALF_UNIT_TYPES.includes(r.unitType) ? 0.5 : 1;
+    });
+  });
+  if (!classic) {
+    (data.barracksRows || []).forEach(r => {
+      const count = parseInt(r.deployCount) || 0;
+      if (count > 0 && r.unit && r.unit.trim()) deployedUnitCount += count;
+    });
+  }
+  const deployMax = trackScale > 0 ? trackScale * 3 : null;
+  const unitCountEl = document.getElementById('deployment-unit-count');
+  if (unitCountEl) {
+    const countStr = deployMax !== null ? `${deployedUnitCount} / ${deployMax}` : `${deployedUnitCount} / —`;
+    const over = deployMax !== null && deployedUnitCount > deployMax;
+    unitCountEl.textContent = countStr;
+    unitCountEl.style.color = over ? 'var(--red)' : 'var(--gold)';
+  }
+
   const panel = document.getElementById('deployment-panel');
   const empty = document.getElementById('deployment-empty');
   const rowsCont = document.getElementById('deployment-rows');
@@ -5150,17 +5515,19 @@ function renderDeployment() {
     if (totalEl) totalEl.textContent = '0';
     const avgHElEmpty = document.getElementById('deployment-avg-handicap');
     if (avgHElEmpty) { avgHElEmpty.textContent = '—'; avgHElEmpty.style.color = 'var(--text-dim)'; }
+    if (unitCountEl) { unitCountEl.textContent = deployMax !== null ? `0 / ${deployMax}` : '0 / —'; unitCountEl.style.color = 'var(--gold)'; }
+    const bvRemEl2 = document.getElementById('force-bv-remaining');
+    if (bvRemEl2 && trackBvAvail) { bvRemEl2.textContent = fmt(trackBvAvail); bvRemEl2.style.color = 'var(--gold)'; }
+    else if (bvRemEl2) { bvRemEl2.textContent = '—'; bvRemEl2.style.color = 'var(--text-dim)'; }
     if (bspEl) {
       if (noBsp) {
         bspEl.textContent = 'N/A'; bspEl.style.color = 'var(--text-dim)';
       } else if (!totalBsp) {
         bspEl.textContent = '—'; bspEl.style.color = 'var(--text-dim)';
       } else if (!classic) {
-        // Alpha Strike — no bonus BSP, just show base
         bspEl.textContent = fmt(totalBsp);
         bspEl.style.color = 'var(--gold)';
       } else {
-        // Classic — all BV unused → max bonus → show full cap
         bspEl.textContent = fmt(totalBsp * 2);
         bspEl.style.color = 'var(--green-bright)';
       }
@@ -5204,8 +5571,7 @@ function renderDeployment() {
       bspEl.style.color = 'var(--gold)';
     } else {
       // Classic — base + bonus from unused BV (1 BSP per 20 unused BV), capped at base
-      const avail = +(data.forceData && data.forceData.bvAvail) || 0;
-      const unusedBv = Math.max(0, avail - totalBv);
+      const unusedBv = Math.max(0, trackBvAvail - totalBv);
       const bonusBsp = Math.min(Math.floor(unusedBv / 20), totalBsp);
       const deployableBsp = totalBsp + bonusBsp;
       bspEl.textContent = fmt(deployableBsp);
@@ -5250,6 +5616,14 @@ function renderDeployment() {
     localStorage.setItem('btMercContract', JSON.stringify(data));
   }
   updateForceCalc();
+
+  // Override BV remaining with track-scale values (updateForceCalc uses contract scale)
+  const bvRemEl = document.getElementById('force-bv-remaining');
+  if (bvRemEl && trackBvAvail) {
+    const rem = trackBvAvail - totalBv;
+    bvRemEl.textContent = `${fmt(rem)} / ${fmt(trackBvAvail)}`;
+    bvRemEl.style.color = rem < 0 ? 'var(--red)' : 'var(--gold)';
+  }
 }
 
 // ─────────────────────────────────────────
@@ -5322,6 +5696,13 @@ function toggleReducedMaintenance(checked) {
   save();
   recalc();
 }
+
+function toggleVerboseMode(checked) {
+  data.verboseMode = !!checked;
+  save();
+}
+
+function isVerbose() { return !!data.verboseMode; }
 
 function toggleHandicapOption(checked) {
   data.handicapOption = checked;
@@ -5722,7 +6103,10 @@ function dragUnitStart(e, fi, ri) {
   const row = e.currentTarget.closest('[data-fi]');
   if (row) row.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
-  e.stopPropagation(); // don't trigger formation drag
+  e.dataTransfer.setData('application/x-fi', String(fi));
+  e.dataTransfer.setData('application/x-ri', String(ri));
+  e.dataTransfer.setData('application/x-source', 'formation');
+  e.stopPropagation();
 }
 function dragUnitOver(e) {
   e.preventDefault();
@@ -5740,6 +6124,23 @@ function dragUnitDrop(e, targetFi, targetRi) {
   e.preventDefault();
   e.stopPropagation();
   e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+
+  // Handle drop from mothballed
+  const source = e.dataTransfer.getData('application/x-source');
+  if (source === 'mothballed') {
+    const mi = +e.dataTransfer.getData('application/x-mothballed');
+    const mbRow = (data.forceData.mothballedRows||[])[mi];
+    if (!mbRow) return;
+    const tgtRows = data.forceData.formations[targetFi].rows;
+    // Place at targetRi, shifting others down
+    tgtRows.splice(targetRi, 0, {...mbRow, pilotIdx:'', deploy:false});
+    data.forceData.mothballedRows.splice(mi, 1);
+    dragUnit = null;
+    renderFormations();
+    localStorage.setItem('btMercContract', JSON.stringify(data));
+    return;
+  }
+
   if (!dragUnit || (dragUnit.fi === targetFi && dragUnit.ri === targetRi)) return;
 
   const rect = e.currentTarget.getBoundingClientRect();
