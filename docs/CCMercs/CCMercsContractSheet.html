@@ -2198,12 +2198,26 @@ function collectFormValues() {
 
 function exportData() {
   save();
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  // Sync current force into its profile slot
+  const allProfiles = loadUnitProfiles();
+  const activeUnitId = getActiveUnitId();
+  if (activeUnitId) {
+    const idx = allProfiles.findIndex(p => p.id === activeUnitId);
+    if (idx !== -1) allProfiles[idx].data = JSON.parse(JSON.stringify(data));
+  }
+  // Bundle format matches gist sync so imports/exports are interchangeable
+  const bundle = {
+    activeContract: data,
+    unitProfiles:   allProfiles,
+    activeUnitId:   activeUnitId
+  };
+  const forceCount = allProfiles.length;
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'merc-contract-data.json';
+  a.download = `merc-contract-${(data.unitName||'data').replace(/\s+/g,'-')}.json`;
   a.click();
-  toast('Data exported!');
+  toast(`Data exported (${forceCount} force${forceCount!==1?'s':''})`);
 }
 
 function importData(input) {
@@ -2211,10 +2225,27 @@ function importData(input) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      data = {...data, ...JSON.parse(e.target.result)};
-      migrateLegacyData();
-      localStorage.setItem('btMercContract', JSON.stringify(data));
-      renderAll(); toast('Data imported!');
+      const parsed = JSON.parse(e.target.result);
+      // Support both bundle format and legacy single-force format
+      if (parsed && parsed.activeContract !== undefined) {
+        // Bundle format — restore all forces
+        data = {...data, ...parsed.activeContract};
+        migrateLegacyData();
+        localStorage.setItem('btMercContract', JSON.stringify(data));
+        if (Array.isArray(parsed.unitProfiles)) saveUnitProfiles(parsed.unitProfiles);
+        if (parsed.activeUnitId !== undefined) setActiveUnitId(parsed.activeUnitId || null);
+        const forceCount = (parsed.unitProfiles || []).length;
+        renderAll();
+        if (typeof renderUnitsPage === 'function') renderUnitsPage();
+        if (typeof updateActiveUnitLabel === 'function') updateActiveUnitLabel();
+        toast(`Imported ${forceCount} force${forceCount!==1?'s':''}!`);
+      } else {
+        // Legacy single-force format
+        data = {...data, ...parsed};
+        migrateLegacyData();
+        localStorage.setItem('btMercContract', JSON.stringify(data));
+        renderAll(); toast('Data imported!');
+      }
     } catch { toast('Import failed — invalid file.'); }
   };
   reader.readAsText(file); input.value = '';
