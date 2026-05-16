@@ -34,7 +34,7 @@ Access at: https://x-lanceman-x.github.io/BTechCampaignTools/
 
 -------
 
-## Lanceman's Chaos Campaign Mercenaries Digital Companion Major Update
+Lanceman's Chaos Campaign Mercenaries Digital Companion Major Update
 
 The CC Mercs Digital Companion has been updated to support new additions from Hot Spots Draconis Reach and add in missing items from Hot Spots Hinterlands.
 
@@ -46,12 +46,15 @@ Major Features:
 * Support for Regular Military Commands
 * Hire a DropShip and upgrade its bays
 * Hiring Hall bonuses
-* The Deployment Area now allows you to "Complete" a deloyment, recording the results to the ledger and disbursing combat bonuses and Named Pilot pay
-* New Support Costs tab calculator to support Battlefield Loss Compenstation rules changes 
+* The Deployment Area now allows you to "Complete" a deployment, recording the results to the ledger and disbursing combat bonuses and Named Pilot pay
+* New Support Costs tab calculator to support Battlefield Loss Compensation rules changes 
  
  Quality of Life Improvements:
  
  * Easily do monthly expenses and travel costs with two new buttons on the Monthly Ledger that takes into account your contract terms and if your unit is at a Hiring Hall
  * A new Verbose Mode option increases the detail recorded in the ledger when Support Cost purchases are made
+ 
+ Note: if loading a force from the Hinterlands only version, any pilots will be converted to Temporary Named Pilots
+ 
+A final Hinterlands only version has been archived at: https://github.com/x-Lanceman-x/BTechCampaignTools/blob/main/docs/Legacy%20Versions/CCMercsContractSheet(Final%20Hinterlands%20Only).html
 
-  Note: if loading a force from the Hinterlands only version, any pilots will be converted to temporary Named Pilots.
