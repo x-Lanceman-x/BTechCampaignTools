@@ -3221,7 +3221,6 @@ function renderHireRows() {
       </select>
       <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;text-align:right">150 SP</span>
       <button class="btn btn-sm btn-danger" onclick="removeHireRow(${i})">✕</button>
-<<<<<<< HEAD
     </div>`;
   }).join('');
   updatePersonnelTotals();
@@ -3235,65 +3234,6 @@ function addHireNamelessRow() {
 function removeHireNamelessRow(i) { data.hireNamelessRows.splice(i,1); renderHireNamelessRows(); save(); }
 function updateHireNamelessRow(i, field, val) { data.hireNamelessRows[i][field]=val; renderHireNamelessRows(); save(); }
 
-function renderHireNamelessRows() {
-  if (!data.hireNamelessRows) data.hireNamelessRows = [];
-  const cont  = document.getElementById('hire-nameless-rows');
-  const total = document.getElementById('hire-nameless-total');
-  if (!cont) return;
-
-  let sum = 0;
-  if (!data.hireNamelessRows.length) {
-    cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No pilots to hire.</div>`;
-    if (total) total.textContent = '0 SP';
-    return;
-  }
-
-  cont.innerHTML = data.hireNamelessRows.map((r, i) => {
-    const cost = (r.skillLevel === 'Green') ? 0 : 100;
-    sum += cost;
-    return `<div style="display:grid;grid-template-columns:1.6fr 1fr 90px 36px;gap:8px;align-items:center;margin-bottom:6px">
-      <select onchange="updateHireNamelessRow(${i},'type',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
-        ${PILOT_TYPES.map(t=>`<option value="${t}" ${r.type===t?'selected':''}>${t}</option>`).join('')}
-      </select>
-      <select onchange="updateHireNamelessRow(${i},'skillLevel',this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
-        <option value="Regular" ${r.skillLevel==='Regular'?'selected':''}>Regular</option>
-        <option value="Green"   ${r.skillLevel==='Green'  ?'selected':''}>Green</option>
-      </select>
-      <span style="font-family:'Share Tech Mono',monospace;color:${cost?'var(--gold)':'var(--text-dim)'};font-size:14px;font-weight:700;text-align:right">${cost} SP</span>
-      <button class="btn btn-sm btn-danger" onclick="removeHireNamelessRow(${i})">✕</button>
-=======
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
-    </div>`;
-  }).join('');
-  if (total) total.textContent = `${fmt(sum)} SP`;
-  updatePersonnelTotals();
-}
-
-function updateHireBATotal() {
-  const count = +(document.getElementById('hire-ba-count')||{}).value || 0;
-  const cost  = count * 20;
-  const el    = document.getElementById('hire-ba-total-personnel');
-  if (el) el.textContent = `${fmt(cost)} SP`;
-  updatePersonnelTotals();
-}
-
-<<<<<<< HEAD
-function addHealRow() {
-  if (!data.healRows) data.healRows = [];
-  data.healRows.push({pilot:'', pilotKey:null});
-  renderHealRows(); save();
-=======
-function addHireNamelessRow() {
-  if (!data.hireNamelessRows) data.hireNamelessRows = [];
-  data.hireNamelessRows.push({ type:'MechWarrior', skillLevel:'Regular' });
-  renderHireNamelessRows(); save();
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
-}
-function removeHireNamelessRow(i) { data.hireNamelessRows.splice(i,1); renderHireNamelessRows(); save(); }
-function updateHireNamelessRow(i, field, val) { data.hireNamelessRows[i][field]=val; renderHireNamelessRows(); save(); }
-
-<<<<<<< HEAD
-=======
 function renderHireNamelessRows() {
   if (!data.hireNamelessRows) data.hireNamelessRows = [];
   const cont  = document.getElementById('hire-nameless-rows');
@@ -3341,7 +3281,6 @@ function addHealRow() {
 }
 function removeHealRow(i) { data.healRows.splice(i,1); renderHealRows(); save(); }
 
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
 const HEAL_TYPES = ['MechWarrior','Vehicle Commander','Conventional Infantry Commander','Aerospace Pilot'];
 
 function renderHealRows() {
@@ -3585,66 +3524,10 @@ function renderHealBARows() {
     return;
   }
 
-<<<<<<< HEAD
   const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
   const supportDiscount = effectiveSupportPct / 100;
 
-  cont.innerHTML = data.healBARows.map((r, i) => {
-    const selKey = r.pilotKey != null ? String(r.pilotKey) : '';
-    const matched = candidates.find(e => e.key === selKey);
-    const currentWounds = matched ? matched.wounds : 0;
-    const troopers = +r.troopers || 0;
-    const cost = Math.ceil(troopers * 10 * (1 - supportDiscount));
-    grandTotal += cost;
-    const woundsColor = currentWounds >= 6 ? 'var(--red)' : currentWounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
-    const opts = `<option value="">— Select BA Commander —</option>` +
-      candidates.map(e => `<option value="${e.key}" ${selKey===e.key?'selected':''}>${esc(e.label)} [${e.wounds} wound${e.wounds!==1?'s':''}]</option>`).join('');
-    return `<div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;align-items:center;margin-bottom:6px">
-      <select onchange="selectHealBAPilot(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
-        ${opts}
-      </select>
-      <input type="number" value="${r.troopers||''}" onchange="updateHealBARow(${i},this.value)" placeholder="0" min="0" style="text-align:center;font-family:'Share Tech Mono',monospace;color:var(--gold)">
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
-        <button class="btn btn-sm btn-danger" onclick="removeHealBARow(${i})">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  if (totalEl) totalEl.textContent = `${fmt(grandTotal)} SP`;
-  updateMedicalGrandTotal();
-}
-
-function updateMedicalGrandTotal() {
-  // Sum heal wounds + heal BA for the combined medical grand total
-  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
-  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
-  const discount = effectiveSupportPct / 100;
-  let healGross = 0;
-  (data.healRows||[]).forEach(() => { healGross += 30; });
-  const healNet = Math.ceil(healGross * (1 - discount));
-  let baTotal = 0;
-  (data.healBARows||[]).forEach(r => { baTotal += (+r.troopers||0) * 10; });
-  const baNet = Math.ceil(baTotal * (1 - discount));
-  const combined = healNet + baNet;
-  const el = document.getElementById('medical-grand-total');
-  if (el) { el.textContent = `${fmt(combined)} SP`; el.style.color = combined ? 'var(--gold)' : 'var(--text-dim)'; }
-}
-
-function sendMedicalToLedger() {
-=======
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
-  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
-  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
-  const supportDiscount = effectiveSupportPct / 100;
-
-<<<<<<< HEAD
-  const hasHeal = (data.healRows||[]).length;
-  const hasBA   = (data.healBARows||[]).length;
-  if (!hasHeal && !hasBA) { toast('No medical costs to send.'); return; }
-
-=======
   cont.innerHTML = data.healBARows.map((r, i) => {
     const selKey = r.pilotKey != null ? String(r.pilotKey) : '';
     const matched = candidates.find(e => e.key === selKey);
@@ -3696,26 +3579,16 @@ function sendMedicalToLedger() {
   const hasBA   = (data.healBARows||[]).length;
   if (!hasHeal && !hasBA) { toast('No medical costs to send.'); return; }
 
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
   // Heal Wounds cost
   let healGross = 0;
   (data.healRows||[]).forEach(() => { healGross += 30; });
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
-<<<<<<< HEAD
 
   // BA Troopers cost (support-discounted)
   let baGross = 0;
   (data.healBARows||[]).forEach(r => { baGross += (+r.troopers||0) * 10; });
   const baNet = Math.ceil(baGross * (1 - supportDiscount));
 
-=======
-
-  // BA Troopers cost (support-discounted)
-  let baGross = 0;
-  (data.healBARows||[]).forEach(r => { baGross += (+r.troopers||0) * 10; });
-  const baNet = Math.ceil(baGross * (1 - supportDiscount));
-
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
   const totalMedical = healNet + baNet;
 
   // Heal wounds — decrement wounds on pilots
@@ -4679,7 +4552,6 @@ function renderContractHistory() {
           </div>
           <div class="field" style="margin-bottom:16px"><label>Contact Terms / Notes</label>
             <input type="text" id="hf-terms-${i}" value="${esc(c.contactTerms||'')}" placeholder="e.g. Quarterly payment, no salvage clause"></div>
-<<<<<<< HEAD
         </div>
 
         <!-- Ledger view (always shown) -->
@@ -4697,25 +4569,6 @@ function renderContractHistory() {
           </div>
         </div>
 
-=======
-        </div>
-
-        <!-- Ledger view (always shown) -->
-        <div id="hist-ledger-${i}" style="padding:0 16px 16px">
-          ${ledgerHTML}
-        </div>
-
-        <!-- Action bar -->
-        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between;background:rgba(0,0,0,.15)">
-          <button class="btn btn-sm btn-danger" onclick="deleteHistoryContract(${i})">✕ Delete</button>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-sm" id="hist-edit-btn-${i}" onclick="toggleHistoryEdit(${i})" style="border-color:#6ab0e8;color:#6ab0e8">✎ Edit</button>
-            <button class="btn btn-sm" id="hist-save-btn-${i}" onclick="saveHistoryContract(${i})" style="display:none;border-color:var(--green);color:var(--green-bright)">✓ Save</button>
-            <button class="btn btn-sm" id="hist-cancel-btn-${i}" onclick="cancelHistoryEdit(${i})" style="display:none">✕ Cancel</button>
-          </div>
-        </div>
-
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
       </div>
     </div>`;
   }).join('');
@@ -5295,169 +5148,7 @@ function renderFormations() {
       </div><!-- /overflow-x:auto -->
     </div>`).join('');
   renderMothballed();
-<<<<<<< HEAD
 }
-
-// ─────────────────────────────────────────
-// MOTHBALLED UNITS
-// ─────────────────────────────────────────
-function addMothballedRow() {
-  if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
-  data.forceData.mothballedRows.push({unit:'', unitType:'', role:'', tons:'', bv:'', techBase:'', unitStatus:'', omni:false});
-  renderMothballed();
-  localStorage.setItem('btMercContract', JSON.stringify(data));
-}
-function removeMothballedRow(i) {
-  data.forceData.mothballedRows.splice(i, 1);
-  renderMothballed();
-  localStorage.setItem('btMercContract', JSON.stringify(data));
-}
-function updateMothballedField(i, field, val) {
-  if (!data.forceData.mothballedRows[i]) return;
-  data.forceData.mothballedRows[i][field] = val;
-  localStorage.setItem('btMercContract', JSON.stringify(data));
-}
-
-function renderMothballed() {
-  if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
-  const pane = document.getElementById('mothballed-pane');
-  if (!pane) return;
-  const classic = (data.gameMode || 'classic') === 'classic';
-  const rows = data.forceData.mothballedRows;
-
-  const UNIT_TYPES = ['BattleMech','Combat Vehicle','Support Vehicle','Battle Armor','Conventional Infantry','Aerospace'];
-  const hCol = `font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px`;
-  const gridCols = '20px 2fr 110px 90px 40px 80px 80px 90px 32px';
-
-  const rowsHtml = rows.length === 0
-    ? `<div style="color:var(--text-dim);font-size:13px;padding:14px 16px;letter-spacing:1px">No mothballed units. Drag units here from formations above, or use the + Add button.</div>`
-    : rows.map((r, i) => {
-        const tbVal  = r.techBase || '';
-        const tbColor = tbVal === 'Clan' ? 'var(--gold)' : tbVal === 'Mixed' ? '#6ab0e8' : tbVal === 'IS' ? 'var(--text)' : 'var(--text-dim)';
-        const uType  = r.unitType || '';
-        return `<div style="display:grid;grid-template-columns:${gridCols};gap:0;border-bottom:1px solid rgba(42,48,64,.5);opacity:0.8"
-          draggable="true"
-          ondragstart="dragMothballedStart(event,${i})"
-          ondragend="dragUnitEnd(event)">
-          <div style="display:flex;align-items:center;justify-content:center">
-            <span class="drag-handle" style="font-size:13px;padding:0 3px;color:var(--text-dim);cursor:grab">⠿</span>
-          </div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.unit||'')}" placeholder="Unit name"
-            onchange="updateMothballedField(${i},'unit',this.value)"
-            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
-          <div style="padding:2px 2px;display:flex;align-items:center">
-            <select onchange="updateMothballedField(${i},'unitType',this.value)"
-              style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 2px;color:${uType?'var(--text)':'var(--text-dim)'};cursor:pointer">
-              <option value="" style="background:var(--panel);color:var(--text-dim)">— Type —</option>
-              ${UNIT_TYPES.map(t=>`<option value="${t}" ${uType===t?'selected':''} style="background:var(--panel);color:var(--text)">${t}</option>`).join('')}
-            </select>
-          </div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.role||'')}" placeholder="Role…"
-            onchange="updateMothballedField(${i},'role',this.value)"
-            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:var(--text)"></div>
-          <div style="padding:2px 4px"><input type="number" value="${r.tons||''}" placeholder="T"
-            onchange="updateMothballedField(${i},'tons',this.value)"
-            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
-          <div style="padding:2px 4px"><input type="number" value="${r.bv||''}" placeholder="${classic?'BV':'PV'}"
-            onchange="updateMothballedField(${i},'bv',this.value)"
-            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
-          <div style="padding:2px 2px;display:flex;align-items:center">
-            <select onchange="updateMothballedField(${i},'techBase',this.value)"
-              style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;padding:4px 2px;color:${tbColor};cursor:pointer">
-              <option value="" style="background:var(--panel);color:var(--text-dim)">— Tech —</option>
-              <option value="IS" ${tbVal==='IS'?'selected':''} style="background:var(--panel);color:var(--text)">Inner Sphere</option>
-              <option value="Clan" ${tbVal==='Clan'?'selected':''} style="background:var(--panel);color:var(--gold)">Clan</option>
-              <option value="Mixed" ${tbVal==='Mixed'?'selected':''} style="background:var(--panel);color:#6ab0e8">Mixed</option>
-            </select>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:center">
-            <span style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);padding:2px 6px;border:1px solid var(--border)">Mothballed</span>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:center">
-            <button onclick="removeMothballedRow(${i})" style="padding:2px 6px;font-size:11px;border:none;background:transparent;color:var(--red);cursor:pointer">✕</button>
-          </div>
-        </div>`;
-      }).join('');
-
-  pane.innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;margin-top:8px">
-      <div class="section-title" style="margin:0;flex:1">Mothballed Units</div>
-      <button class="btn btn-sm" onclick="addMothballedRow()">+ Add Unit</button>
-    </div>
-    <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto;border-top:3px solid var(--text-dim)"
-      ondragover="dragMothballedOver(event)"
-      ondragleave="dragMothballedLeave(event)"
-      ondrop="dragMothballedDrop(event)">
-      <div style="min-width:820px">
-        <div style="display:grid;grid-template-columns:${gridCols};gap:0;border-bottom:1px solid var(--border-gold);background:rgba(60,64,80,.18)">
-          <div style="${hCol}"></div>
-          <div style="${hCol}">Unit / 'Mech</div>
-          <div style="${hCol}">Type</div>
-          <div style="${hCol}">Role</div>
-          <div style="${hCol}">Tons</div>
-          <div style="${hCol}">${classic?'BV':'PV'}</div>
-          <div style="${hCol}">Tech Base</div>
-          <div style="${hCol}">Status</div>
-          <div style="${hCol}"></div>
-        </div>
-        ${rowsHtml}
-      </div>
-    </div>
-    <div style="margin-top:4px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.7;font-style:italic">
-      Contract Unit Limit is 3 times the Contract Scale. Units are selected prior to Contract starting, all others should be mothballed.
-    </div>`;
-}
-
-// Drag: mothballed source
-function dragMothballedStart(event, i) {
-  event.dataTransfer.setData('application/x-mothballed', String(i));
-  event.dataTransfer.setData('application/x-source', 'mothballed');
-  event.target.closest('[draggable]').style.opacity = '0.4';
-}
-
-// Drag: drop INTO mothballed zone from a formation row
-function dragMothballedOver(event) {
-  event.preventDefault();
-  event.currentTarget.style.boxShadow = '0 0 0 2px var(--text-dim)';
-}
-function dragMothballedLeave(event) {
-  event.currentTarget.style.boxShadow = '';
-}
-function dragMothballedDrop(event) {
-  event.preventDefault();
-  event.currentTarget.style.boxShadow = '';
-  const source = event.dataTransfer.getData('application/x-source');
-  if (source === 'mothballed') return; // dragging within mothballed — ignore
-
-  const fi = event.dataTransfer.getData('application/x-fi');
-  const ri = event.dataTransfer.getData('application/x-ri');
-  if (fi === '' || ri === '') return;
-
-  const fIdx = +fi, rIdx = +ri;
-  const formation = (data.forceData.formations||[])[fIdx];
-  if (!formation) return;
-  const row = formation.rows[rIdx];
-  if (!row || !row.unit || !row.unit.trim()) return;
-
-  // Copy unit to mothballed
-  if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
-  data.forceData.mothballedRows.push({
-    unit: row.unit, unitType: row.unitType||'', role: row.role||'',
-    tons: row.tons||'', bv: row.bv||'', techBase: row.techBase||'',
-    unitStatus: '', omni: !!row.omni
-  });
-
-  // Clear the source row
-  formation.rows[rIdx] = {unit:'',unitType:'',role:'',tons:'',bv:'',techBase:'',unitStatus:'',omni:false,pilotIdx:'',gp:'',spa:''};
-
-  renderFormations();
-  localStorage.setItem('btMercContract', JSON.stringify(data));
-=======
->>>>>>> a271dcf5d3451cad22b4dc4159b3af02e44bd12c
-}
-
-// Allow dropping a mothballed unit back into a formation row
-// Wire into existing dragUnitDrop — detect application/x-mothballed source
 
 // ─────────────────────────────────────────
 // MOTHBALLED UNITS
