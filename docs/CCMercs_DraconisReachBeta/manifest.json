@@ -1,6 +1,6 @@
 {
-  "name": "BattleTech Chaos Campaign Mercenaries Digital Companion",
-  "short_name": "BT CC Mercs",
+  "name": "BattleTech Chaos Campaign Mercenaries Digital Companion DR BETA",
+  "short_name": "BT CC Mercs Beta",
   "description": "Campaign log sheets for BattleTech Chaos Campaign Mercenaries",
   "start_url": "./CCMercsContractSheet_Beta.html",
   "display": "standalone",

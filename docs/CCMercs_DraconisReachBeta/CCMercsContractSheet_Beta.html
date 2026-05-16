@@ -1365,7 +1365,7 @@
       <input type="text" id="force-manufacturing-sponsor" placeholder="e.g. Defiance Industries, Irian Technologies" oninput="saveForce()">
     </div>
     <div class="field" style="margin-top:10px">
-      <label>Special Command Abilities</label>
+      <label>Parent Command Special Command Abilities</label>
       <input type="text" id="force-sca" placeholder="e.g. Overrun Combat, Fire for Effect" oninput="saveForce()">
     </div>
     <!-- Warchest bar -->
@@ -1428,7 +1428,7 @@
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Assigned Unit</div>
       <div id="pilot-skill-header" style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">G/P Skill</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">H</div>
-      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Edge Abilities</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Abilities</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Wounds</div>
       <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Status</div>
     </div>
@@ -1921,6 +1921,14 @@
   </div>
 
 </div><!-- /page-pilotcards -->
+<!-- Pilot Abilities Popup -->
+<div id="pilot-abilities-popup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center"
+  onclick="if(event.target===this)closePilotAbilitiesPopup()">
+  <div style="background:var(--panel2);border:1px solid var(--border-gold);max-width:480px;width:90%;max-height:80vh;overflow-y:auto;padding:24px;position:relative">
+    <button onclick="closePilotAbilitiesPopup()" style="position:absolute;top:12px;right:12px;background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;line-height:1">✕</button>
+    <div id="pilot-abilities-popup-content"></div>
+  </div>
+</div>
 
 </div><!-- /container -->
 
@@ -2514,16 +2522,13 @@ function payMonthlyMaintenance() {
   const scale = +data.scale || 0;
   if (!scale && !data.atHiringHall) { toast('Set a Force Scale on the Contract tab first.'); return; }
   const maintGross = (data.atHiringHall && !data.reducedMaintenance) ? 100 : 500 * scale;
-  const supportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
-  const effectiveSupportPct = data.supportType === 'battle' ? 100 : supportPct;
-  const maintCovered = Math.round(maintGross * (effectiveSupportPct / 100));
   const basePay = Math.round(500 * scale * ((+data.basePay || 0) / 100));
   const dropShipSurcharge = data.dropShipHired ? 100 : 0;
   data.ledger.push({
     month: '',
     event: 'Monthly Maintenance' + (dropShipSurcharge ? ' (incl. DropShip)' : ''),
     cost:  String(maintGross + dropShipSurcharge),
-    cover: maintCovered ? String(maintCovered) : '',
+    cover: '',
     paid:  basePay ? String(basePay) : '',
     rep:   ''
   });
@@ -3237,42 +3242,103 @@ function selectHealPilot(i, key) {
 
 function addSkillRow() {
   if (!data.skillRows) data.skillRows = [];
-  data.skillRows.push({desc:'', cost:''});
+  data.skillRows.push({desc:'', cost:'', pilotIdx:'', abilityText:'', replaceSCAIdx:''});
   renderSkillRows(); save();
 }
 function removeSkillRow(i) { data.skillRows.splice(i,1); renderSkillRows(); save(); }
-function updateSkillRow(i, field, val) { data.skillRows[i][field]=val; renderSkillRows(); save(); }
+function updateSkillRow(i, field, val) {
+  data.skillRows[i][field] = val;
+  // Auto-fill cost when a standard training type is selected
+  if (field === 'desc') {
+    const COST_MAP = {
+      'Train Named Pilot as Formation Commander (500 SP)': 500,
+      "Change Named Pilot's Formation Training (250 SP)": 250,
+      'Learn 1st Special Command Ability (250 SP)': 250,
+      'Learn 2nd Special Command Ability (500 SP)': 500,
+      'Learn 3rd+ Special Command Ability (750 SP)': 750,
+      'Replace Special Command Ability (250 SP)': 250,
+    };
+    if (COST_MAP[val]) data.skillRows[i].cost = String(COST_MAP[val]);
+  }
+  renderSkillRows(); save();
+}
+
+// Determine what type of training action a skill row is
+function skillRowType(desc) {
+  if (!desc) return 'other';
+  if (desc.startsWith('Train Named Pilot as Formation Commander')) return 'formation_train';
+  if (desc.startsWith("Change Named Pilot's Formation Training"))  return 'formation_change';
+  if (desc.startsWith('Learn') && desc.includes('Special Command Ability')) return 'sca_learn';
+  if (desc.startsWith('Replace Special Command Ability'))           return 'sca_replace';
+  return 'other';
+}
 
 function renderSkillRows() {
   if (!data.skillRows) data.skillRows = [];
   const cont = document.getElementById('skill-rows');
   if (!cont) { updatePersonnelTotals(); return; }
 
-  const classic = (data.gameMode || 'classic') === 'classic';
   const trainingOptions = [
-    // Force Training Activities
     'Train Named Pilot as Formation Commander (500 SP)',
-    'Change Named Pilot\'s Formation Training (250 SP)',
-    // Command Training Activities
+    "Change Named Pilot's Formation Training (250 SP)",
     'Learn 1st Special Command Ability (250 SP)',
     'Learn 2nd Special Command Ability (500 SP)',
     'Learn 3rd+ Special Command Ability (750 SP)',
     'Replace Special Command Ability (250 SP)',
   ];
-  const datalistHtml = `<datalist id="skill-pilot-list">${trainingOptions.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+  const datalistHtml = `<datalist id="skill-desc-list">${trainingOptions.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+
+  // Build named pilot options
+  const namedPilots = (data.pilotCards||[]).filter(p => !p.temporary && p.status !== 'KIA');
+  const pilotOpts = `<option value="">— Select Pilot —</option>` +
+    namedPilots.map((p, idx) => {
+      const label = [p.rank, p.name, p.callsign ? `"${p.callsign}"` : ''].filter(Boolean).join(' ') || `Pilot ${idx+1}`;
+      return `<option value="${idx}">${esc(label)}</option>`;
+    }).join('');
 
   if (!data.skillRows.length) {
     cont.innerHTML = datalistHtml + `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No entries added.</div>`;
     updatePersonnelTotals(); return;
   }
-  cont.innerHTML = datalistHtml + data.skillRows.map((r,i) => {
-    const cost = Math.ceil(+r.cost||0);
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 36px;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="text" list="skill-pilot-list" value="${esc(r.desc||'')}" placeholder="Pilot / description"
-        onchange="updateSkillRow(${i},'desc',this.value)" style="width:100%">
-      <input type="number" value="${r.cost||''}" placeholder="SP cost" style="text-align:right;font-family:'Share Tech Mono',monospace;color:var(--gold)"
-        onchange="updateSkillRow(${i},'cost',this.value)">
-      <button class="btn btn-sm btn-danger" onclick="removeSkillRow(${i})">✕</button>
+
+  cont.innerHTML = datalistHtml + data.skillRows.map((r, i) => {
+    const cost    = Math.ceil(+r.cost || 0);
+    const rowType = skillRowType(r.desc);
+    const needsAbility = rowType === 'formation_train' || rowType === 'formation_change' || rowType === 'sca_learn' || rowType === 'sca_replace';
+    const needsSCAReplace = rowType === 'sca_replace';
+
+    // Build SCA replace dropdown from selected pilot's SCAs
+    let scaReplaceOpts = '';
+    if (needsSCAReplace && r.pilotIdx !== '') {
+      const pc = (data.pilotCards||[])[+r.pilotIdx];
+      const scas = (pc && pc.scas) || [];
+      scaReplaceOpts = `<option value="">— Select SCA to Replace —</option>` +
+        scas.map((s, si) => `<option value="${si}" ${String(r.replaceSCAIdx)===String(si)?'selected':''}>${esc(s||`SCA ${si+1}`)}</option>`).join('');
+    }
+
+    return `<div style="background:var(--panel2);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:grid;grid-template-columns:2fr 1.2fr 80px 36px;gap:8px;align-items:center">
+        <input type="text" list="skill-desc-list" value="${esc(r.desc||'')}" placeholder="Select or type training activity…"
+          onchange="updateSkillRow(${i},'desc',this.value)" style="width:100%">
+        <select onchange="updateSkillRow(${i},'pilotIdx',this.value)"
+          style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
+          ${pilotOpts.replace(`value="${r.pilotIdx}"`, `value="${r.pilotIdx}" selected`)}
+        </select>
+        <input type="number" value="${r.cost||''}" placeholder="SP" style="text-align:right;font-family:'Share Tech Mono',monospace;color:var(--gold)"
+          onchange="updateSkillRow(${i},'cost',this.value)">
+        <button class="btn btn-sm btn-danger" onclick="removeSkillRow(${i})">✕</button>
+      </div>
+      ${needsAbility ? `
+      <input type="text" value="${esc(r.abilityText||'')}" onchange="updateSkillRow(${i},'abilityText',this.value)"
+        placeholder="${rowType==='formation_train'||rowType==='formation_change'?'Formation name…':'Ability name…'}"
+        style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
+      ` : ''}
+      ${needsSCAReplace && r.pilotIdx !== '' ? `
+      <select onchange="updateSkillRow(${i},'replaceSCAIdx',this.value)"
+        style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%">
+        ${scaReplaceOpts}
+      </select>
+      ` : ''}
     </div>`;
   }).join('');
   updatePersonnelTotals();
@@ -3362,12 +3428,16 @@ function renderHealBARows() {
     return;
   }
 
+  const rawSupportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
+  const effectiveSupportPct = data.supportType === 'battle' ? 100 : rawSupportPct;
+  const supportDiscount = effectiveSupportPct / 100;
+
   cont.innerHTML = data.healBARows.map((r, i) => {
     const selKey = r.pilotKey != null ? String(r.pilotKey) : '';
     const matched = candidates.find(e => e.key === selKey);
     const currentWounds = matched ? matched.wounds : 0;
     const troopers = +r.troopers || 0;
-    const cost = troopers * 10;
+    const cost = Math.ceil(troopers * 10 * (1 - supportDiscount));
     grandTotal += cost;
     const woundsColor = currentWounds >= 6 ? 'var(--red)' : currentWounds > 0 ? 'var(--gold)' : 'var(--text-dim)';
     const opts = `<option value="">— Select BA Commander —</option>` +
@@ -3398,7 +3468,8 @@ function updateMedicalGrandTotal() {
   const healNet = Math.ceil(healGross * (1 - discount));
   let baTotal = 0;
   (data.healBARows||[]).forEach(r => { baTotal += (+r.troopers||0) * 10; });
-  const combined = healNet + baTotal;
+  const baNet = Math.ceil(baTotal * (1 - discount));
+  const combined = healNet + baNet;
   const el = document.getElementById('medical-grand-total');
   if (el) { el.textContent = `${fmt(combined)} SP`; el.style.color = combined ? 'var(--gold)' : 'var(--text-dim)'; }
 }
@@ -3417,11 +3488,12 @@ function sendMedicalToLedger() {
   (data.healRows||[]).forEach(() => { healGross += 30; });
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
 
-  // BA Troopers cost (not support-discounted)
-  let baTotal = 0;
-  (data.healBARows||[]).forEach(r => { baTotal += (+r.troopers||0) * 10; });
+  // BA Troopers cost (support-discounted)
+  let baGross = 0;
+  (data.healBARows||[]).forEach(r => { baGross += (+r.troopers||0) * 10; });
+  const baNet = Math.ceil(baGross * (1 - supportDiscount));
 
-  const totalMedical = healNet + baTotal;
+  const totalMedical = healNet + baNet;
 
   // Heal wounds — decrement wounds on pilots
   (data.healRows||[]).forEach(r => {
@@ -3750,7 +3822,29 @@ function sendPersonnelToLedger() {
     });
   });
 
-  // Calculate total cost
+  // Apply training outcomes to pilot cards
+  skillRows.forEach(r => {
+    if (r.pilotIdx === '' || r.pilotIdx === undefined) return;
+    const pc = (data.pilotCards||[])[+r.pilotIdx];
+    if (!pc) return;
+    const rowType = skillRowType(r.desc);
+    const text = (r.abilityText || '').trim();
+    if (!text) return;
+    if (rowType === 'formation_train' || rowType === 'formation_change') {
+      pc.formationTraining = text;
+    } else if (rowType === 'sca_learn') {
+      if (!pc.scas) pc.scas = [];
+      pc.scas.push(text);
+    } else if (rowType === 'sca_replace') {
+      if (!pc.scas) pc.scas = [];
+      const idx = +r.replaceSCAIdx;
+      if (!isNaN(idx) && pc.scas[idx] !== undefined) {
+        pc.scas[idx] = text;
+      } else {
+        pc.scas.push(text);
+      }
+    }
+  });
   const hireCost         = hireRows.length * 150;
   const namelessCost     = hireNamelessRows.reduce((s,r) => s + (r.skillLevel==='Green'?0:100), 0);
   const skillCost        = skillRows.reduce((s,r) => s + Math.ceil(+r.cost||0), 0);
@@ -3758,13 +3852,16 @@ function sendPersonnelToLedger() {
 
   data.hireRows         = [];
   data.hireNamelessRows = [];
+  data.skillRows        = [];
   if (hireBACountEl) hireBACountEl.value = '';
 
   if (total) data.ledger.push({month:'', event:'Personnel & Training', cost:String(total), cover:'', paid:'', rep:''});
   renderLedger();
   renderHireRows();
   renderHireNamelessRows();
+  renderSkillRows();
   renderNamelessPilots();
+  renderPilotCards();
   renderPilotCards();
   save();
 
@@ -3903,7 +4000,7 @@ function sendRepairRearmToLedger() {
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
   // apply support discount + hall discount to repair & rearm, hall discount to omni
-  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
+  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-supportDiscount)*(1-hallRepairDiscount));
   const hasRows = (data.repairRows||[]).length || (data.rearmRows||[]).length || (data.omniRows||[]).length;
   if (!hasRows) { toast('No repair/rearm costs to send.'); return; }
 
@@ -4000,7 +4097,7 @@ function updateSupportTotals() {
   // omni reconfigure (hall discount applies, support discount does not)
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
-  const omniNet = Math.ceil(omniTotal * (1 - hallRepairDiscount));
+  const omniNet = Math.ceil(omniTotal * (1 - supportDiscount) * (1 - hallRepairDiscount));
   setText('omni-total', `${fmt(omniNet)} SP`);
   setBadge('omni-hall-badge', hallRepairDiscount > 0, hallBadgeText);
 
@@ -4014,7 +4111,7 @@ function updateSupportTotals() {
 
   // repair, rearm & omni section total (repair+rearm discounted, omni not)
   const repairRearmGross = Math.ceil(repairGross + rearmGross + omniTotal);
-  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
+  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-supportDiscount)*(1-hallRepairDiscount));
   setText('support-repair-rearm-total', `${fmt(repairRearmNet)} SP`);
   // show strikethrough gross and label when discount applies
   const grossLineEl = document.getElementById('repair-rearm-gross-line');
@@ -4708,8 +4805,8 @@ function renderFormations() {
       <div style="overflow-x:auto">
       <div style="min-width:860px">
       <!-- Column headers -->
-      <div style="display:grid;grid-template-columns:20px 2fr 110px 40px 80px 80px 90px 44px 2fr 90px 2fr 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
-        ${['', 'Unit / \'Mech', 'Type', 'Tons', classic ? 'BV' : 'PV', 'Tech Base', 'Status', 'Omni', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Edge Abilities', 'Deploy', ''].map(h=>
+      <div style="display:grid;grid-template-columns:20px 2fr 110px 90px 40px 80px 80px 90px 44px 2fr 90px 52px 32px;gap:0;border-bottom:1px solid var(--border-gold)">
+        ${['', 'Unit / \'Mech', 'Type', 'Role', 'Tons', classic ? 'BV' : 'PV', 'Tech Base', 'Status', 'Omni', 'Crew', classic ? 'G/P Skill' : 'Skill', 'Deploy', ''].map(h=>
           `<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:6px 8px;background:rgba(201,162,39,.05);text-align:${h==='Deploy'||h==='Omni'?'center':'left'}">${h}</div>`
         ).join('')}
       </div>
@@ -4749,7 +4846,7 @@ function renderFormations() {
           ].join('');
           return `
         <div data-fi="${fi}" data-ri="${ri}"
-          style="display:grid;grid-template-columns:20px 2fr 110px 40px 80px 80px 90px 44px 2fr 90px 2fr 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:960px"
+          style="display:grid;grid-template-columns:20px 2fr 110px 90px 40px 80px 80px 90px 44px 2fr 90px 52px 32px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:960px"
           ondragover="dragUnitOver(event)"
           ondragleave="dragUnitLeave(event)"
           ondrop="dragUnitDrop(event,${fi},${ri})"
@@ -4773,6 +4870,9 @@ function renderFormations() {
               </select>`;
             })()}
           </div>
+          <div style="padding:2px 4px"><input type="text" value="${esc(r.role||'')}" placeholder="Role…"
+            onchange="updateFormationField(${fi},${ri},'role',this.value)"
+            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 4px;color:var(--text)"></div>
           <div style="padding:2px 4px"><input type="number" value="${r.tons||''}" placeholder="T"
             onchange="updateFormationField(${fi},${ri},'tons',this.value)" style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
           <div style="padding:2px 4px"><input type="number" value="${r.bv||''}" placeholder="${classic?'BV':'PV'}"
@@ -4828,8 +4928,6 @@ function renderFormations() {
           </div>
           <div style="padding:2px 4px"><input type="text" value="${esc(r.gp)}" placeholder="${classic?'4/5':'4'}" readonly
             style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center;opacity:${selIdx!==''?'1':'0.4'}"></div>
-          <div style="padding:2px 4px"><input type="text" value="${esc(r.spa)}" placeholder="" readonly
-            style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);opacity:${selIdx!==''?'1':'0.4'}"></div>
           <div style="display:flex;align-items:center;justify-content:center">
             ${r.unitStatus === 'destroyed'
               ? `<span title="Destroyed units cannot be deployed" style="width:20px;height:20px;border:2px solid #440000;background:rgba(136,0,0,.2);display:flex;align-items:center;justify-content:center;cursor:not-allowed;opacity:0.5">✕</span>`
@@ -5523,7 +5621,13 @@ function renderPilotRoster() {
       ${cell(p.unit)}
       ${cell(p.skill, {center:true, bold:true})}
       ${cell(p.adv,   {center:true, color:'var(--text-dim)'})}
-      ${cell(p.spa || '—')}
+      <div style="padding:6px 8px;display:flex;align-items:center;justify-content:center">${(()=>{
+        const cardIdx = (data.pilotCards||[]).findIndex(pc => pc.name && p.name && pc.name.trim() === p.name.trim());
+        if (cardIdx === -1) return '<span style="color:var(--text-dim);font-size:12px">—</span>';
+        const pc = data.pilotCards[cardIdx];
+        const hasAbilities = (pc.abilities||[]).filter(a=>a).length || pc.formationTraining || (pc.scas||[]).filter(a=>a).length;
+        return `<button onclick="showPilotAbilitiesPopup(${cardIdx})" title="View Abilities" style="background:transparent;border:1px solid ${hasAbilities?'var(--gold)':'var(--border)'};color:${hasAbilities?'var(--gold)':'var(--text-dim)'};width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">📋</button>`;
+      })()}</div>
       ${cell(p.wounds, {center:true, color:woundsColor, bold:true})}
       <div style="padding:6px 8px;display:flex;align-items:center;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;color:${statusColor};text-transform:uppercase">${esc(p.status)}</div>
     </div>`;
@@ -6627,6 +6731,24 @@ function updatePCAbility(i, ai, val) {
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
+function addPCSCASlot(i) {
+  if (!data.pilotCards[i].scas) data.pilotCards[i].scas = [];
+  data.pilotCards[i].scas.push('');
+  renderPilotCards();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function removePCSCASlot(i, ai) {
+  data.pilotCards[i].scas.splice(ai, 1);
+  renderPilotCards();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+function updatePCSCA(i, ai, val) {
+  data.pilotCards[i].scas[ai] = val;
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
 function calcGunSkill(sp)  { let s=4; PC_GUN_TABLE.forEach(r=>{ if(sp>=r.sp) s=r.skill; }); return s; }
 function calcPilSkill(sp)  { let s=5; PC_PIL_TABLE.forEach(r=>{ if(sp>=r.sp) s=r.skill; }); return s; }
 function calcASSkill(sp)   { let s=4; PC_AS_SKILL_TABLE.forEach(r=>{ if(sp>=r.sp) s=r.skill; }); return s; }
@@ -6958,6 +7080,31 @@ function renderPilotCards() {
               <input type="text" value="${esc(a)}" onchange="updatePCAbility(${i},${ai},this.value)"
                 placeholder="Ability name…" style="flex:1;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none">
               <button class="btn btn-sm btn-danger" onclick="removePCAbilitySlot(${i},${ai})" style="padding:4px 8px">✕</button>
+            </div>`).join('')}
+      </div>
+
+      <!-- Formation Training -->
+      <div class="field" style="margin-top:12px;margin-bottom:0">
+        <label>Formation Training</label>
+        <input type="text" value="${esc(p.formationTraining||'')}" onchange="updatePC(${i},'formationTraining',this.value)"
+          placeholder="e.g. Fire Lance, Wolf Pack…"
+          style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none">
+      </div>
+
+      <!-- Special Command Abilities -->
+      <div style="margin-top:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label style="margin:0;flex:1">Special Command Abilities</label>
+          <button class="btn btn-sm" onclick="addPCSCASlot(${i})">+ Add</button>
+        </div>
+        ${(p.scas||[]).length === 0
+          ? `<div style="color:var(--text-dim);font-size:12px;letter-spacing:1px;padding:8px 0">No Special Command Abilities recorded.</div>`
+          : (p.scas||[]).map((a, ai) => `
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+              <span style="color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:12px;min-width:18px">${ai+1}.</span>
+              <input type="text" value="${esc(a)}" onchange="updatePCSCA(${i},${ai},this.value)"
+                placeholder="Ability name…" style="flex:1;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none">
+              <button class="btn btn-sm btn-danger" onclick="removePCSCASlot(${i},${ai})" style="padding:4px 8px">✕</button>
             </div>`).join('')}
       </div>
 
@@ -7306,6 +7453,42 @@ function releaseDropShip() {
   renderDropShip();
   save();
   toast('DropShip released. All upgrades removed.');
+}
+
+function showPilotAbilitiesPopup(cardIdx) {
+  const pc = (data.pilotCards||[])[cardIdx];
+  if (!pc) return;
+  const popup  = document.getElementById('pilot-abilities-popup');
+  const content= document.getElementById('pilot-abilities-popup-content');
+  if (!popup || !content) return;
+
+  const name = [pc.rank, pc.name, pc.callsign ? `\u201c${pc.callsign}\u201d` : ''].filter(Boolean).join(' ') || 'Unknown Pilot';
+  const hdr  = `<div style="font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:2px;color:var(--gold);margin-bottom:18px;border-bottom:1px solid var(--border-gold);padding-bottom:10px">${esc(name)}</div>`;
+
+  function section(title, items) {
+    if (!items || !items.length) return '';
+    return `<div style="margin-bottom:14px">
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">${title}</div>
+      ${items.map((item, i) => `<div style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);padding:4px 0;border-bottom:1px solid rgba(42,48,64,.4)">${i>0?`${i+1}. `:''}${esc(item)}</div>`).join('')}
+    </div>`;
+  }
+
+  const edgeSection = section('Edge Abilities', (pc.abilities||[]).filter(a=>a));
+  const formSection = pc.formationTraining
+    ? `<div style="margin-bottom:14px">
+        <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Formation Training</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);padding:4px 0">${esc(pc.formationTraining)}</div>
+       </div>` : '';
+  const scaSection  = section('Special Command Abilities', (pc.scas||[]).filter(a=>a));
+
+  const body = edgeSection + formSection + scaSection;
+  content.innerHTML = hdr + (body || `<div style="color:var(--text-dim);font-size:13px;letter-spacing:1px">No abilities recorded.</div>`);
+  popup.style.display = 'flex';
+}
+
+function closePilotAbilitiesPopup() {
+  const popup = document.getElementById('pilot-abilities-popup');
+  if (popup) popup.style.display = 'none';
 }
 
 // ─────────────────────────────────────────
