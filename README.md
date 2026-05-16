@@ -53,4 +53,5 @@ Major Features:
  
  * Easily do monthly expenses and travel costs with two new buttons on the Monthly Ledger that takes into account your contract terms and if your unit is at a Hiring Hall
  * A new Verbose Mode option increases the detail recorded in the ledger when Support Cost purchases are made
- 
+
+  Note: if loading a force from the Hinterlands only version, any pilots will be converted to Nameless Pilots
