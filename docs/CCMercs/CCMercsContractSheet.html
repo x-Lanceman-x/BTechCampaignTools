@@ -1929,6 +1929,8 @@
     <button class="btn" onclick="addTemporaryPilot()" style="border-color:#6ab0e8;color:#6ab0e8">+ Add Temporary Pilot</button>
   </div>
 
+  <div id="pilot-legacy-nag" style="display:none;margin-bottom:14px;padding:10px 14px;border:1px solid var(--gold);background:rgba(201,162,39,.1);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;line-height:1.7"></div>
+
   <div id="pilotCardsContainer" class="pilot-cards-grid"></div>
 
   <!-- Nameless Pilots -->
@@ -2063,38 +2065,72 @@ let data = {
 // LEGACY DATA MIGRATION
 // ─────────────────────────────────────────
 function migrateLegacyData() {
-  // Convert old `pilots` array (legacy format) to nameless pilots
+  // Convert old `pilots` array (legacy format) to Named Pilot Cards
   if (Array.isArray(data.pilots) && data.pilots.length) {
-    if (!data.namelessPilots) data.namelessPilots = [];
-    const existing = new Set(data.namelessPilots.map(p => `${p.type}|${p.id}`));
-    let nextId = data.namelessPilots.length > 0
-      ? Math.max(...data.namelessPilots.map(p => +p.id || 0)) + 1 : 1;
+    if (!data.pilotCards) data.pilotCards = [];
     const classic = (data.gameMode || 'classic') === 'classic';
-    const CLASSIC_MAP = { Green:{gunnery:5,piloting:6}, Regular:{gunnery:4,piloting:5} };
-    const AS_MAP      = { Green:{skill:5},              Regular:{skill:4} };
-    data.pilots.forEach(p => {
-      const type       = p.type || 'MechWarrior';
-      const skillLevel = p.skillLevel || p.skill || 'Regular';
-      const stats      = classic ? (CLASSIC_MAP[skillLevel] || {}) : {};
-      const asStat     = !classic ? (AS_MAP[skillLevel] || {}) : {};
-      data.namelessPilots.push({
-        id:         nextId++,
-        type,
-        skillLevel,
-        gunnery:   p.gunnery  || stats.gunnery  || '',
-        piloting:  p.piloting || stats.piloting  || '',
-        skill:     p.skill    || asStat.skill    || '',
+    data.pilots.forEach((p, i) => {
+      data.pilotCards.push({
+        callsign:   p.callsign || '',
+        name:       p.name     || `Pilot ${i + 1}`,
+        rank:       p.rank     || '',
+        type:       p.type     || 'MechWarrior',
+        portrait:   '',
+        temporary:  true,  // mark as temporary so slot limit isn't enforced, with a nag
+        _legacyImport: true, // flag to show the nag message
+        totalSP:   p.totalSP  || 0,
+        spGun:     p.spGun    || 0,
+        spPil:     p.spPil    || 0,
+        spET:      p.spET     || 0,
+        spEA:      p.spEA     || 0,
+        spAS:      p.spAS     || 0,
         wounds:    p.wounds   || 0,
-        status:    p.status   || 'Active'
+        mvpCount:  p.mvpCount || 0,
+        status:    p.status   || 'Active',
+        abilities: p.abilities || [],
+        formationTraining: p.formationTraining || '',
+        scas:      p.scas     || [],
+        notes:     p.notes    || ''
       });
     });
-    delete data.pilots; // clear legacy field
+    delete data.pilots;
   }
 
-  // Ensure forceData.mothballedRows exists
-  if (data.forceData && !Array.isArray(data.forceData.mothballedRows)) {
-    data.forceData.mothballedRows = [];
+  // Ensure forceData exists and fill in all fields that may be missing in old saves
+  if (!data.forceData) data.forceData = {};
+  const fd = data.forceData;
+  if (!fd.name)                fd.name = '';
+  if (!fd.co)                  fd.co   = '';
+  if (!fd.scale)               fd.scale = '';
+  if (!fd.bvUsed)              fd.bvUsed = '';
+  if (!fd.bvAvail)             fd.bvAvail = '';
+  if (!fd.bsp)                 fd.bsp = '';
+  if (!fd.skillAdv)            fd.skillAdv = '';
+  if (!fd.sca)                 fd.sca = '';
+  if (!fd.parentCommand)       fd.parentCommand = '';
+  if (!fd.manufacturingSponsor) fd.manufacturingSponsor = '';
+  if (fd.regularMilitary === undefined) fd.regularMilitary = false;
+  if (!Array.isArray(fd.mothballedRows)) fd.mothballedRows = [];
+  if (!Array.isArray(fd.formations) || !fd.formations.length) {
+    fd.formations = [{label:'Formation 1', rows: Array(4).fill(null).map(()=>({unit:'',unitType:'',role:'',tons:'',bv:'',techBase:'',unitStatus:'',omni:false,pilotIdx:'',gp:'',spa:''}))}];
   }
+  // Ensure every formation row has all current fields
+  fd.formations.forEach(f => {
+    if (!Array.isArray(f.rows)) f.rows = [];
+    f.rows.forEach(r => {
+      if (r.unitType === undefined)  r.unitType  = '';
+      if (r.role     === undefined)  r.role      = '';
+      if (r.techBase === undefined)  r.techBase  = '';
+      if (r.unitStatus === undefined) r.unitStatus = '';
+      if (r.omni     === undefined)  r.omni      = false;
+    });
+  });
+
+  // Ensure top-level array fields exist
+  const arrayFields = ['namelessPilots','pilotCards','pilotMemorial','bflRows','simTrainingRows',
+    'healRows','healBARows','skillRows','hireRows','hireNamelessRows','repairRows','rearmRows',
+    'omniRows','assetRows','salvageRows','ledger','contractHistory','pilotRoster','barracksRows','journalEntries'];
+  arrayFields.forEach(f => { if (!Array.isArray(data[f])) data[f] = []; });
 }
 
 // ─────────────────────────────────────────
@@ -7216,11 +7252,25 @@ function renderPilotCards() {
   const c = document.getElementById('pilotCardsContainer');
   if (!c) return;
 
+  // Check for legacy-imported pilots
+  const legacyPilots = data.pilotCards.filter(p => p._legacyImport);
+  const nagEl = document.getElementById('pilot-legacy-nag');
+  if (nagEl) {
+    if (legacyPilots.length) {
+      nagEl.style.display = 'block';
+      nagEl.innerHTML = `⚠ <strong>${legacyPilots.length} pilot${legacyPilots.length!==1?'s':''} imported from an older version</strong> — they are currently marked as temporary to bypass the slot limit.
+        Please review each card and decide whether to keep as a Named Pilot (remove the temporary flag) or convert to a Nameless Pilot entry. Named Pilots must fit within 4 slots.`;
+    } else {
+      nagEl.style.display = 'none';
+    }
+  }
+
   const slotEl = document.getElementById('pilot-slot-counter');
   if (slotEl) {
     const used = namedPilotSlotsUsed(data.pilotCards);
-    const color = used >= 4 ? 'var(--red)' : used >= 3 ? 'var(--gold)' : 'var(--text-dim)';
-    slotEl.innerHTML = `<span style="color:${color}">${used}</span> / 4 Slots`;
+    const over = used > 4;
+    const color = over ? 'var(--red)' : used >= 4 ? 'var(--red)' : used >= 3 ? 'var(--gold)' : 'var(--text-dim)';
+    slotEl.innerHTML = `<span style="color:${color}">${used}</span> / 4 Slots${over ? ' ⚠' : ''}`;
   }
 
   if (!data.pilotCards.length) {
