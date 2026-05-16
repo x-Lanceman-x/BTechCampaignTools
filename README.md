@@ -34,21 +34,23 @@ Access at: https://x-lanceman-x.github.io/BTechCampaignTools/
 
 -------
 
-## Draconis Reach Update Roadmap
+## Lanceman's Chaos Campaign Mercenaries Digital Companion Major Update
 
-The app will be updated to fully support Draconis Reach as the current definitive version of Chaos Campaign Mercenaries. 
+The CC Mercs Digital Companion has been updated to support new additions from Hot Spots Draconis Reach and add in missing items from Hot Spots Hinterlands.
 
-I do not intend to preserve "legacy" Hinterlands options in the live app, but will retain a copy of the HTML file of the current release as a "final" Hinterlands only version.
+Major Features:
 
-A test version can be accessed at: https://x-lanceman-x.github.io/BTechCampaignTools/CCMercs_DraconisReachBeta/CCMercsContractSheet_Beta.html
-
-Roadmap (not necessarily in order of planned implementation):
-
-* ~Named Pilots, done in a similar manner as the Aces app~
-* ~Updates to SP Costs~
-* ~New Battle Support Reimbursement Calculator~
-* ~Implement _Le Lion d'Or_~
-* ~Improvements to Deployment function to track wins/losses and record track rewards.~
-* ~Implement Changes to Formation and Special Command Abilities~
-
-Road map is complete! Some polishing is ongoing, but full release should be soon.
+* Named Pilot cards that track your pilots' progress
+* Redone roster for Nameless Pilots
+* Support for Contract Scale and Track Scale limitations
+* Support for Regular Military Commands
+* Hire a DropShip and upgrade its bays
+* Hiring Hall bonuses
+* The Deployment Area now allows you to "Complete" a deloyment, recording the results to the ledger and disbursing combat bonuses and Named Pilot pay
+* New Support Costs tab calculator to support Battlefield Loss Compenstation rules changes 
+ 
+ Quality of Life Improvements:
+ 
+ * Easily do monthly expenses and travel costs with two new buttons on the Monthly Ledger that takes into account your contract terms and if your unit is at a Hiring Hall
+ * A new Verbose Mode option increases the detail recorded in the ledger when Support Cost purchases are made
+ 
