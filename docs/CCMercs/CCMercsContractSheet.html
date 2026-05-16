@@ -2061,6 +2061,42 @@ let data = {
 
 // ─────────────────────────────────────────
 // PERSISTENCE
+function _makeLegacyCard(p, i) {
+  // Parse old skill string like "4/5" → spGun/spPil
+  // Old `skill` field stored as "G/P" display value, not raw SP
+  // Map displayed skill level to the base SP thresholds
+  const GUN_SKILL_SP = {'4':0,'3':100,'2':300,'1':700,'0':1700};
+  const PIL_SKILL_SP = {'5':0,'4':25,'3':75,'2':175,'1':375,'0':875};
+  let spGun = 0, spPil = 0;
+  if (p.skill && p.skill.includes('/')) {
+    const parts = p.skill.split('/');
+    spGun = GUN_SKILL_SP[parts[0]] || 0;
+    spPil = PIL_SKILL_SP[parts[1]] || 0;
+  }
+  return {
+    callsign:   p.callsign || '',
+    name:       p.name     || `Pilot ${i + 1}`,
+    rank:       p.rank     || '',
+    type:       p.type     || 'MechWarrior',
+    portrait:   '',
+    temporary:  true,
+    _legacyImport: true,
+    totalSP:   p.totalSP  || 0,
+    spGun:     p.spGun    !== undefined ? p.spGun : spGun,
+    spPil:     p.spPil    !== undefined ? p.spPil : spPil,
+    spET:      p.spET     || 0,
+    spEA:      p.spEA     || 0,
+    spAS:      p.spAS     || 0,
+    wounds:    +p.wounds  || 0,
+    mvpCount:  p.mvpCount || 0,
+    status:    p.status   || 'Active',
+    abilities: Array.isArray(p.abilities) ? p.abilities : (p.spa ? [p.spa] : []),
+    formationTraining: p.formationTraining || '',
+    scas:      Array.isArray(p.scas) ? p.scas : [],
+    notes:     p.notes    || ''
+  };
+}
+
 // ─────────────────────────────────────────
 // LEGACY DATA MIGRATION
 // ─────────────────────────────────────────
@@ -2068,32 +2104,25 @@ function migrateLegacyData() {
   // Convert old `pilots` array (legacy format) to Named Pilot Cards
   if (Array.isArray(data.pilots) && data.pilots.length) {
     if (!data.pilotCards) data.pilotCards = [];
-    const classic = (data.gameMode || 'classic') === 'classic';
     data.pilots.forEach((p, i) => {
-      data.pilotCards.push({
-        callsign:   p.callsign || '',
-        name:       p.name     || `Pilot ${i + 1}`,
-        rank:       p.rank     || '',
-        type:       p.type     || 'MechWarrior',
-        portrait:   '',
-        temporary:  true,  // mark as temporary so slot limit isn't enforced, with a nag
-        _legacyImport: true, // flag to show the nag message
-        totalSP:   p.totalSP  || 0,
-        spGun:     p.spGun    || 0,
-        spPil:     p.spPil    || 0,
-        spET:      p.spET     || 0,
-        spEA:      p.spEA     || 0,
-        spAS:      p.spAS     || 0,
-        wounds:    p.wounds   || 0,
-        mvpCount:  p.mvpCount || 0,
-        status:    p.status   || 'Active',
-        abilities: p.abilities || [],
-        formationTraining: p.formationTraining || '',
-        scas:      p.scas     || [],
-        notes:     p.notes    || ''
-      });
+      data.pilotCards.push(_makeLegacyCard(p, i));
     });
     delete data.pilots;
+  }
+
+  // Convert legacy pilotRoster entries to Named Pilot Cards
+  // Old pilotRoster had: name, rank, callsign, skill ("4/5"), spa, adv, status, wounds, notes
+  // New system uses pilotRoster only as a derived read-only view — named pilots live in pilotCards
+  if (Array.isArray(data.pilotRoster) && data.pilotRoster.length &&
+      (!Array.isArray(data.pilotCards) || data.pilotCards.length === 0)) {
+    if (!data.pilotCards) data.pilotCards = [];
+    data.pilotRoster.forEach((p, i) => {
+      // Only convert entries that look like real named pilots (have a name)
+      if (!p.name || !p.name.trim()) return;
+      data.pilotCards.push(_makeLegacyCard(p, i));
+    });
+    // Clear old roster so it gets rebuilt from pilotCards on next render
+    data.pilotRoster = [];
   }
 
   // Ensure forceData exists and fill in all fields that may be missing in old saves
