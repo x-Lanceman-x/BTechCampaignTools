@@ -2909,7 +2909,7 @@ function renderRepairRows() {
 // REARM ROWS
 // ─────────────────────────────────────────
 function addRearmRow() {
-  data.rearmRows.push({unit:'', tons:''});
+  data.rearmRows.push({unit:'', tons:'', advAmmo: false});
   renderRearmRows(); save();
 }
 function removeRearmRow(i) { data.rearmRows.splice(i,1); renderRearmRows(); save(); }
@@ -2918,31 +2918,49 @@ function updateRearmRow(i, field, val) { data.rearmRows[i][field]=val; renderRea
 function renderRearmRows() {
   const cont = document.getElementById('rearm-rows');
   const classic = (data.gameMode || 'classic') === 'classic';
-  const rearmLabel = classic ? 'Rearm Costs (10 SP/Ton)' : 'Rearm Costs (20 SP/unit)';
   const rearmHdr = document.getElementById('rearm-panel-title');
   if (rearmHdr) rearmHdr.textContent = classic ? '🔧 Rearm Costs (10 SP/Ton)' : '🔧 Rearm Costs (20 SP/unit)';
   const tonsHdr = document.getElementById('rearm-tons-header');
   if (tonsHdr) tonsHdr.style.display = classic ? '' : 'none';
   const colHdrs = document.getElementById('rearm-col-headers');
-  if (colHdrs) colHdrs.style.gridTemplateColumns = classic ? '2fr 1fr 120px' : '2fr 120px';
+  if (colHdrs) colHdrs.style.gridTemplateColumns = classic ? '2fr 1fr 130px 160px' : '2fr 130px 160px';
   if (!data.rearmRows.length) {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
     updateSupportTotals(); return;
   }
   const forceUnits = getForceUnits();
   cont.innerHTML = data.rearmRows.map((r,i) => {
-    const cost = classic ? Math.ceil((+r.tons||0) * 10) : 20;
+    const advAmmo    = !!r.advAmmo;
+    const advAmmoAS  = !classic ? (+r.advAmmoAS || 0) : 0;
+    const baseCost   = classic ? Math.ceil((+r.tons||0) * 10) : 20;
+    const advASCost  = advAmmoAS * 20;
+    const cost       = (classic && advAmmo ? baseCost * 10 : baseCost) + advASCost;
     const unitOptions = forceUnits.length
       ? `<option value="">— select unit —</option>` + forceUnits.map(u=>`<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}</option>`).join('')
       : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
-    const cols = classic ? '2fr 1fr 120px' : '2fr 120px';
+    const cols = classic ? '2fr 1fr 130px 160px' : '2fr 130px 160px';
+    const advBadge = advAmmo
+      ? `<span style="font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border:1px solid var(--red);color:var(--red);background:rgba(204,34,51,.08);white-space:nowrap">×10 Adv</span>`
+      : '';
     return `<div style="display:grid;grid-template-columns:${cols};gap:8px;align-items:center;margin-bottom:6px">
       <select onchange="selectRearmUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
         ${unitOptions}
       </select>
       ${classic ? `<input type="number" value="${r.tons||''}" onchange="updateRearmRow(${i},'tons',this.value)" placeholder="Tons" style="text-align:center">` : ''}
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;flex:1;text-align:right">${fmt(cost)} SP</span>
+      ${classic
+        ? `<button onclick="updateRearmRow(${i},'advAmmo',${!advAmmo});event.preventDefault()"
+            style="background:${advAmmo?'rgba(204,34,51,.15)':'transparent'};border:1px solid ${advAmmo?'var(--red)':'var(--border)'};color:${advAmmo?'var(--red)':'var(--text-dim)'};padding:5px 8px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;width:100%">
+            ${advAmmo ? '✓ Adv/Exp Ammo' : '  Adv/Exp Ammo'}
+          </button>`
+        : `<div style="display:flex;align-items:center;gap:6px">
+            <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);white-space:nowrap">Adv/Exp</span>
+            <input type="number" value="${+r.advAmmoAS||''}" min="0" placeholder="0"
+              onchange="updateRearmRow(${i},'advAmmoAS',+this.value||0)"
+              style="width:60px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;background:var(--darker);border:1px solid var(--border);color:var(--gold);padding:4px 6px;outline:none">
+           </div>`}
+      <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-wrap:nowrap">
+        ${advBadge}
+        <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;white-space:nowrap">${fmt(cost)} SP</span>
         <button class="btn btn-sm btn-danger" onclick="removeRearmRow(${i})">✕</button>
       </div>
     </div>`;
@@ -4261,7 +4279,11 @@ function sendRepairRearmToLedger() {
   });
   let rearmTotal = 0;
   const rearmLedgerClassic = (data.gameMode || 'classic') === 'classic';
-  (data.rearmRows||[]).forEach(r => { rearmTotal += rearmLedgerClassic ? (+r.tons||0)*10 : 20; });
+  (data.rearmRows||[]).forEach(r => {
+    const base      = rearmLedgerClassic ? (+r.tons||0)*10 : 20;
+    const advAmmoAS = !rearmLedgerClassic ? (+r.advAmmoAS||0)*20 : 0;
+    rearmTotal += (rearmLedgerClassic && r.advAmmo ? base * 10 : base) + advAmmoAS;
+  });
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
   // apply support discount + hall discount to repair & rearm, hall discount to omni
@@ -4370,7 +4392,11 @@ function updateSupportTotals() {
   // rearm
   const rearmClassic = (data.gameMode || 'classic') === 'classic';
   let rearmGross = 0;
-  (data.rearmRows||[]).forEach(r => { rearmGross += rearmClassic ? (+r.tons||0)*10 : 20; });
+  (data.rearmRows||[]).forEach(r => {
+    const base      = rearmClassic ? (+r.tons||0)*10 : 20;
+    const advAmmoAS = !rearmClassic ? (+r.advAmmoAS||0)*20 : 0;
+    rearmGross += (rearmClassic && r.advAmmo ? base * 10 : base) + advAmmoAS;
+  });
   const rearmNet = Math.ceil(rearmGross * (1 - supportDiscount) * (1 - hallRepairDiscount));
   setText('rearm-total', `${fmt(rearmNet)} SP`);
   setBadge('rearm-support-badge', supportActive, supportLabel);
