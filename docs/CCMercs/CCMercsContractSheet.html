@@ -1336,6 +1336,9 @@
           <option value="1">1</option>
           <option value="2">2</option>
           <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
         </select>
       </div>
       <div class="field" style="display:none"><label id="lbl-bv-used">BV Used</label>
@@ -1460,6 +1463,9 @@
         <option value="1">Scale 1</option>
         <option value="2">Scale 2</option>
         <option value="3">Scale 3</option>
+        <option value="4">Scale 4</option>
+        <option value="5">Scale 5</option>
+        <option value="6">Scale 6</option>
       </select>
     </div>
     <div class="field" style="margin:0;min-width:180px">
@@ -1723,7 +1729,7 @@
       No Battlefield Support
     </label>
     <div style="margin-top:10px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.8">
-      When checked, BSP is set to 0 and BV Available is increased by 500 per scale (500 / 1,000 / 1,500).
+      When checked, BSP is set to 0 and BV Available is increased by 500 per scale (500 / 1,000 / 1,500 / 2,000 / 2,500 / 3,000).
     </div>
     <label class="check-label" style="margin-top:14px">
       <input type="checkbox" id="track-jumps" onchange="toggleTrackJumps(this.checked)">
@@ -4827,8 +4833,8 @@ function saveForce() {
   fd.bvUsed = v('force-bv-used');
   // Auto-set BV/PV Available and BSP based on scale and game mode
   const classic = (data.gameMode || 'classic') === 'classic';
-  const scaleBvMap  = classic ? {'1':3000,'2':6000,'3':9000} : {'1':100,'2':200,'3':300};
-  const scaleBspMap = classic ? {'1':32,'2':64,'3':96} : {'1':5,'2':10,'3':15};
+  const scaleBvMap  = classic ? {'1':3000,'2':6000,'3':9000,'4':12000,'5':15000,'6':18000} : {'1':100,'2':200,'3':300,'4':400,'5':500,'6':600};
+  const scaleBspMap = classic ? {'1':32,'2':64,'3':96,'4':128,'5':160,'6':192} : {'1':5,'2':10,'3':15,'4':20,'5':25,'6':30};
   const noBspBonus  = classic ? {'1':500,'2':1000,'3':1500} : {'1':10,'2':20,'3':30};
   if (fd.scale && scaleBvMap[fd.scale]) {
     const bonus = data.noBsp ? (noBspBonus[fd.scale] || 0) : 0;
@@ -5609,8 +5615,8 @@ function renderDeployment() {
   // BSP helper — use track scale if set, otherwise contract scale
   const bspEl    = document.getElementById('deployment-bsp');
   const noBsp    = !!data.noBsp;
-  const scaleBvMap  = classic ? {'1':3000,'2':6000,'3':9000} : {'1':100,'2':200,'3':300};
-  const scaleBspMap = classic ? {'1':32,'2':64,'3':96} : {'1':5,'2':10,'3':15};
+  const scaleBvMap  = classic ? {'1':3000,'2':6000,'3':9000,'4':12000,'5':15000,'6':18000} : {'1':100,'2':200,'3':300,'4':400,'5':500,'6':600};
+  const scaleBspMap = classic ? {'1':32,'2':64,'3':96,'4':128,'5':160,'6':192} : {'1':5,'2':10,'3':15,'4':20,'5':25,'6':30};
   const bvAvailBase  = trackScale > 0 ? (+(scaleBvMap[String(trackScale)] || 0)) : +(data.forceData && data.forceData.bvAvail) || 0;
   const bonus500     = data.noBsp ? (trackScale > 0 ? 500 * trackScale : 0) : 0;
   const trackBvAvail = bvAvailBase + bonus500;
