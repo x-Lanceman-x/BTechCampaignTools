@@ -1473,6 +1473,7 @@
         style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
         <option value="">— Combat Bonus —</option>
         <option value="broke">Broke Contract</option>
+        <option value="noobjectives">Completed No Objectives</option>
         <option value="unsuccessful">Unsuccessful</option>
         <option value="success">Success</option>
         <option value="allobjectives">All Objectives</option>
@@ -5477,6 +5478,7 @@ function completeDeployment() {
 
   const BONUS_PAY = {
     broke:         0,
+    noobjectives:  0,
     unsuccessful:  250 * scale,
     success:       500 * scale,
     allobjectives: 750 * scale
@@ -5492,7 +5494,7 @@ function completeDeployment() {
   const netPaid  = grossPaid - pilotPay;
 
   const bonusLabels = {
-    broke:'Broke Contract', unsuccessful:'Unsuccessful', success:'Success', allobjectives:'All Objectives'
+    broke:'Broke Contract', noobjectives:'Completed No Objectives', unsuccessful:'Unsuccessful', success:'Success', allobjectives:'All Objectives'
   };
   const event = trackName + (bonusKey ? ` — ${bonusLabels[bonusKey]}` : '');
 
