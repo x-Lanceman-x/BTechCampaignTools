@@ -34,7 +34,7 @@ Access at: https://x-lanceman-x.github.io/BTechCampaignTools/
 
 -------
 
-Lanceman's Chaos Campaign Mercenaries Digital Companion Major Update
+## Lanceman's Chaos Campaign Mercenaries Digital Companion Major Update
 
 The CC Mercs Digital Companion has been updated to support new additions from Hot Spots Draconis Reach and add in missing items from Hot Spots Hinterlands.
 
