@@ -702,6 +702,7 @@
       <button class="nav-tab" onclick="showPage('ref',this)">Reference</button>
       <button class="nav-tab" onclick="showPage('units',this)">Forces</button>
       <button class="nav-tab" onclick="showPage('journal',this)">Journal</button>
+      <button class="nav-tab" onclick="showPage('dis',this)">D.I.S.</button>
       <button class="nav-tab" onclick="showPage('settings',this)">Settings</button>
     </nav>
   </div>
@@ -786,17 +787,16 @@
       </div>
     </div>
     <div class="grid-3">
-      <div class="field"><label>Type of Action</label>
+      <div class="field"><label>Mission Type</label>
         <select id="actionType" onchange="recalc();save()">
           <option value="">— Select —</option>
-          <option>Raid</option>
-          <option>Recon</option>
-          <option>Guerrilla</option>
-          <option>Extraction</option>
-          <option>Planetary Assault</option>
+          <option>Expedition — Standard Expedition</option>
+          <option>Expedition — Pirate Hunt</option>
+          <option>Expedition — Guerrilla Operation</option>
+          <option>Garrison — Cadre Duty</option>
           <option>Garrison</option>
-          <option>Cadre</option>
-          <option>Pirate Hunting</option>
+          <option>Raid</option>
+          <option>Invasion</option>
         </select>
       </div>
       <div class="field"><label>Length (Months)</label>
@@ -879,6 +879,12 @@
         <input type="text" id="contactTerms" placeholder="e.g. Quarterly payment, no salvage clause" oninput="save()">
       </div>
     </div>
+  </div>
+
+  <!-- Contract Intensity -->
+  <div id="contract-intensity-section" style="display:none;margin-bottom:16px">
+    <div class="section-title">Contract Intensity</div>
+    <div class="panel" id="contract-intensity-panel" style="padding:14px 18px"></div>
   </div>
 
   <!-- Calculated Summary -->
@@ -1702,6 +1708,48 @@
 <!-- ══════════════════════════════════════════════
      PAGE 5 · SETTINGS
 ══════════════════════════════════════════════ -->
+<div id="page-dis" class="page">
+  <div style="text-align:center;padding:32px 24px 20px">
+    <div style="font-family:'Oswald',sans-serif;font-size:36px;font-weight:700;letter-spacing:8px;text-transform:uppercase;color:var(--gold);text-shadow:0 0 24px rgba(201,162,39,.3)">Dobless Information Services</div>
+    <div style="margin-top:6px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim)">Contract Intelligence Network</div>
+    <hr style="border:none;border-top:1px solid var(--border-gold);margin:20px auto;max-width:480px;opacity:0.5">
+  </div>
+
+  <div style="max-width:640px;margin:0 auto;padding:0 24px">
+    <div class="field">
+      <label>Hiring Hall</label>
+      <select id="dis-hiring-hall"
+        style="width:100%;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:8px 12px;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;outline:none">
+        <option value="">— Select Hiring Hall —</option>
+        <option value="proserpina">Proserpina</option>
+        <option value="tybalt">Tybalt</option>
+      </select>
+    </div>
+
+    <div style="text-align:center;margin:24px 0">
+      <button class="btn" onclick="generateDISContract()"
+        style="border-color:var(--gold);color:var(--gold);font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:4px;text-transform:uppercase;padding:12px 40px">
+        ⚡ Generate Contract
+      </button>
+    </div>
+
+    <div id="dis-result" style="display:none"></div>
+    <div id="dis-intensity" style="display:none;margin-top:18px"></div>
+    <div id="dis-accept-wrap" style="display:none;text-align:center;margin:20px 0">
+      <button class="btn" onclick="acceptDISContract()"
+        style="border-color:var(--green);color:var(--green-bright);font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:3px;text-transform:uppercase;padding:12px 40px">
+        ✓ Accept Contract
+      </button>
+    </div>
+    <div id="dis-export-wrap" style="display:none;text-align:center;margin:24px 0 24px">
+      <button class="btn" onclick="exportDISContractCSV()"
+        style="border-color:#6ab0e8;color:#6ab0e8;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:10px 32px">
+        ⬇ Export Contract
+      </button>
+    </div>
+  </div>
+</div><!-- /page-dis -->
+
 <div id="page-settings" class="page">
   <div class="section-title">Settings</div>
 
@@ -4635,10 +4683,10 @@ function renderContractHistory() {
           <div class="grid-2" style="gap:10px;margin-bottom:10px">
             <div class="field" style="margin:0"><label>Planet</label>
               <input type="text" id="hf-planet-${i}" value="${esc(c.planet||'')}" placeholder="e.g. Hesperus II"></div>
-            <div class="field" style="margin:0"><label>Type of Action</label>
+            <div class="field" style="margin:0"><label>Mission Type</label>
               <select id="hf-action-${i}" style="width:100%;background:var(--darker);border:1px solid var(--border);color:var(--text);padding:7px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;outline:none">
                 <option value="">— Select —</option>
-                ${['Raid','Recon','Guerrilla','Extraction','Planetary Assault','Garrison','Cadre','Pirate Hunting'].map(t=>`<option value="${t}" ${c.actionType===t?'selected':''}>${t}</option>`).join('')}
+                ${['Expedition — Standard Expedition','Expedition — Pirate Hunt','Expedition — Guerrilla Operation','Garrison — Cadre Duty','Garrison','Raid','Invasion'].map(t=>`<option value="${t}" ${c.actionType===t?'selected':''}>${t}</option>`).join('')}
               </select></div>
           </div>
           <div class="grid-3" style="gap:10px;margin-bottom:16px">
@@ -7401,7 +7449,7 @@ function renderPilotCards() {
     const pilSkill = calcPilSkill(spPil / costMult);
     const etCount  = calcEdgeTokens(spET / costMult);
     const eaCount  = calcEdgeAbil(spEA / costMult);
-    const spentClassic = (spGun + spPil + spET + spEA) * costMult;
+    const spentClassic = spGun + spPil + spET + spEA;
     const totalH = classic
       ? getH(PC_GUN_TABLE, spGun / costMult) + getH(PC_PIL_TABLE, spPil / costMult) + getH(PC_ET_TABLE, spET / costMult) + getH(PC_EA_TABLE, spEA / costMult)
       : getH(PC_ET_TABLE, spET / costMult) + getH(PC_EA_TABLE, spEA / costMult);
@@ -7409,7 +7457,7 @@ function renderPilotCards() {
     // --- Alpha Strike field ---
     const spAS = +p.spAS || 0;
     const asSkill = calcASSkill(spAS / costMult);
-    const spentAS = (spAS + spET + spEA) * costMult;
+    const spentAS = spAS + spET + spEA;
 
     const spent     = classic ? spentClassic : spentAS;
     const remaining = totalSP - spent;
@@ -8074,6 +8122,583 @@ function showPilotAbilitiesPopup(cardIdx) {
 function closePilotAbilitiesPopup() {
   const popup = document.getElementById('pilot-abilities-popup');
   if (popup) popup.style.display = 'none';
+}
+
+// ─────────────────────────────────────────
+// D.I.S. CONTRACT GENERATOR
+// ─────────────────────────────────────────
+function d6() { return Math.floor(Math.random() * 6) + 1; }
+function d6r(n) { let s=0; for(let i=0;i<n;i++) s+=d6(); return s; }
+
+// Contract Steps Table (index = step number 1..17)
+const DIS_STEPS = {
+  basePay:     {1:50,2:55,3:60,4:70,5:80,6:90,7:100,8:110,9:120,10:130,11:140,12:150,13:160,14:170,15:180,16:190,17:200},
+  cmdRights:   {3:'Integrated',7:'House',8:'Liaison',11:'Independent'},
+  salvage:     {3:'Exchange',4:'10%',5:'20%',6:'30%',7:'40%',8:'50%',9:'60%',10:'70%',11:'80%',12:'90%',13:'100%'},
+  support:     {1:'None',2:'Straight/20%',3:'Straight/40%',4:'Straight/60%',5:'Straight/70%',6:'Straight/80%',7:'Straight/90%',8:'Straight/100%',9:'Battle/10%',10:'Battle/20%',11:'Battle/30%',12:'Battle/40%',13:'Battle/50%',14:'Battle/75%',15:'Battle/100%'},
+  transport:   {5:'0%',6:'25%',7:'50%',8:'75%',9:'100%'}
+};
+function stepVal(table, step) {
+  const s = Math.max(1, Math.min(17, step));
+  if (table === 'basePay') return (DIS_STEPS.basePay[s] || 50) + '%';
+  if (table === 'cmdRights') {
+    for (let i = s; i >= 1; i--) if (DIS_STEPS.cmdRights[i]) return DIS_STEPS.cmdRights[i];
+    return '—';
+  }
+  if (table === 'salvage') {
+    if (s < 3) return 'None';
+    for (let i = s; i >= 3; i--) if (DIS_STEPS.salvage[i]) return DIS_STEPS.salvage[i];
+    return 'None';
+  }
+  if (table === 'support') {
+    if (s < 1) return 'None';
+    for (let i = s; i >= 1; i--) if (DIS_STEPS.support[i]) return DIS_STEPS.support[i];
+    return 'None';
+  }
+  if (table === 'transport') {
+    if (s < 5) return '0%';
+    for (let i = s; i >= 5; i--) if (DIS_STEPS.transport[i]) return DIS_STEPS.transport[i];
+    return '0%';
+  }
+  return '—';
+}
+
+const DIS_SYSTEM_TABLE = {
+  'Tikonov':         { terrain:'Urban',                          factions:[[4,'Liao'],[6,'Mercenary']] },
+  'Rio':             { terrain:'Badland',                        factions:[[3,'Liao'],[6,'Mercenary']] },
+  'Basalt':          { terrain:'—',                              factions:[[6,'Mercenary']] },
+  'Caselton':        { terrain:'Mountain',                       factions:[[4,'Davion'],[5,'Mercenary'],[6,'Kurita']] },
+  'Deneb Kaitos':    { terrain:'Tundra / Savannah',              factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Addicks':         { terrain:'Wetland',                        factions:[[3,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Helen':           { terrain:'Wetland',                        factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Small World':     { terrain:'Savannah (Cold)',                 factions:[[3,'Liao'],[6,'Mercenary']] },
+  'Markab':          { terrain:'Desert (Tainted)',                factions:[[3,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Galatia':         { terrain:'Wooded',                         factions:[[3,'Kurita'],[5,'Davion'],[6,'Mercenary']] },
+  'Cylene':          { terrain:'Desert (High Gravity)',          factions:[[2,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Edwards':         { terrain:'Alien (Lunar/Vacuum/Low-G)',     factions:[[4,'Davion'],[6,'Mercenary']] },
+  'Mara':            { terrain:'Grassland',                      factions:[[3,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Elbar':           { terrain:'Savannah',                       factions:[[6,'Mercenary']] },
+  'Cartago':         { terrain:'Wetlands (Hot)',                  factions:[[3,'Davion'],[4,'Kurita'],[6,'Mercenary']] },
+  'Chesterton':      { terrain:'Savannah',                       factions:[[3,'Liao'],[6,'Mercenary']] },
+  'New Hessen':      { terrain:'Hills',                          factions:[[3,'Liao'],[6,'Mercenary']] },
+  'Ruchbah':         { terrain:'Grasslands',                     factions:[[2,'Liao'],[5,'Mercenary'],[6,'Davion']] },
+  'Skat':            { terrain:'Wetlands (Tainted)',              factions:[[5,'Kurita'],[6,'Mercenary']] },
+  'Halstead Station':{ terrain:'Desert (Toxic)',                  factions:[[1,'Davion'],[5,'Kurita'],[6,'Mercenary']] },
+  'Fellanin II':     { terrain:'Mountains',                      factions:[[2,'Kurita'],[3,'Davion'],[6,'Mercenary']] },
+  'Marlette':        { terrain:'Wetlands',                       factions:[[3,'Kurita'],[6,'Davion']] },
+  'Johnsondale':     { terrain:'Grassland',                      factions:[[5,'Kurita'],[6,'Mercenary']] },
+  'Olancha':         { terrain:'Alien (Crystalline Canyon)',     factions:[[3,'Davion'],[5,'Mercenary'],[6,'Kurita']] },
+  'Al Na\'ir':       { terrain:'Desert (Low-G, Tainted)',        factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Raman':           { terrain:'Savannah',                       factions:[[3,'Davion'],[5,'Kurita'],[6,'Mercenary']] },
+  'David':           { terrain:'Grassland (Tainted)',             factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Lapida II':       { terrain:'Desert (Cold, Tainted)',         factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Ancha':           { terrain:'Wetlands (Tainted)',              factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Kentares IV':     { terrain:'Urban ⚠',                        factions:[[3,'Davion'],[5,'Kurita'],[6,'Mercenary']] },
+  'Klathandu IV':    { terrain:'Alien (Caustic Valley)',         factions:[[3,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Proserpina':      { terrain:'Wetlands (Tainted)',              factions:[[4,'Kurita'],[6,'Mercenary']] },
+  'Clovis':          { terrain:'Hills',                          factions:[[4,'Davion'],[5,'Kurita'],[6,'Mercenary']] },
+  'Sadalbari':       { terrain:'Wooded',                         factions:[[3,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Exeter':          { terrain:'Wetlands (High Pressure)',       factions:[[3,'Davion'],[5,'Mercenary'],[6,'Kurita']] },
+  'Shinonoi':        { terrain:'Grasslands',                     factions:[[5,'Kurita'],[6,'Mercenary']] },
+  'Klathandu':       { terrain:'Alien (Caustic Valley)',         factions:[[3,'Kurita'],[5,'Mercenary'],[6,'Davion']] },
+  'Kentares':        { terrain:'Urban ⚠',                        factions:[[3,'Davion'],[5,'Kurita'],[6,'Mercenary']] },
+};
+
+const DIS_TYBALT_SYSTEMS = [
+  ['Tikonov','Rio','Basalt','Caselton','Deneb Kaitos','Addicks'],     // 1
+  ['Helen','Small World','Markab','Galatia','Cylene','Edwards'],       // 2
+  ['Mara','Elbar','Cartago','Chesterton','New Hessen','Ruchbah'],      // 3
+  ['Skat','Halstead Station','Fellanin II','Marlette','Johnsondale','Olancha'], // 4
+  ["Al Na'ir",'Raman','David','Lapida II','Ancha','Kentares IV'],      // 5
+  ['Klathandu IV','Proserpina','Clovis','Sadalbari','Exeter','Shinonoi'] // 6
+];
+const DIS_TYBALT_JUMPS  = [1,2,2,3,3,4];
+
+const DIS_PROSERPINA_SYSTEMS = [
+  // Roll 1 → 1-2: 1 jump; use d6 for system within group
+  ['Sadalbari','Raman','Raman','David','Fellanin II','Klathandu'],     // roll 1-2 within: 1d6 below
+  ['Lapida II','Mara','Cartago','Kentares IV','Clovis','Exeter'],       // 3
+  ['Johnsondale','Cylene','Elbar','Clovis','Skat','Galatia'],           // 4
+  ['Marlette','Marlette','Edwards','Caselton','Addicks','Addicks'],     // 5
+  ['Shinonoi','Ancha','Halstead Station',"Al Na'ir",'Helen','Deneb Kaitos'] // 6
+];
+const DIS_PROSERPINA_JUMPS = [1,1,2,2,3,4]; // indexed by outer d6 roll
+
+function rollSystem(hall) {
+  const roll = d6();
+  if (hall === 'tybalt') {
+    const idx = roll - 1;
+    const sys = DIS_TYBALT_SYSTEMS[idx][d6()-1];
+    return { system: sys, jumps: DIS_TYBALT_JUMPS[idx] };
+  } else {
+    // Proserpina: rolls 1-2 → index 0; 3 → 1; 4 → 2; 5 → 3; 6 → 4
+    const idx = roll <= 2 ? 0 : roll - 2;
+    const sys = DIS_PROSERPINA_SYSTEMS[idx][d6()-1];
+    return { system: sys, jumps: DIS_PROSERPINA_JUMPS[idx] };
+  }
+}
+
+function rollFaction(systemName) {
+  const entry = DIS_SYSTEM_TABLE[systemName];
+  if (!entry) return '—';
+  const r = d6();
+  for (const [max, faction] of entry.factions) {
+    if (r <= max) return faction;
+  }
+  return entry.factions[entry.factions.length-1][1];
+}
+
+function generateDISIntensity(contractType, length) {
+  // Number of Tracks
+  const tRoll = d6r(2);
+  let numTracks;
+  if (contractType === 'Raid' || contractType === 'Expedition') {
+    numTracks = tRoll <= 8 ? 1 : tRoll <= 11 ? 2 : 3;
+  } else if (contractType === 'Garrison') {
+    numTracks = tRoll <= 4 ? 0 : tRoll <= 6 ? 1 : tRoll <= 8 ? 2 : tRoll === 9 ? 3 : tRoll === 10 ? 4 : 5;
+  } else { // Invasion
+    numTracks = tRoll <= 5 ? 2 : tRoll <= 7 ? 3 : tRoll <= 9 ? 4 : tRoll <= 11 ? 5 : 6;
+  }
+
+  // Clamp to valid columns
+  const months = length === '6 months' ? 6 : 3;
+  const maxTracks = months === 3 ? 3 : 6;
+  const tracksForTable = Math.min(numTracks, maxTracks);
+
+  // Track Intensity Table
+  const TI3 = {
+    1: ['0-1-0','0-1-0','0-1-0','0-0-1','0-0-1','1-0-0'],
+    2: ['0-1-1','0-1-1','0-1-1','1-0-1','0-0-2','0-2-0'],
+    3: ['0-1-2','1-1-1','1-1-1','0-2-1','2-0-1','2-1-0']
+  };
+  const TI6 = {
+    1: ['0-0-1-0-0-0','0-0-0-0-1-0','0-1-0-0-0-0','0-1-1-0-0-0','0-0-0-0-0-1','0-0-1-0-1-0'],
+    2: ['0-1-0-1-0-0','0-0-1-0-1-0','0-1-0-0-1-0','0-1-1-0-0-0','0-0-0-1-1-0','0-2-0-0-0-0'],
+    3: ['0-1-0-1-0-1','0-1-0-1-1-0','0-1-1-1-0-0','0-1-1-0-0-1','0-2-0-1-0-0','0-0-0-2-1-0'],
+    4: ['0-1-0-1-1-1','0-1-1-1-1-0','0-1-1-1-1-1','0-2-1-1-0-0','0-2-0-2-1-0','0-2-1-1-0-0'],
+    5: ['0-1-1-1-1-1','0-1-1-1-1-2','0-2-2-1-0-0','0-0-2-1-1-0','0-2-2-1-0-0','0-1-1-2-0-2'],
+    6: ['1-1-1-1-1-1','0-2-1-1-1-1','0-2-1-1-1-2','0-2-1-1-0-2','0-0-2-2-1-0','0-1-2-2-1-0']
+  };
+
+  const iTbl = months === 3 ? TI3 : TI6;
+  const iRoll = d6();
+  let intensityPattern = '—';
+  if (tracksForTable > 0 && iTbl[tracksForTable]) {
+    intensityPattern = iTbl[tracksForTable][iRoll - 1];
+  }
+
+  // Format pattern as labeled months
+  let patternLabel = '—';
+  if (intensityPattern !== '—') {
+    const parts = intensityPattern.split('-');
+    patternLabel = parts.map((n, i) => `Month ${i+1}: <strong>${n}</strong> track${n!=='1'?'s':''}`).join('  ·  ');
+  }
+
+  window._disLastTrackCount = numTracks;
+  window._disLastIntensityPattern = intensityPattern;
+
+  const el = document.getElementById('dis-intensity');
+  if (el) {
+    el.style.display = 'block';
+    el.innerHTML = `
+    <div style="border:1px solid var(--border);background:var(--panel2)">
+      <div style="padding:10px 14px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)">
+        <div style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim)">Contract Intensity</div>
+      </div>
+      <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
+        <div style="width:160px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Mission Type</div>
+        <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text)">${contractType} &nbsp;·&nbsp; ${length}</div>
+      </div>
+      <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
+        <div style="width:160px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Tracks</div>
+        <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)">${numTracks}${numTracks === 0 ? ' <span style="font-size:11px;color:var(--text-dim)">(See opposing contract rules)</span>' : ''}</div>
+      </div>
+      <div style="display:flex;align-items:stretch">
+        <div style="width:160px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Intensity</div>
+        <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">${tracksForTable > 0 ? patternLabel : '—'}</div>
+      </div>
+    </div>`;
+  }
+}
+
+// ─────────────────────────────────────────
+// DIS: ACCEPT CONTRACT → FILL CONTRACT TAB
+// ─────────────────────────────────────────
+function acceptDISContract() {
+  const c = window._disGeneratedContract;
+  if (!c) { toast('Generate a contract first.'); return; }
+  if (!confirm(`Accept contract ${c.contactRef}?\n\nThis will start a new contract on the Contract tab with the generated terms filled in.`)) return;
+
+  // Parse support from step value string like "Straight/60%"
+  function parseSupport(stepStr) {
+    if (!stepStr || stepStr === '—' || stepStr === 'None') return { type: 'none', pct: '' };
+    const [type, pct] = stepStr.split('/');
+    return {
+      type: (type || '').toLowerCase().trim() === 'battle' ? 'battle' : 'straight',
+      pct: (pct || '').replace('%', '').trim()
+    };
+  }
+  const supp = parseSupport(stepVal('support', c.suppStep));
+
+  // Build new contract fields
+  collectFormValues();
+  const hasContent = data.contractName || data.unitName || data.ledger.length || data.basePay;
+  if (hasContent) {
+    if (!confirm('Archive the current contract and start a fresh one?')) return;
+    const snapshot = JSON.parse(JSON.stringify(data));
+    delete snapshot.contractHistory;
+    if (!data.contractHistory) data.contractHistory = [];
+    data.contractHistory.unshift(snapshot);
+    let endingBalance = +data.startWarchest || 0;
+    data.ledger.forEach(row => { endingBalance += (+row.paid||0) + (+row.cover||0) - (+row.cost||0); });
+    let endingRep = 0;
+    data.ledger.forEach(row => { endingRep += +row.rep || 0; });
+    data.startWarchest = String(Math.round(endingBalance));
+    data.ledger = endingRep ? [{month:'1',event:'Carried Rep',cost:'',cover:'',paid:'',rep:String(endingRep)}] : [];
+  }
+
+  // Fill contract fields
+  data.contractName  = c.contactRef;
+  data.actionType    = c.contractType + (c.subType ? ' — ' + c.subType : '');
+  data.contractLength= c.length.replace(' months','').trim();
+  data.employer      = c.employer;
+  data.planet        = c.system;
+  data.basePay       = stepVal('basePay', c.payStep).replace('%','');
+  data.supportType   = supp.type;
+  data.supportPct    = supp.pct;
+  data.transportPct  = stepVal('transport', c.transStep).replace('%','');
+  data.salvagePct    = stepVal('salvage', c.salvStep).replace('%','').replace('Exchange','0');
+  data.command       = stepVal('cmdRights', c.cmdStep);
+  data.contractStatus= 'active';
+  // Reset open work rows
+  ['repairRows','rearmRows','omniRows','assetRows','salvageRows','healRows','healBARows',
+   'skillRows','hireRows','hireNamelessRows','simTrainingRows','bflRows'].forEach(f => { data[f] = []; });
+
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+  renderAll();
+  showPage('contract', document.querySelector('.nav-tab[onclick*="contract"]'));
+  toast(`Contract ${c.contactRef} accepted — Contract tab updated!`);
+
+  // Now reveal the intensity — player has committed
+  try { generateDISIntensity(c.contractType, c.length); } catch(e) { console.error('Intensity error:', e); }
+
+  // Also populate the Contract tab intensity section
+  try {
+    const intensitySection = document.getElementById('contract-intensity-section');
+    const intensityPanel   = document.getElementById('contract-intensity-panel');
+    if (intensitySection && intensityPanel) {
+      // Re-use the stored intensity HTML from the DIS pane
+      const disIntensityEl = document.getElementById('dis-intensity');
+      if (disIntensityEl && disIntensityEl.innerHTML) {
+        intensityPanel.innerHTML = disIntensityEl.innerHTML;
+        intensitySection.style.display = 'block';
+      }
+    }
+  } catch(e) { console.error('Contract intensity copy error:', e); }
+
+  window._disAcceptedContract = Object.assign({}, c, {
+    trackCount: window._disLastTrackCount,
+    intensityPattern: window._disLastIntensityPattern
+  });
+  window._disGeneratedContract = null;
+  document.getElementById('dis-accept-wrap').style.display = 'none';
+  const exportWrap = document.getElementById('dis-export-wrap');
+  if (exportWrap) exportWrap.style.display = 'block';
+}
+
+function generateDISContract() {
+  const hall = (document.getElementById('dis-hiring-hall')||{}).value || '';
+  if (!hall) { toast('Select a Hiring Hall first.'); return; }
+
+  const hallMod = hall === 'proserpina' ? 1 : -1;
+
+  // 1. Contract Type
+  const ctRoll = Math.min(13, Math.max(1, d6r(2) + hallMod));
+  let contractType, subType = '';
+  if (ctRoll <= 4) {
+    contractType = 'Expedition';
+    const sub = d6r(2);
+    subType = sub <= 8 ? 'Standard Expedition' : sub <= 11 ? 'Pirate Hunt' : 'Guerrilla Operation';
+  } else if (ctRoll <= 6) {
+    contractType = 'Garrison';
+    const sub = d6r(2);
+    subType = sub <= 5 ? 'Cadre Duty' : 'Garrison';
+  } else if (ctRoll <= 9) {
+    contractType = 'Raid';
+  } else {
+    contractType = 'Invasion';
+  }
+
+  // Opposing contract type
+  const oppRoll = d6r(2);
+  const oppMap = {
+    Expedition: oppRoll <= 8 ? 'Garrison' : 'Raid',
+    Garrison:   oppRoll <= 4 ? 'Expedition' : oppRoll <= 8 ? 'Raid' : 'Invasion',
+    Raid:       oppRoll <= 7 ? 'Expedition' : oppRoll <= 10 ? 'Garrison' : oppRoll === 11 ? 'Raid' : 'Invasion',
+    Invasion:   oppRoll <= 4 ? 'Expedition' : oppRoll <= 8 ? 'Garrison' : oppRoll === 9 ? 'Raid' : 'Invasion'
+  };
+  const opposingType = oppMap[contractType];
+
+  // 2. Employer
+  const empRoll = d6r(2);
+  const empMap = {2:'Civilian Organization',3:'Planetary Government',4:'Mercenary Subcontract',5:'Corporation',6:'House Government',7:'House Government',8:'Noble (Local)',9:'Corporation',10:'Planetary Government',11:'House Government',12:'Mercenary Subcontract'};
+  const employer = empMap[empRoll];
+
+  // 3. System
+  const sysResult = rollSystem(hall);
+  const terrain   = (DIS_SYSTEM_TABLE[sysResult.system] || {}).terrain || '—';
+  const oppFaction = rollFaction(sysResult.system);
+
+  // 4. Contract Length
+  const lengthMap = {Raid:'3 months',Expedition:'3 months',Garrison:'6 months',Invasion:'6 months'};
+  const length = lengthMap[contractType] || '3 months';
+
+  // 5. Employer step modifiers
+  const empMod = {
+    payBase:  employer.includes('Civilian') ? -2 : employer === 'Mercenary Subcontract' ? -1 : employer.includes('House') ? 1 : employer === 'Corporation' ? 2 : 0,
+    support:  employer.includes('Civilian') ? -2 : employer === 'Corporation' ? -2 : employer === 'Planetary Government' ? 1 : employer.includes('House') ? 2 : 0,
+    salvage:  employer.includes('Civilian') ? 4  : employer === 'Corporation' ? 2 : employer === 'Planetary Government' ? 1 : employer.includes('House') ? -2 : 0,
+    cmd:      employer.includes('Civilian') ? 4  : employer === 'Mercenary Subcontract' ? 3 : employer.includes('House') ? -3 : 0,
+    transport:employer.includes('Civilian') ? -1 : employer === 'Corporation' ? 1 : employer.includes('House') ? 1 : 0
+  };
+
+  // Contract type step modifiers
+  const typeMod = {
+    payBase:   contractType === 'Garrison' ? 1 : contractType === 'Invasion' ? -1 : 0,
+    support:   contractType === 'Expedition' ? 1 : contractType === 'Invasion' ? 2 : 0,
+    salvage:   contractType === 'Raid' ? -1 : contractType === 'Garrison' ? -2 : contractType === 'Invasion' ? 1 : 0,
+    cmd:       contractType === 'Invasion' ? -2 : contractType === 'Expedition' ? 2 : 0,
+    transport: contractType === 'Garrison' ? 1 : contractType === 'Invasion' ? -1 : 0
+  };
+
+  // 6. Roll each term
+  function rollStep(base2d6, empAdj, typeAdj) {
+    return d6r(2) + empAdj + typeAdj;
+  }
+
+  // Pay Rate (base roll 2-12 maps to step 3-8)
+  const payRollRaw = d6r(2);
+  const payBaseStep = payRollRaw <= 3 ? 3 : payRollRaw <= 5 ? 4 : payRollRaw <= 7 ? 5 : payRollRaw <= 9 ? 6 : payRollRaw <= 11 ? 7 : 8;
+  const payStep = Math.min(17, Math.max(1, payBaseStep + empMod.payBase + typeMod.payBase));
+
+  // Support
+  const suppRollRaw = d6r(2);
+  const suppBaseStep = suppRollRaw <= 5 ? 3 : suppRollRaw <= 7 ? 4 : suppRollRaw <= 9 ? 5 : suppRollRaw <= 11 ? 6 : 7;
+  const suppStep = Math.min(17, Math.max(1, suppBaseStep + empMod.support + typeMod.support));
+
+  // Transport
+  const transRollRaw = d6r(2);
+  const transBaseStep = transRollRaw <= 5 ? 5 : transRollRaw <= 7 ? 6 : transRollRaw <= 9 ? 7 : transRollRaw <= 11 ? 8 : 9;
+  const transStep = Math.min(17, Math.max(1, transBaseStep + empMod.transport + typeMod.transport));
+
+  // Salvage
+  const salvRollRaw = d6r(2);
+  const salvBaseStep = salvRollRaw <= 5 ? 3 : salvRollRaw <= 7 ? 4 : salvRollRaw <= 9 ? 5 : salvRollRaw <= 11 ? 6 : 7;
+  const salvStep = Math.min(17, Math.max(1, salvBaseStep + empMod.salvage + typeMod.salvage));
+
+  // Command
+  const cmdRollRaw = d6r(2);
+  const cmdBaseStep = cmdRollRaw <= 5 ? 3 : cmdRollRaw <= 7 ? 7 : cmdRollRaw <= 9 ? 8 : 11;
+  const cmdStep = Math.min(17, Math.max(1, cmdBaseStep + empMod.cmd + typeMod.cmd));
+
+  // Generate paired contract reference numbers: same 6 digits, A for main, B for opposing
+  const digits = Array.from({length:6}, () => Math.floor(Math.random()*10)).join('');
+  const contactRef    = digits + 'A';
+  const oppContactRef = digits + 'B';
+
+  // 7. Opposing Contract — roll its terms
+  // Mission sub-type for opposing contract
+  const oppSubRoll = d6r(2);
+  let oppSubType = '';
+  if (opposingType === 'Expedition') {
+    oppSubType = oppSubRoll <= 8 ? 'Standard Expedition' : oppSubRoll <= 11 ? 'Pirate Hunt' : 'Guerrilla Operation';
+  } else if (opposingType === 'Garrison') {
+    oppSubType = oppSubRoll <= 5 ? 'Cadre Duty' : 'Garrison';
+  }
+
+  // Opposing employer — same employer table, new roll
+  const oppEmpRoll = d6r(2);
+  const oppEmployer = empMap[oppEmpRoll];
+  const oppEmpMod = {
+    payBase:  oppEmployer.includes('Civilian') ? -2 : oppEmployer === 'Mercenary Subcontract' ? -1 : oppEmployer.includes('House') ? 1 : oppEmployer === 'Corporation' ? 2 : 0,
+    support:  oppEmployer.includes('Civilian') ? -2 : oppEmployer === 'Corporation' ? -2 : oppEmployer === 'Planetary Government' ? 1 : oppEmployer.includes('House') ? 2 : 0,
+    salvage:  oppEmployer.includes('Civilian') ? 4  : oppEmployer === 'Corporation' ? 2 : oppEmployer === 'Planetary Government' ? 1 : oppEmployer.includes('House') ? -2 : 0,
+    cmd:      oppEmployer.includes('Civilian') ? 4  : oppEmployer === 'Mercenary Subcontract' ? 3 : oppEmployer.includes('House') ? -3 : 0,
+    transport:oppEmployer.includes('Civilian') ? -1 : oppEmployer === 'Corporation' ? 1 : oppEmployer.includes('House') ? 1 : 0
+  };
+  const oppTypeMod = {
+    payBase:   opposingType === 'Garrison' ? 1 : opposingType === 'Invasion' ? -1 : 0,
+    support:   opposingType === 'Expedition' ? 1 : opposingType === 'Invasion' ? 2 : 0,
+    salvage:   opposingType === 'Raid' ? -1 : opposingType === 'Garrison' ? -2 : opposingType === 'Invasion' ? 1 : 0,
+    cmd:       opposingType === 'Invasion' ? -2 : opposingType === 'Expedition' ? 2 : 0,
+    transport: opposingType === 'Garrison' ? 1 : opposingType === 'Invasion' ? -1 : 0
+  };
+
+  // Opp Pay
+  const oppPayRaw = d6r(2);
+  const oppPayBase = oppPayRaw <= 3 ? 3 : oppPayRaw <= 5 ? 4 : oppPayRaw <= 7 ? 5 : oppPayRaw <= 9 ? 6 : oppPayRaw <= 11 ? 7 : 8;
+  const oppPayStep = Math.min(17, Math.max(1, oppPayBase + oppEmpMod.payBase + oppTypeMod.payBase));
+  // Opp Support
+  const oppSuppRaw = d6r(2);
+  const oppSuppBase = oppSuppRaw <= 5 ? 3 : oppSuppRaw <= 7 ? 4 : oppSuppRaw <= 9 ? 5 : oppSuppRaw <= 11 ? 6 : 7;
+  const oppSuppStep = Math.min(17, Math.max(1, oppSuppBase + oppEmpMod.support + oppTypeMod.support));
+  // Opp Transport
+  const oppTransRaw = d6r(2);
+  const oppTransBase = oppTransRaw <= 5 ? 5 : oppTransRaw <= 7 ? 6 : oppTransRaw <= 9 ? 7 : oppTransRaw <= 11 ? 8 : 9;
+  const oppTransStep = Math.min(17, Math.max(1, oppTransBase + oppEmpMod.transport + oppTypeMod.transport));
+  // Opp Salvage
+  const oppSalvRaw = d6r(2);
+  const oppSalvBase = oppSalvRaw <= 5 ? 3 : oppSalvRaw <= 7 ? 4 : oppSalvRaw <= 9 ? 5 : oppSalvRaw <= 11 ? 6 : 7;
+  const oppSalvStep = Math.min(17, Math.max(1, oppSalvBase + oppEmpMod.salvage + oppTypeMod.salvage));
+  // Opp Command
+  const oppCmdRaw = d6r(2);
+  const oppCmdBase = oppCmdRaw <= 5 ? 3 : oppCmdRaw <= 7 ? 7 : oppCmdRaw <= 9 ? 8 : 11;
+  const oppCmdStep = Math.min(17, Math.max(1, oppCmdBase + oppEmpMod.cmd + oppTypeMod.cmd));
+
+  // Build result
+  const row = (label, value, highlight) => `
+    <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
+      <div style="width:140px;flex-shrink:0;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(201,162,39,.03)">${label}</div>
+      <div style="flex:1;padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;color:${highlight||'var(--text)'};word-break:break-word">${value}</div>
+    </div>`;
+
+  const result = document.getElementById('dis-result');
+  document.getElementById('dis-intensity').style.display = 'none';
+  document.getElementById('dis-accept-wrap').style.display = 'none';
+
+  result.style.display = 'block';
+  result.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+
+      <div style="border:1px solid var(--border-gold);background:var(--panel2)">
+        <div style="padding:10px 14px;background:rgba(201,162,39,.1);border-bottom:1px solid var(--border-gold)">
+          <div style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--gold)">Contract Briefing</div>
+        </div>
+        ${row('Contact Ref.', contactRef, 'var(--gold)')}
+        ${row('Mission Type', contractType + (subType ? ' — ' + subType : ''), 'var(--gold)')}
+        ${row('Employer', employer)}
+        ${row('Target System', sysResult.system + ' (' + sysResult.jumps + ' jump' + (sysResult.jumps>1?'s':'') + ')', 'var(--gold)')}
+        ${row('Primary Terrain', terrain)}
+        ${row('Opposing Force', oppFaction)}
+        ${row('Contract Length', length)}
+        <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5);border-top:1px solid rgba(201,162,39,.25);margin-top:2px">
+          <div style="width:140px;flex-shrink:0;padding:5px 10px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);background:rgba(201,162,39,.04)">Terms</div>
+          <div style="flex:1"></div>
+        </div>
+        ${row('Base Pay', stepVal('basePay', payStep) + '  (Step ' + payStep + ')', 'var(--green-bright)')}
+        ${row('Support', stepVal('support', suppStep) + '  (Step ' + suppStep + ')')}
+        ${row('Transportation', stepVal('transport', transStep) + '  (Step ' + transStep + ')')}
+        ${row('Salvage Rights', stepVal('salvage', salvStep) + '  (Step ' + salvStep + ')')}
+        ${row('Command Rights', stepVal('cmdRights', cmdStep) + '  (Step ' + cmdStep + ')')}
+      </div>
+
+      <div style="border:1px solid rgba(204,34,51,.4);background:rgba(204,34,51,.02)">
+        <div style="padding:10px 14px;background:rgba(204,34,51,.08);border-bottom:1px solid rgba(204,34,51,.3)">
+          <div style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--red)">Opposing Contract</div>
+        </div>
+        ${row('Contact Ref.', oppContactRef, 'var(--red)')}
+        ${row('Mission Type', opposingType + (oppSubType ? ' — ' + oppSubType : ''), 'var(--red)')}
+        ${row('Employer', oppEmployer)}
+        ${row('Target System', sysResult.system + ' (' + sysResult.jumps + ' jump' + (sysResult.jumps>1?'s':'') + ')')}
+        ${row('Contract Length', length)}
+        <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5);border-top:1px solid rgba(204,34,51,.2);margin-top:2px">
+          <div style="width:140px;flex-shrink:0;padding:5px 10px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);background:rgba(204,34,51,.04)">Terms</div>
+          <div style="flex:1"></div>
+        </div>
+        ${row('Base Pay', stepVal('basePay', oppPayStep) + '  (Step ' + oppPayStep + ')', 'var(--green-bright)')}
+        ${row('Support', stepVal('support', oppSuppStep) + '  (Step ' + oppSuppStep + ')')}
+        ${row('Transportation', stepVal('transport', oppTransStep) + '  (Step ' + oppTransStep + ')')}
+        ${row('Salvage Rights', stepVal('salvage', oppSalvStep) + '  (Step ' + oppSalvStep + ')')}
+        ${row('Command Rights', stepVal('cmdRights', oppCmdStep) + '  (Step ' + oppCmdStep + ')')}
+      </div>
+
+    </div>`;
+
+  // Store generated contract for Accept button (intensity generated after acceptance)
+  window._disGeneratedContract = {
+    contractType, subType, employer, system: sysResult.system, jumps: sysResult.jumps,
+    length, terrain, oppFaction,
+    payStep, suppStep, transStep, salvStep, cmdStep,
+    opposingType, oppSubType, oppEmployer,
+    oppPayStep, oppSuppStep, oppTransStep, oppSalvStep, oppCmdStep,
+    contactRef, oppContactRef
+  };
+
+  // Show Accept button — intensity revealed after acceptance
+  const acceptWrap = document.getElementById('dis-accept-wrap');
+  if (acceptWrap) acceptWrap.style.display = 'block';
+  else console.error('dis-accept-wrap element not found');
+}
+
+function exportDISContractCSV() {
+  const c = window._disAcceptedContract;
+  if (!c) { toast('No accepted contract to export.'); return; }
+
+  function esc(v) { const s = String(v||''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; }
+  function row(...cols) { return cols.map(esc).join(',') + '\n'; }
+
+  let csv = '';
+
+  // Main Contract
+  csv += row('CONTRACT BRIEFING', '');
+  csv += row('Contact Ref.', c.contactRef);
+  csv += row('Mission Type', c.contractType + (c.subType ? ' — ' + c.subType : ''));
+  csv += row('Employer', c.employer);
+  csv += row('Target System', c.system + ' (' + c.jumps + ' jump' + (c.jumps > 1 ? 's' : '') + ')');
+  csv += row('Primary Terrain', c.terrain);
+  csv += row('Opposing Force', c.oppFaction);
+  csv += row('Contract Length', c.length);
+  csv += row('', '');
+  csv += row('TERMS', '');
+  csv += row('Base Pay', stepVal('basePay', c.payStep));
+  csv += row('Support', stepVal('support', c.suppStep));
+  csv += row('Transportation', stepVal('transport', c.transStep));
+  csv += row('Salvage Rights', stepVal('salvage', c.salvStep));
+  csv += row('Command Rights', stepVal('cmdRights', c.cmdStep));
+
+  csv += row('', '');
+  csv += row('', '');
+
+  // Opposing Contract
+  csv += row('OPPOSING CONTRACT', '');
+  csv += row('Contact Ref.', c.oppContactRef || '');
+  csv += row('Mission Type', c.opposingType + (c.oppSubType ? ' — ' + c.oppSubType : ''));
+  csv += row('Employer', c.oppEmployer);
+  csv += row('Target System', c.system + ' (' + c.jumps + ' jump' + (c.jumps > 1 ? 's' : '') + ')');
+  csv += row('Contract Length', c.length);
+  csv += row('', '');
+  csv += row('TERMS', '');
+  csv += row('Base Pay', stepVal('basePay', c.oppPayStep));
+  csv += row('Support', stepVal('support', c.oppSuppStep));
+  csv += row('Transportation', stepVal('transport', c.oppTransStep));
+  csv += row('Salvage Rights', stepVal('salvage', c.oppSalvStep));
+  csv += row('Command Rights', stepVal('cmdRights', c.oppCmdStep));
+
+  csv += row('', '');
+  csv += row('', '');
+
+  // Contract Intensity
+  csv += row('CONTRACT INTENSITY', '');
+  csv += row('Mission Type', c.contractType);
+  csv += row('Contract Length', c.length);
+  csv += row('Total Tracks', c.trackCount !== undefined ? c.trackCount : '—');
+  csv += row('', '');
+  csv += row('MONTHLY TRACK SCHEDULE', '');
+  const pattern = c.intensityPattern || '—';
+  const parts = pattern !== '—' ? pattern.split('-') : [];
+  if (parts.length) {
+    parts.forEach((n, i) => { csv += row(`Month ${i + 1}`, n + ' track' + (n !== '1' ? 's' : '')); });
+  } else {
+    csv += row('Pattern', '—');
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `DIS-${c.contactRef}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Exported DIS-${c.contactRef}.csv`);
 }
 
 // ─────────────────────────────────────────
