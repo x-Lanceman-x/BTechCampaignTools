@@ -1392,7 +1392,12 @@
   <!-- Formations -->
   <div id="force-formations"></div>
 
-  <button class="btn btn-sm" onclick="addFormation()" style="margin-bottom:16px">+ Add Formation</button>
+  <button class="btn btn-sm" onclick="addFormation()" style="margin-bottom:12px">+ Add Formation</button>
+
+  <div id="force-bv-total-bar" style="display:none;padding:8px 14px;border:1px solid var(--border-gold);background:rgba(201,162,39,.06);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-dim)" id="force-bv-total-label">Total Force BV</span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--gold)" id="force-bv-total-value">0</span>
+  </div>
 
   <!-- ── MOTHBALLED UNITS ── -->
   <div id="mothballed-section" style="margin-bottom:16px">
@@ -1406,9 +1411,13 @@
       <button class="btn btn-sm" onclick="addBarracksRow()">+ Add Unit</button>
     </div>
 
-    <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto">
+    <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto"
+      ondragover="dragBarracksPanelOver(event)"
+      ondragleave="dragBarracksPanelLeave(event)"
+      ondrop="dragBarracksPanelDrop(event)">
       <div style="min-width:780px">
-      <div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 1.4fr 120px 100px 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+      <div style="display:grid;grid-template-columns:20px 2fr 60px 70px 90px 80px 1.4fr 120px 100px 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+        <div style="padding:7px 8px"></div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Tons</div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:right">PV</div>
@@ -3329,23 +3338,72 @@ function sendSalvageToLedger() {
   });
   const pct = Math.min(100, Math.max(0, +data.salvagePct || 0));
   const netTotal = rawTotal * (pct / 100) - claimedTotal;
-  if (netTotal === 0) { toast(pct === 0 ? 'Salvage % is 0 on the Contract tab.' : 'No salvage value to send.'); return; }
-  const rounded = Math.round(netTotal);
-  if (isVerbose()) {
-    const units = (data.salvageRows||[]).filter(r => r.unit).map(r => r.unit).join(', ');
-    const prefix = units ? `Salvage (${units})` : 'Salvage';
-    if (rounded >= 0) {
-      data.ledger.push({month:'', event: prefix, cost:'', cover:'', paid: String(rounded), rep:''});
-    } else {
-      data.ledger.push({month:'', event: `${prefix} — net cost`, cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
-    }
-  } else {
-    if (rounded >= 0) {
-      data.ledger.push({month:'', event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
-    } else {
-      data.ledger.push({month:'', event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
-    }
+  const hasClaimed = (data.salvageRows||[]).some(r => r.claim && r.unit && r.unit.trim());
+  if (netTotal === 0 && !hasClaimed) {
+    toast(pct === 0 ? 'Salvage % is 0 on the Contract tab.' : 'No salvage value to send.');
+    return;
   }
+  const rounded = Math.round(netTotal);
+  if (rounded !== 0) {
+    if (isVerbose()) {
+      const units = (data.salvageRows||[]).filter(r => r.unit).map(r => r.unit).join(', ');
+      const prefix = units ? `Salvage (${units})` : 'Salvage';
+      if (rounded >= 0) {
+        data.ledger.push({month:'', event: prefix, cost:'', cover:'', paid: String(rounded), rep:''});
+      } else {
+        data.ledger.push({month:'', event: `${prefix} — net cost`, cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+      }
+    } else {
+      if (rounded >= 0) {
+        data.ledger.push({month:'', event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
+      } else {
+        data.ledger.push({month:'', event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+      }
+    }
+  } else if (hasClaimed) {
+    const claimedNames = (data.salvageRows||[]).filter(r => r.claim && r.unit).map(r => r.unit).join(', ');
+    const label = claimedNames
+      ? `Unit Salvaged — Fully Covered By Contract (${claimedNames})`
+      : 'Unit Salvaged — Fully Covered By Contract';
+    data.ledger.push({month:'', event: label, cost:'', cover:'', paid:'', rep:''});
+  }
+  // Add claimed units to first open formation slots on Force Record
+  const claimedUnits = (data.salvageRows||[]).filter(r => r.claim && r.unit && r.unit.trim());
+  if (claimedUnits.length) {
+    const formations = (data.forceData && data.forceData.formations) || [];
+    let added = 0;
+    for (const claimed of claimedUnits) {
+      let placed = false;
+      for (const formation of formations) {
+        if (!formation.rows) continue;
+        for (let ri = 0; ri < formation.rows.length; ri++) {
+          const row = formation.rows[ri];
+          if (!row.unit || !row.unit.trim()) {
+            row.unit = claimed.unit.trim();
+            if (claimed.bv) row.bv = String(claimed.bv);
+            row.unitStatus = 'Salvage';
+            placed = true;
+            added++;
+            break;
+          }
+        }
+        if (placed) break;
+      }
+      if (!placed) {
+        const lastFormation = formations[formations.length - 1];
+        if (lastFormation) {
+          lastFormation.rows.push({
+            unit: claimed.unit.trim(), unitType:'', role:'', tons:'',
+            bv: claimed.bv ? String(claimed.bv) : '', techBase:'',
+            unitStatus:'Salvage', omni:false, pilotIdx:'', gp:'', spa:''
+          });
+          added++;
+        }
+      }
+    }
+    if (added) renderFormations();
+  }
+
   data.salvageRows = [];
   renderLedger();
   renderSalvageRows();
@@ -4342,7 +4400,7 @@ function sendRepairRearmToLedger() {
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
   // apply support discount + hall discount to repair & rearm, hall discount to omni
-  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-supportDiscount)*(1-hallRepairDiscount));
+  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
   const hasRows = (data.repairRows||[]).length || (data.rearmRows||[]).length || (data.omniRows||[]).length;
   if (!hasRows) { toast('No repair/rearm costs to send.'); return; }
 
@@ -4460,7 +4518,7 @@ function updateSupportTotals() {
   // omni reconfigure (hall discount applies, support discount does not)
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
-  const omniNet = Math.ceil(omniTotal * (1 - supportDiscount) * (1 - hallRepairDiscount));
+  const omniNet = Math.ceil(omniTotal * (1 - hallRepairDiscount));
   setText('omni-total', `${fmt(omniNet)} SP`);
   setBadge('omni-hall-badge', hallRepairDiscount > 0, hallBadgeText);
 
@@ -4474,7 +4532,7 @@ function updateSupportTotals() {
 
   // repair, rearm & omni section total (repair+rearm discounted, omni not)
   const repairRearmGross = Math.ceil(repairGross + rearmGross + omniTotal);
-  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-supportDiscount)*(1-hallRepairDiscount));
+  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
   setText('support-repair-rearm-total', `${fmt(repairRearmNet)} SP`);
   // show strikethrough gross and label when discount applies
   const grossLineEl = document.getElementById('repair-rearm-gross-line');
@@ -5168,6 +5226,12 @@ function renderFormations() {
           ondragend="dragFormationEnd(event)">⠿</span>
         <input type="text" value="${esc(f.label)}" onchange="updateFormationLabel(${fi},this.value)"
           style="background:transparent;border:none;font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;width:200px;outline:none;padding:0;min-width:120px;max-width:100%">
+        ${(()=>{
+          const bvSum = f.rows.reduce((s,r) => s + (+r.bv||0), 0);
+          return bvSum > 0
+            ? `<span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">(${fmt(bvSum)} ${classic?'BV':'PV'})</span>`
+            : '';
+        })()}
         <div style="flex:1;min-width:8px"></div>
         <label onclick="event.stopPropagation()" title="Deploy entire formation" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--border)'};background:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'rgba(201,162,39,.18)' : 'transparent'};transition:all .15s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)">
           <input type="checkbox" ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'checked' : ''} onchange="deployFormation(${fi},this.checked)" style="display:none">
@@ -5324,6 +5388,18 @@ function renderFormations() {
       </div><!-- /min-width -->
       </div><!-- /overflow-x:auto -->
     </div>`).join('');
+  // BV/PV total bar — include Barracks PV in Alpha Strike mode
+  const formationBV = (data.forceData.formations || []).reduce((sum, f) =>
+    sum + f.rows.reduce((s, r) => s + (+r.bv || 0), 0), 0);
+  const barracksPV = !classic ? (data.barracksRows || []).reduce((sum, r) => sum + (+r.pv || 0), 0) : 0;
+  const totalBV = formationBV + barracksPV;
+  const totalBar   = document.getElementById('force-bv-total-bar');
+  const totalLabel = document.getElementById('force-bv-total-label');
+  const totalValue = document.getElementById('force-bv-total-value');
+  if (totalBar) totalBar.style.display = totalBV > 0 ? 'flex' : 'none';
+  if (totalLabel) totalLabel.textContent = `Total Force ${classic ? 'BV' : 'PV'}`;
+  if (totalValue) totalValue.textContent = fmt(totalBV);
+
   renderMothballed();
 }
 
@@ -5437,6 +5513,45 @@ function renderMothballed() {
     </div>`;
 }
 
+function dragBarracksPanelOver(event) {
+  const source = event.dataTransfer.types.includes('application/x-mothballed') ? 'mothballed' : null;
+  if (source === 'mothballed') { event.preventDefault(); event.currentTarget.style.boxShadow = '0 0 0 2px #6ab0e8'; }
+}
+function dragBarracksPanelLeave(event) {
+  event.currentTarget.style.boxShadow = '';
+}
+function dragBarracksPanelDrop(event) {
+  event.preventDefault();
+  event.currentTarget.style.boxShadow = '';
+  const source = event.dataTransfer.getData('application/x-source');
+  if (source !== 'mothballed') return;
+  const mi = +event.dataTransfer.getData('application/x-mothballed');
+  const mr = (data.forceData.mothballedRows||[])[mi];
+  if (!mr) return;
+  const BA_CI_TYPES = ['Battle Armor', 'Conventional Infantry'];
+  if (!BA_CI_TYPES.includes(mr.unitType)) {
+    toast('Only Battle Armor and Conventional Infantry units can be moved to the Barracks.');
+    return;
+  }
+  if (!data.barracksRows) data.barracksRows = [];
+  data.barracksRows.push({
+    unit: mr.unit || '', tons: mr.tons || '', pv: mr.bv || '',
+    techBase: mr.techBase || '', skill: '', crew: '',
+    losses: [false, false, false], deployCount: '0'
+  });
+  data.forceData.mothballedRows.splice(mi, 1);
+  renderFormations();
+  renderBarracks();
+  localStorage.setItem('btMercContract', JSON.stringify(data));
+}
+
+// Drag: barracks source → mothballed
+function dragBarracksStart(event, i) {
+  event.dataTransfer.setData('application/x-barracks', String(i));
+  event.dataTransfer.setData('application/x-source', 'barracks');
+  event.target.closest('[draggable]').style.opacity = '0.4';
+}
+
 // Drag: mothballed source
 function dragMothballedStart(event, i) {
   event.dataTransfer.setData('application/x-mothballed', String(i));
@@ -5457,6 +5572,23 @@ function dragMothballedDrop(event) {
   event.currentTarget.style.boxShadow = '';
   const source = event.dataTransfer.getData('application/x-source');
   if (source === 'mothballed') return; // dragging within mothballed — ignore
+
+  // Handle drop from barracks
+  if (source === 'barracks') {
+    const bi = +event.dataTransfer.getData('application/x-barracks');
+    const br = (data.barracksRows||[])[bi];
+    if (!br) return;
+    if (!data.forceData.mothballedRows) data.forceData.mothballedRows = [];
+    data.forceData.mothballedRows.push({
+      unit: br.unit || '', unitType: '', role: '', tons: br.tons || '',
+      bv: br.pv || '', techBase: br.techBase || '', unitStatus: '', omni: false
+    });
+    data.barracksRows.splice(bi, 1);
+    renderFormations();
+    renderBarracks();
+    localStorage.setItem('btMercContract', JSON.stringify(data));
+    return;
+  }
 
   const fi = event.dataTransfer.getData('application/x-fi');
   const ri = event.dataTransfer.getData('application/x-ri');
@@ -7076,6 +7208,21 @@ function updateBarracksField(i, field, val) {
   if (field === 'deployCount') {
     renderDeployment();
   }
+  if (field === 'pv') {
+    // Recompute and update total force PV bar immediately
+    const classic = (data.gameMode || 'classic') === 'classic';
+    if (!classic) {
+      const formationBV = (data.forceData && data.forceData.formations || []).reduce((s, f) => s + f.rows.reduce((rs, r) => rs + (+r.bv||0), 0), 0);
+      const barracksPV  = (data.barracksRows||[]).reduce((s, r) => s + (+r.pv||0), 0);
+      const totalBV     = formationBV + barracksPV;
+      const totalBar    = document.getElementById('force-bv-total-bar');
+      const totalLabel  = document.getElementById('force-bv-total-label');
+      const totalValue  = document.getElementById('force-bv-total-value');
+      if (totalBar)   totalBar.style.display  = totalBV > 0 ? 'flex' : 'none';
+      if (totalLabel) totalLabel.textContent  = 'Total Force PV';
+      if (totalValue) totalValue.textContent  = fmt(totalBV);
+    }
+  }
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
@@ -7140,7 +7287,13 @@ function renderBarracks() {
     const crewSelKey = r.crew || '';
     const crewOpts = `<option value="">— None —</option>` + crewCandidates.map(c => `<option value="${c.key}" ${crewSelKey===c.key?'selected':''}>${esc(c.label)}</option>`).join('');
 
-    return `<div style="display:grid;grid-template-columns:2fr 60px 70px 90px 80px 1.4fr 120px 100px 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:860px;${rowStyle}">
+    return `<div style="display:grid;grid-template-columns:20px 2fr 60px 70px 90px 80px 1.4fr 120px 100px 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);min-width:860px;${rowStyle}"
+      draggable="true"
+      ondragstart="dragBarracksStart(event,${i})"
+      ondragend="dragUnitEnd(event)">
+      <div style="display:flex;align-items:center;justify-content:center">
+        <span class="drag-handle" style="font-size:13px;padding:0 3px">⠿</span>
+      </div>
       <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="Atlas AS7-D"
         onchange="updateBarracksField(${i},'unit',this.value)"
         style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
@@ -7182,6 +7335,20 @@ function renderBarracks() {
       </div>
     </div>`;
   }).join('');
+
+  // Update total force BV/PV bar (barracks PV counts in Alpha Strike)
+  const classic = (data.gameMode || 'classic') === 'classic';
+  if (!classic) {
+    const formationBV = (data.forceData && data.forceData.formations || []).reduce((s, f) => s + f.rows.reduce((rs, r) => rs + (+r.bv||0), 0), 0);
+    const barracksPV  = (data.barracksRows||[]).reduce((s, r) => s + (+r.pv||0), 0);
+    const totalBV     = formationBV + barracksPV;
+    const totalBar    = document.getElementById('force-bv-total-bar');
+    const totalLabel  = document.getElementById('force-bv-total-label');
+    const totalValue  = document.getElementById('force-bv-total-value');
+    if (totalBar)   totalBar.style.display  = totalBV > 0 ? 'flex' : 'none';
+    if (totalLabel) totalLabel.textContent  = 'Total Force PV';
+    if (totalValue) totalValue.textContent  = fmt(totalBV);
+  }
 }
 
 // ─────────────────────────────────────────
