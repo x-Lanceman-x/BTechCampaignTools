@@ -7351,6 +7351,39 @@ function renderBarracks() {
   }
 }
 
+function hireTemporaryPilot(i) {
+  const pc = (data.pilotCards||[])[i];
+  if (!pc || !pc.temporary) return;
+
+  const standardCost = 150;
+  const totalSP      = +pc.totalSP || 0;
+  const cost         = Math.max(standardCost, totalSP);
+  const name         = [pc.rank, pc.name, pc.callsign ? `"${pc.callsign}"` : ''].filter(Boolean).join(' ') || `Pilot ${i + 1}`;
+
+  if (!confirm(`Hire ${name} as a permanent Named Pilot?\n\nCost: ${fmt(cost)} SP (${cost === totalSP ? 'Total SP Earned' : 'Standard Hiring Fee'}).\n\nThis will be deducted from the ledger and the pilot will count toward your 4-slot limit.`)) return;
+
+  // Check slots
+  const slotsUsed = namedPilotSlotsUsed(data.pilotCards.filter((_, idx) => idx !== i));
+  const slotCost  = pc.type === 'Battle Armor Commander' ? 0.5 : 1;
+  if (slotsUsed + slotCost > 4) {
+    toast('Not enough pilot slots to hire this pilot permanently. Free up a slot first.');
+    return;
+  }
+
+  // Write to ledger
+  const event = `Hire Named Pilot — ${name}`;
+  data.ledger.push({ month:'', event, cost: String(cost), cover:'', paid:'', rep:'' });
+
+  // Mark as permanent and clear legacy flag
+  pc.temporary        = false;
+  pc._legacyImport    = false;
+
+  save();
+  renderPilotCards();
+  renderLedger();
+  toast(`${name} hired permanently for ${fmt(cost)} SP.`);
+}
+
 // ─────────────────────────────────────────
 // PILOT CARDS
 // ─────────────────────────────────────────
@@ -7778,7 +7811,11 @@ function renderPilotCards() {
       <!-- Temporary banner -->
       ${p.temporary ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:5px 12px;background:rgba(106,176,232,.1);border:1px solid #6ab0e8;">
         <span style="font-size:13px">⏱</span>
-        <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6ab0e8;font-weight:600">Temporary Pilot</span>
+        <span style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6ab0e8;font-weight:600;flex:1">Temporary Pilot</span>
+        <button class="btn btn-sm" onclick="hireTemporaryPilot(${i})"
+          style="border-color:var(--green);color:var(--green-bright);font-size:10px;letter-spacing:1px;padding:3px 10px;white-space:nowrap">
+          Hire Permanently
+        </button>
       </div>` : ''}
 
       <!-- Total Handicap banner -->
