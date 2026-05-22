@@ -583,6 +583,19 @@
     color: var(--gold); font-size: 14px;
     text-align: right; font-weight: 700;
   }
+
+  /* ── BARRACKS ── */
+  .barracks-loss-boxes {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .barracks-loss-box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--red);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .15s; cursor: pointer;
+  }
+  .barracks-loss-box.checked { background: var(--red); border-color: var(--red); }
+  .barracks-loss-box.checked::after { content: '✕'; color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
 </style>
 </head>
 <body>
@@ -662,6 +675,33 @@
     </div><!-- /table-scroll -->
     <div class="btn-row">
       <button class="btn btn-sm" onclick="addUnit()">+ Add Unit</button>
+    </div>
+  </div>
+
+  <!-- Barracks -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <div class="section-title" style="margin:0;flex:1">Barracks</div>
+    <button class="btn btn-sm" onclick="addBarracksRow()">+ Add Unit</button>
+  </div>
+
+  <div class="panel" style="padding:0;margin-bottom:16px;overflow-x:auto">
+    <div style="min-width:820px">
+      <div style="display:grid;grid-template-columns:20px 2fr 110px 60px 70px 90px 80px 120px 100px 36px;gap:0;border-bottom:1px solid var(--border-gold);background:rgba(201,162,39,.08)">
+        <div style="padding:7px 8px"></div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Unit / 'Mech</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Type</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Tons</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:right">PV</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px">Tech Base</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Skill</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Combat Losses</div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:7px 8px;text-align:center">Deploy</div>
+        <div style="padding:7px 8px"></div>
+      </div>
+      <div id="barracks-rows"></div>
+      <div id="barracks-empty" style="display:none;text-align:center;color:var(--text-dim);padding:16px;font-size:13px;letter-spacing:1px">
+        No units in barracks. Add a unit to begin.
+      </div>
     </div>
   </div>
 
@@ -961,7 +1001,7 @@
     <div class="section-title" style="margin-bottom:12px">Import Unit Roster from CSV</div>
     <div style="font-size:12px;color:var(--text-dim);letter-spacing:1px;line-height:1.8;margin-bottom:12px">
       Import a <a href=https://mekbay.com>Mekbay</a>-format CSV to populate the Unit Roster. Columns used: <strong style="color:var(--text)">chassis</strong>, <strong style="color:var(--text)">model</strong>, <strong style="color:var(--text)">TP</strong>, <strong style="color:var(--text)">SZ</strong>, <strong style="color:var(--text)">PV</strong>. All other columns are ignored.<br>
-      Type mapping: <span style="font-family:'Share Tech Mono',monospace;font-size:11px">BM → BattleMech &nbsp; CV → Vehicle &nbsp; CI → Infantry Platoon &nbsp; BA → Battle Armor Squad</span>
+      Type mapping: <span style="font-family:'Share Tech Mono',monospace;font-size:11px">BM → BattleMech &nbsp; CV → Vehicle</span>
     </div>
     <div style="margin-bottom:12px">
       <label style="margin-bottom:6px">Import Mode</label>
@@ -1139,7 +1179,7 @@ let data = {
   forceName:'', forceCO:'', forceLevel:'', totalPV:0, pvPercent:100, spPercent:100,
   campaignName:'', startWarchest:0, memorial:'', maxDeployPV:0, miscSpend:0, miscSpendLog:[],
   units:[], namedPilots:[], campaignRows:[], sortieLogs:[], pilotCards:[],
-  archivedCampaigns:[], journalEntries:[]
+  archivedCampaigns:[], journalEntries:[], barracksRows:[]
 };
 
 function loadData() {
@@ -1210,7 +1250,7 @@ function clearAll() {
     forceName:'', forceCO:'', forceLevel:'', totalPV:0, pvPercent:100, spPercent:100,
     campaignName:'', startWarchest:0, memorial:'', maxDeployPV:0, miscSpend:0, miscSpendLog:[],
     units:[], namedPilots:[], campaignRows:[], sortieLogs:[], pilotCards:[],
-    campaignMeta:{}, archivedCampaigns:[], journalEntries:[]
+    campaignMeta:{}, archivedCampaigns:[], journalEntries:[], barracksRows:[]
   };
   renderAll();
   renderForcesPage();
@@ -1238,6 +1278,7 @@ function renderAll() {
   updatePilotPayCalc();
   updateActiveForceLabel();
   renderJournalEntries();
+  renderBarracks();
 }
 
 // ─────────────────────────────────────────
@@ -1296,7 +1337,7 @@ function renderUnits() {
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:16px;">No units added yet.</td></tr>`;
     return;
   }
-  const typeOpts = ['BattleMech','Vehicle','Infantry Platoon','Battle Armor Squad'];
+  const typeOpts = ['BattleMech','Vehicle'];
   tbody.innerHTML = data.units.map((u,i) => `
     <tr draggable="false" data-index="${i}"
         ondragstart="unitDragStart(event,${i})"
@@ -1517,50 +1558,62 @@ function renderMiscSpendLog() {
 function renderDeployment() {
   const tbody = document.getElementById('deployRows');
   if (!tbody) return;
-  const deployed = (data.units||[]).filter(u => u.deploy);
-  const deployedPV = deployed.reduce((s,u) => s + (+u.pv||0), 0);
+
+  const deployedUnits = (data.units||[]).filter(u => u.deploy);
+  const unitsPV = deployedUnits.reduce((s,u) => s + (+u.pv||0), 0);
+
+  // Barracks: each active (non-destroyed) row with deployCount > 0
+  const allBarracks = data.barracksRows||[];
+  const activeBarracks = allBarracks.filter(r => {
+    const dc = +(r.deployCount||0);
+    const destroyed = (r.losses||[false,false,false]).every(Boolean);
+    return dc > 0 && !destroyed;
+  });
+  const barracksPV = activeBarracks.reduce((s,r) => s + (+(r.pv||0) * +(r.deployCount||0)), 0);
+
+  const deployedPV = unitsPV + barracksPV;
   const maxPV = +v('maxDeployPV') || +data.maxDeployPV || 0;
   const pvPercent = +data.pvPercent || 100;
   const adjustedMaxPV = Math.round(maxPV * pvPercent / 100);
   const remaining = adjustedMaxPV - deployedPV;
   const over = remaining < 0;
 
-  // Adjusted max PV display
   const adjDisplay = document.getElementById('deployAdjustedPV');
   if (adjDisplay) {
     adjDisplay.textContent = maxPV > 0 ? adjustedMaxPV : '—';
     adjDisplay.style.color = 'var(--gold)';
   }
-
-  // Deployed / Remaining display
   const display = document.getElementById('deployPVDisplay');
   if (display) {
     display.textContent = maxPV > 0 ? `${deployedPV} / ${remaining}` : `${deployedPV}`;
     display.style.color = over ? 'var(--red)' : 'var(--gold)';
   }
 
-  if (!deployed.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:16px;">No units marked for deployment. Check the Deploy box on the Unit Roster.</td></tr>`;
+  if (!deployedUnits.length && !activeBarracks.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:16px;">No units marked for deployment. Check the Deploy box on the Unit Roster or the Deploy selector in the Barracks.</td></tr>`;
     return;
   }
 
-  // Map unit type → required pilot type
   const UNIT_PILOT_TYPE = {
-    'BattleMech':        'MechWarrior',
-    'Vehicle':           'Vehicle Crew',
-    'Infantry Platoon':  'Infantry',
-    'Battle Armor Squad':'Battle Armor',
+    'BattleMech': 'MechWarrior',
+    'Vehicle':    'Vehicle Crew',
   };
 
-  tbody.innerHTML = deployed.map(u => {
+  const TECH_COLOR = {'IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'};
+
+  // Build a global set of every callsign assigned anywhere (units + barracks)
+  // so each pilot can only appear in one dropdown at a time.
+  const globalAssigned = new Set([
+    ...(data.units||[]).filter(u => u.assignedPilot).map(u => u.assignedPilot),
+    ...allBarracks.filter(r => r.assignedPilot).map(r => r.assignedPilot),
+  ]);
+
+  // ── Unit roster rows ──────────────────────────────────────────────────────
+  const unitRows = deployedUnits.map(u => {
     const unitIndex = data.units.indexOf(u);
     const requiredType = UNIT_PILOT_TYPE[u.type||'BattleMech'];
-    // Build set of pilots assigned to OTHER units
-    const assignedElsewhere = new Set(
-      (data.units||[])
-        .filter((other, idx) => idx !== unitIndex && other.assignedPilot)
-        .map(other => other.assignedPilot)
-    );
+    // All assigned callsigns except this unit's own
+    const assignedElsewhere = new Set([...globalAssigned].filter(c => c !== u.assignedPilot));
     const availableForUnit = (data.pilotCards||[]).filter(p =>
       !p.wounded &&
       p.callsign &&
@@ -1594,20 +1647,85 @@ function renderDeployment() {
       </td>
     </tr>`;
   }).join('');
+
+  // ── Barracks rows ─────────────────────────────────────────────────────────
+  const barracksRows = activeBarracks.map(r => {
+    const barracksIndex = allBarracks.indexOf(r);
+    const dc = +(r.deployCount||1);
+    const pvEach = +(r.pv||0);
+    const pvTotal = pvEach * dc;
+
+    const tbColor = TECH_COLOR[r.techBase||''] || 'var(--text-dim)';
+    const tbLabel = r.techBase ? ` · <span style="color:${tbColor};font-weight:600">${esc(r.techBase)}</span>` : '';
+    const typeLabel = r.type ? esc(r.type) : '<span style="color:var(--text-dim);font-style:italic">Barracks</span>';
+    const typeCell = typeLabel + tbLabel;
+
+    const badge = dc > 1
+      ? ` <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;background:rgba(201,162,39,.15);color:var(--gold);border:1px solid var(--border-gold);padding:2px 6px;vertical-align:middle">×${dc}</span>`
+      : '';
+
+    // Only Battle Armor and Infantry pilots are eligible for barracks units
+    const BARRACKS_TYPES = ['Battle Armor', 'Infantry'];
+    const assignedElsewhereB = new Set([...globalAssigned].filter(c => c !== r.assignedPilot));
+    const eligiblePilots = (data.pilotCards||[]).filter(p =>
+      !p.wounded &&
+      p.callsign &&
+      BARRACKS_TYPES.includes(p.type) &&
+      !assignedElsewhereB.has(p.callsign)
+    );
+    const pilotOptions = eligiblePilots.map(p =>
+      `<option value="${esc(p.callsign)}" ${r.assignedPilot === p.callsign ? 'selected' : ''}>[${esc(p.type === 'Battle Armor' ? 'BA' : 'CI')}] ${esc(p.callsign)}</option>`
+    ).join('');
+
+    return `<tr style="background:rgba(201,162,39,.03)">
+      <td style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 8px">${esc(r.unit)||'—'}${badge}</td>
+      <td style="font-size:12px;padding:6px 8px">${typeCell}</td>
+      <td style="padding:4px 6px">
+        <select onchange="updateBarracksRowPilot(${barracksIndex}, this.value)"
+          style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
+          <option value="">— Unassigned —</option>
+          ${pilotOptions}
+        </select>
+      </td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:14px;padding:6px 8px;text-align:right;color:var(--gold);font-weight:700">${pvTotal}</td>
+      <td style="text-align:center;padding:6px 8px">
+        <label class="check-label" style="justify-content:center;opacity:0.3;pointer-events:none">
+          <input type="checkbox" disabled><span class="checkmark"></span>
+        </label>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Gold divider between roster units and barracks entries
+  const divider = (deployedUnits.length && activeBarracks.length)
+    ? `<tr><td colspan="5" style="padding:0;border-bottom:1px solid var(--border-gold)"></td></tr>`
+    : '';
+
+  tbody.innerHTML = unitRows + divider + barracksRows;
 }
 
 function resetDeployment() {
-  if (!confirm('Reset deployment? This will uncheck all Deploy boxes and unassign all pilots.')) return;
+  if (!confirm('Reset deployment? This will uncheck all Deploy boxes, unassign all pilots, and set all Barracks deploy counts to Off.')) return;
   (data.units||[]).forEach(u => {
     u.deploy = false;
     u.assignedPilot = '';
     u.forceCommander = false;
   });
+  (data.barracksRows||[]).forEach(r => { r.deployCount = '0'; r.assignedPilot = ''; });
   saveData();
   renderUnits();
+  renderBarracks();
   renderDeployment();
   updatePilotPayCalc();
   toast('Deployment reset — all units removed and pilots unassigned.');
+}
+
+function updateBarracksRowPilot(bi, callsign) {
+  if (!data.barracksRows || !data.barracksRows[bi]) return;
+  data.barracksRows[bi].assignedPilot = callsign;
+  saveData();
+  renderDeployment();
+  updatePilotPayCalc();
 }
 
 
@@ -1677,10 +1795,11 @@ function updateCampaignTotals() {
 function updatePilotPayCalc() {
   const maxPay = +data.pilotPayMax||0;
 
-  // Deployed = pilot cards whose callsign is assigned to any unit
-  const assignedCallsigns = new Set(
-    (data.units||[]).map(u => u.assignedPilot).filter(Boolean)
-  );
+  // Deployed = pilot cards whose callsign is assigned to any unit OR any barracks row
+  const assignedCallsigns = new Set([
+    ...(data.units||[]).map(u => u.assignedPilot).filter(Boolean),
+    ...(data.barracksRows||[]).map(r => r.assignedPilot).filter(Boolean),
+  ]);
   const allPilots = (data.pilotCards||[]).filter(p => p.callsign);
   const deployed  = allPilots.filter(p => assignedCallsigns.has(p.callsign));
   const remaining = allPilots.filter(p => !assignedCallsigns.has(p.callsign));
@@ -2309,7 +2428,7 @@ function unitDragEnd(e) {
 // ─────────────────────────────────────────
 // CSV ROSTER IMPORT
 // ─────────────────────────────────────────
-const TP_MAP = { BM: 'BattleMech', CV: 'Vehicle', CI: 'Infantry Platoon', BA: 'Battle Armor Squad' };
+const TP_MAP = { BM: 'BattleMech', CV: 'Vehicle' };
 let _csvMode = 'replace';
 
 function setCsvMode(mode) {
@@ -2905,6 +3024,131 @@ function gistOpenInBrowser() {
   const gistId = localStorage.getItem(GIST_ID_KEY);
   if (!gistId) return;
   window.open(`https://gist.github.com/${gistId}`, '_blank', 'noopener');
+}
+
+// ─────────────────────────────────────────
+// BARRACKS
+// ─────────────────────────────────────────
+function addBarracksRow() {
+  if (!data.barracksRows) data.barracksRows = [];
+  data.barracksRows.push({ unit:'', type:'', tons:'', pv:'', techBase:'', skill:'', assignedPilot:'', losses:[false,false,false], deployCount:'0' });
+  saveData();
+  renderBarracks();
+}
+
+function removeBarracksRow(i) {
+  data.barracksRows.splice(i, 1);
+  saveData();
+  renderBarracks();
+}
+
+function updateBarracksField(i, field, val) {
+  if (!data.barracksRows) return;
+  data.barracksRows[i][field] = val;
+  saveData();
+  if (field === 'deployCount' || field === 'pv') renderDeployment();
+}
+
+function toggleBarracksLoss(i, lossIdx, checked) {
+  if (!data.barracksRows) return;
+  if (!data.barracksRows[i].losses) data.barracksRows[i].losses = [false, false, false];
+  data.barracksRows[i].losses[lossIdx] = checked;
+  // If all three losses are checked, force deploy off
+  const losses = data.barracksRows[i].losses;
+  if (losses[0] && losses[1] && losses[2]) {
+    data.barracksRows[i].deployCount = '0';
+  }
+  saveData();
+  renderBarracks();
+  renderDeployment();
+}
+
+function renderBarracks() {
+  if (!data.barracksRows) data.barracksRows = [];
+  const cont  = document.getElementById('barracks-rows');
+  const empty = document.getElementById('barracks-empty');
+  if (!cont) return;
+
+  if (!data.barracksRows.length) {
+    cont.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const TECH_BASE_COLORS = {'':'var(--text-dim)','IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'};
+
+  cont.innerHTML = data.barracksRows.map((r, i) => {
+    const tbVal  = r.techBase || '';
+    const tbColor = TECH_BASE_COLORS[tbVal] || 'var(--text-dim)';
+    const losses = r.losses || [false, false, false];
+    const destroyed = losses[0] && losses[1] && losses[2];
+    const dc = destroyed ? '0' : (r.deployCount || '0');
+
+    const lossBoxes = [0,1,2].map(li => {
+      const chkClass = losses[li] ? 'barracks-loss-box checked' : 'barracks-loss-box';
+      return `<div class="${chkClass}" onclick="toggleBarracksLoss(${i},${li},${!losses[li]})"></div>`;
+    }).join('');
+
+    const deployCell = destroyed
+      ? `<span title="Unit destroyed — cannot be deployed" style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#880000;opacity:0.7">DESTROYED</span>`
+      : `<select onchange="updateBarracksField(${i},'deployCount',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px;color:${dc!=='0'?'var(--gold)':'var(--text-dim)'};cursor:pointer;text-align:center">
+          <option value="0" ${dc==='0'?'selected':''} style="background:var(--panel);color:var(--text-dim)">— Off —</option>
+          <option value="1" ${dc==='1'?'selected':''} style="background:var(--panel);color:var(--gold)">× 1</option>
+          <option value="2" ${dc==='2'?'selected':''} style="background:var(--panel);color:var(--gold)">× 2</option>
+          <option value="3" ${dc==='3'?'selected':''} style="background:var(--panel);color:var(--gold)">× 3</option>
+        </select>`;
+
+    const rowStyle = destroyed ? 'opacity:0.55;background:rgba(136,0,0,.06)' : '';
+
+    return `<div style="display:grid;grid-template-columns:20px 2fr 110px 60px 70px 90px 80px 120px 100px 36px;gap:0;border-bottom:1px solid rgba(42,48,64,.5);${rowStyle}">
+      <div style="display:flex;align-items:center;justify-content:center">
+        <span class="drag-handle" style="font-size:13px;padding:0 3px">⠿</span>
+      </div>
+      <div style="padding:2px 4px"><input type="text" value="${esc(r.unit)}" placeholder="e.g. Gnome BA"
+        onchange="updateBarracksField(${i},'unit',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text)"></div>
+      <div style="padding:2px 2px;display:flex;align-items:center">
+        <select onchange="updateBarracksField(${i},'type',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${r.type?'var(--text)':'var(--text-dim)'};cursor:pointer">
+          <option value="" style="background:var(--panel);color:var(--text-dim)">— Type —</option>
+          <option value="Infantry Platoon"   ${r.type==='Infantry Platoon'  ?'selected':''} style="background:var(--panel);color:var(--text)">Infantry Platoon</option>
+          <option value="Battle Armor Squad" ${r.type==='Battle Armor Squad'?'selected':''} style="background:var(--panel);color:var(--text)">Battle Armor Squad</option>
+        </select>
+      </div>
+      <div style="padding:2px 4px"><input type="number" value="${r.tons||''}" placeholder="T"
+        onchange="updateBarracksField(${i},'tons',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 2px;color:var(--text);text-align:center"></div>
+      <div style="padding:2px 4px"><input type="number" value="${r.pv||''}" placeholder="PV"
+        onchange="updateBarracksField(${i},'pv',this.value)"
+        style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--gold);text-align:right"></div>
+      <div style="padding:2px 2px;display:flex;align-items:center">
+        <select onchange="updateBarracksField(${i},'techBase',this.value)"
+          oninput="this.style.color=({'':'var(--text-dim)','IS':'var(--text)','Clan':'var(--gold)','Mixed':'#6ab0e8'}[this.value]||'var(--text-dim)')"
+          style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${tbColor};cursor:pointer">
+          <option value="" style="background:var(--panel);color:var(--text-dim)">— Tech —</option>
+          <option value="IS"    ${tbVal==='IS'   ?'selected':''} style="background:var(--panel);color:var(--text)">Inner Sphere</option>
+          <option value="Clan"  ${tbVal==='Clan' ?'selected':''} style="background:var(--panel);color:var(--gold)">Clan</option>
+          <option value="Mixed" ${tbVal==='Mixed'?'selected':''} style="background:var(--panel);color:#6ab0e8">Mixed</option>
+        </select>
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
+        <input type="text" value="${esc(r.skill)}" placeholder="4"
+          onchange="updateBarracksField(${i},'skill',this.value)"
+          style="width:100%;background:transparent;border:none;font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 4px;color:var(--text);text-align:center">
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
+        <div class="barracks-loss-boxes">${lossBoxes}</div>
+      </div>
+      <div style="padding:2px 4px;display:flex;align-items:center;justify-content:center">
+        ${deployCell}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <button onclick="removeBarracksRow(${i})" style="padding:2px 6px;font-size:11px;border:none;background:transparent;color:var(--red);cursor:pointer">&#10005;</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────
