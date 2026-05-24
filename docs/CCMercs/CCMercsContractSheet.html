@@ -1407,7 +1407,9 @@
   <!-- ── BARRACKS (Alpha Strike only) ── -->
   <div class="alpha-only" id="barracks-section">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:8px">
-      <div class="section-title" style="margin:0;flex:1">Barracks</div>
+      <div class="section-title" style="margin:0">Barracks</div>
+      <span id="barracks-pv-total" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)"></span>
+      <div style="flex:1"></div>
       <button class="btn btn-sm" onclick="addBarracksRow()">+ Add Unit</button>
     </div>
 
@@ -1726,12 +1728,21 @@
 
   <div style="max-width:640px;margin:0 auto;padding:0 24px">
     <div class="field">
+      <label>Region</label>
+      <select id="dis-region" onchange="updateDISHalls()"
+        style="width:100%;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:8px 12px;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;outline:none">
+        <option value="">— Select Region —</option>
+        <option value="draconis_reach">Draconis Reach</option>
+        <option value="hinterlands">The Hinterlands</option>
+        <option value="chaos_march">Chaos March</option>
+      </select>
+    </div>
+
+    <div class="field">
       <label>Hiring Hall</label>
       <select id="dis-hiring-hall"
         style="width:100%;background:var(--darker);border:1px solid var(--border-gold);color:var(--gold);padding:8px 12px;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;outline:none">
-        <option value="">— Select Hiring Hall —</option>
-        <option value="proserpina">Proserpina</option>
-        <option value="tybalt">Tybalt</option>
+        <option value="">— Select Region First —</option>
       </select>
     </div>
 
@@ -5088,6 +5099,30 @@ function updateFormationField(fi, ri, field, val) {
     }
     renderFormations();
   }
+  if (field === 'bv') {
+    // Recompute and update total force BV/PV bar without full re-render
+    const classic  = (data.gameMode || 'classic') === 'classic';
+    const formBV   = (data.forceData.formations || []).reduce((s, f) => s + f.rows.reduce((rs, r) => rs + (+r.bv||0), 0), 0);
+    const barrPV   = !classic ? (data.barracksRows||[]).reduce((s, r) => s + (+r.pv||0), 0) : 0;
+    const totalBV  = formBV + barrPV;
+    const scale    = +(data.forceData && data.forceData.scale) || 0;
+    const BV_LIMITS = {1:4500,2:9000,3:13500,4:18000,5:22500,6:27000};
+    const PV_LIMITS = {1:150,2:300,3:450,4:600,5:750,6:900};
+    const limit    = classic ? (BV_LIMITS[scale]||0) : (PV_LIMITS[scale]||0);
+    const over     = limit > 0 && totalBV > limit;
+    const totalBar   = document.getElementById('force-bv-total-bar');
+    const totalLabel = document.getElementById('force-bv-total-label');
+    const totalValue = document.getElementById('force-bv-total-value');
+    if (totalBar)   totalBar.style.display  = totalBV > 0 ? 'flex' : 'none';
+    if (totalLabel) totalLabel.textContent  = `Total Force ${classic ? 'BV' : 'PV'}`;
+    if (totalValue) { totalValue.textContent = fmt(totalBV); totalValue.style.color = over ? 'var(--red)' : 'var(--green-bright)'; }
+    // Also update the formation label BV sum inline
+    const formHeader = document.querySelector(`#force-formations .formation-bv-${fi}`);
+    if (formHeader) {
+      const fBV = data.forceData.formations[fi].rows.reduce((s,r)=>s+(+r.bv||0),0);
+      formHeader.textContent = fBV > 0 ? `(${fmt(fBV)} ${classic?'BV':'PV'})` : '';
+    }
+  }
   if (field === 'omni') {
     renderFormations();
   }
@@ -5229,8 +5264,8 @@ function renderFormations() {
         ${(()=>{
           const bvSum = f.rows.reduce((s,r) => s + (+r.bv||0), 0);
           return bvSum > 0
-            ? `<span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">(${fmt(bvSum)} ${classic?'BV':'PV'})</span>`
-            : '';
+            ? `<span class="formation-bv-${fi}" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">(${fmt(bvSum)} ${classic?'BV':'PV'})</span>`
+            : `<span class="formation-bv-${fi}"></span>`;
         })()}
         <div style="flex:1;min-width:8px"></div>
         <label onclick="event.stopPropagation()" title="Deploy entire formation" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid ${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'var(--gold)' : 'var(--border)'};background:${f.rows.length && f.rows.filter(r=>r.unit&&r.unit.trim()).every(r=>r.deploy) ? 'rgba(201,162,39,.18)' : 'transparent'};transition:all .15s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)">
@@ -5398,7 +5433,15 @@ function renderFormations() {
   const totalValue = document.getElementById('force-bv-total-value');
   if (totalBar) totalBar.style.display = totalBV > 0 ? 'flex' : 'none';
   if (totalLabel) totalLabel.textContent = `Total Force ${classic ? 'BV' : 'PV'}`;
-  if (totalValue) totalValue.textContent = fmt(totalBV);
+  if (totalValue) {
+    const scale    = +(data.forceData && data.forceData.scale) || 0;
+    const BV_LIMITS = {1:4500, 2:9000,  3:13500, 4:18000, 5:22500, 6:27000};
+    const PV_LIMITS = {1:150,  2:300,   3:450,   4:600,   5:750,   6:900};
+    const limit    = classic ? (BV_LIMITS[scale] || 0) : (PV_LIMITS[scale] || 0);
+    const over     = limit > 0 && totalBV > limit;
+    totalValue.textContent  = fmt(totalBV);
+    totalValue.style.color  = over ? 'var(--red)' : 'var(--green-bright)';
+  }
 
   renderMothballed();
 }
@@ -7215,12 +7258,19 @@ function updateBarracksField(i, field, val) {
       const formationBV = (data.forceData && data.forceData.formations || []).reduce((s, f) => s + f.rows.reduce((rs, r) => rs + (+r.bv||0), 0), 0);
       const barracksPV  = (data.barracksRows||[]).reduce((s, r) => s + (+r.pv||0), 0);
       const totalBV     = formationBV + barracksPV;
+      const pvSpan = document.getElementById('barracks-pv-total');
+      if (pvSpan) pvSpan.textContent = barracksPV > 0 ? `(${fmt(barracksPV)} PV)` : '';
       const totalBar    = document.getElementById('force-bv-total-bar');
       const totalLabel  = document.getElementById('force-bv-total-label');
       const totalValue  = document.getElementById('force-bv-total-value');
       if (totalBar)   totalBar.style.display  = totalBV > 0 ? 'flex' : 'none';
       if (totalLabel) totalLabel.textContent  = 'Total Force PV';
-      if (totalValue) totalValue.textContent  = fmt(totalBV);
+      if (totalValue) {
+        const sc = +(data.forceData && data.forceData.scale) || 0;
+        const over = sc > 0 && totalBV > {1:150,2:300,3:450,4:600,5:750,6:900}[sc];
+        totalValue.textContent = fmt(totalBV);
+        totalValue.style.color = over ? 'var(--red)' : 'var(--green-bright)';
+      }
     }
   }
   localStorage.setItem('btMercContract', JSON.stringify(data));
@@ -7339,15 +7389,23 @@ function renderBarracks() {
   // Update total force BV/PV bar (barracks PV counts in Alpha Strike)
   const classic = (data.gameMode || 'classic') === 'classic';
   if (!classic) {
+    const pvSum = (data.barracksRows||[]).reduce((s, r) => s + (+r.pv||0), 0);
+    const pvSpan = document.getElementById('barracks-pv-total');
+    if (pvSpan) pvSpan.textContent = pvSum > 0 ? `(${fmt(pvSum)} PV)` : '';
+
     const formationBV = (data.forceData && data.forceData.formations || []).reduce((s, f) => s + f.rows.reduce((rs, r) => rs + (+r.bv||0), 0), 0);
-    const barracksPV  = (data.barracksRows||[]).reduce((s, r) => s + (+r.pv||0), 0);
-    const totalBV     = formationBV + barracksPV;
+    const totalBV     = formationBV + pvSum;
     const totalBar    = document.getElementById('force-bv-total-bar');
     const totalLabel  = document.getElementById('force-bv-total-label');
     const totalValue  = document.getElementById('force-bv-total-value');
     if (totalBar)   totalBar.style.display  = totalBV > 0 ? 'flex' : 'none';
     if (totalLabel) totalLabel.textContent  = 'Total Force PV';
-    if (totalValue) totalValue.textContent  = fmt(totalBV);
+    if (totalValue) {
+      const sc   = +(data.forceData && data.forceData.scale) || 0;
+      const over = sc > 0 && totalBV > {1:150,2:300,3:450,4:600,5:750,6:900}[sc];
+      totalValue.textContent = fmt(totalBV);
+      totalValue.style.color = over ? 'var(--red)' : 'var(--green-bright)';
+    }
   }
 }
 
@@ -8328,8 +8386,139 @@ function closePilotAbilitiesPopup() {
   if (popup) popup.style.display = 'none';
 }
 
-// ─────────────────────────────────────────
-// D.I.S. CONTRACT GENERATOR
+const DIS_REGION_HALLS = {
+  draconis_reach: [
+    { value: 'proserpina', label: 'Proserpina (+1 to roll)' },
+    { value: 'tybalt',     label: 'Tybalt (−1 to roll)' }
+  ],
+  hinterlands: [
+    { value: 'almotacen', label: 'Almotacen' }
+  ],
+  chaos_march: [
+    { value: 'outreach', label: 'Outreach' }
+  ]
+};
+
+const DIS_HALL_MOD = {
+  proserpina:  1,
+  tybalt:     -1,
+  almotacen:   0,
+  outreach:    0
+};
+
+function updateDISHalls() {
+  const region = (document.getElementById('dis-region')||{}).value || '';
+  const hallEl = document.getElementById('dis-hiring-hall');
+  if (!hallEl) return;
+  const halls = DIS_REGION_HALLS[region] || [];
+  if (!halls.length) {
+    hallEl.innerHTML = '<option value="">— Select Region First —</option>';
+    return;
+  }
+  hallEl.innerHTML = '<option value="">— Select Hiring Hall —</option>' +
+    halls.map(h => `<option value="${h.value}">${h.label}</option>`).join('');
+}
+
+// ─── CHAOS MARCH SYSTEM TABLE ───
+// 1D6 jump group (1-2=1 jump, 3-4=2 jumps, 5-6=3 jumps), then 1D6 for system
+const DIS_CHAOSMARCH_SYSTEMS = [
+  ['Carver','Hall','Elgin','Hsien','Keid','Procyon'],
+  ['Caph','Epsilon Indi','Sheratan','Fletcher','Arboris','Genoa'],
+  ['Ningpo','Pleione','Poznan','Shensi','St. Andre','Tsitsang']
+];
+const DIS_CHAOSMARCH_JUMPS = [1, 2, 3];
+
+const DIS_CHAOSMARCH_TERRAIN = {
+  'Carver':'Wetlands','Hall':'Mountains','Elgin':'Wetlands','Hsien':'Wooded',
+  'Keid':'Urban','Procyon':'Mountains','Caph':'Deserts','Epsilon Indi':'Hills',
+  'Sheratan':'Wooded','Fletcher':'Wetlands (High Atmosphere)','Arboris':'Wooded',
+  'Genoa':'Deserts (Cold)','Ningpo':'Savannahs','Pleione':'Wetlands (Hot)',
+  'Poznan':'Hills','Shensi':'Grasslands','St. Andre':'Deserts (Hot)','Tsitsang':'Grasslands'
+};
+
+const DIS_CHAOSMARCH_OPFOR = {
+  'Carver':       ['Steiner','Steiner','Davion','Davion','Liao','Mercenary'],
+  'Hall':         ['Steiner','Steiner','Steiner','Mercenary','Mercenary','Mercenary'],
+  'Elgin':        ['Liao','Liao','Liao','Liao','Liao','Liao'],
+  'Hsien':        ['Liao','Liao','Liao','Liao','Mercenary','Mercenary'],
+  'Keid':         ['Steiner','Steiner','Mercenary','Mercenary','Mercenary','Mercenary'],
+  'Procyon':      ['Marik','Marik','Marik','Marik','Marik','Marik'],
+  'Caph':         ['Liao','Liao','Marik','Marik','Marik','Marik'],
+  'Epsilon Indi': ['Liao','Liao','Liao','Liao','Mercenary','Mercenary'],
+  'Sheratan':     ['Liao','Liao','Liao','Mercenary','Mercenary','Mercenary'],
+  'Fletcher':     ['Liao','Liao','Mercenary','Mercenary','Mercenary','Mercenary'],
+  'Arboris':      ['Steiner','Steiner','Mercenary','Mercenary','Mercenary','Mercenary'],
+  'Genoa':        ['Liao','Liao','Mercenary','Mercenary','Mercenary','Mercenary'],
+  'Ningpo':       ['Mercenary','Mercenary','Mercenary','Mercenary','Mercenary','Mercenary'],
+  'Pleione':      ['Liao','Liao','Liao','Liao','Liao','Liao'],
+  'Poznan':       ['Davion','Davion','Liao','Liao','Mercenary','Mercenary'],
+  'Shensi':       ['Davion','Davion','Davion','Liao','Liao','Liao'],
+  'St. Andre':    ['Davion','Davion','Mercenary','Mercenary','Mercenary','Mercenary'],
+  'Tsitsang':     ['Liao','Liao','Liao','Mercenary','Mercenary','Mercenary']
+};
+
+// ─── HINTERLANDS SYSTEM TABLE ───
+// Groups by 1D6 jump distance, then 1D6 for specific system (6 per group; 3-jump padded)
+const DIS_HINTERLANDS_SYSTEMS = [
+  ['Zoetermeer','Baker 3','Leskovik','Dompaire','Devin','Antares'],              // 1 jump
+  ['Babaeski','Morges','A Place','Vulcan','Parakoila','Matteo'],                  // 2 jumps
+  ['Bountiful Harvest','Colmar','Koniz','Twycross','Waldorff','Waldorff'],        // 3 jumps (5 systems, pad)
+  ['New Exford','Ballynure','Zanderij','Trell I','Deia','Great X'],               // 4 jumps
+  ['Santana','Blumenort',"Kooken's Pleasure Pit",'Hot Springs','Derf','Timkovichi'], // 5 jumps
+  ['Biuque','Roadside','Clermont','Black Earth','Golandrinas','Sargasso']         // 6 jumps
+];
+
+const DIS_HINTERLANDS_TERRAIN = {
+  'Zoetermeer':'Deserts','Baker 3':'Wooded (Hot)','Leskovik':'Deserts','Dompaire':'Urban',
+  'Devin':'Deserts (EMI)','Antares':'Hills','Babaeski':'Alien','Morges':'Mountains (Cold)',
+  'A Place':'Savannahs','Vulcan':'Deserts','Parakoila':'Urban (Fortified)','Matteo':'Wetlands',
+  'Bountiful Harvest':'Grasslands','Colmar':'Grasslands','Koniz':'Grasslands',
+  'Twycross':'Deserts (Hot)','Waldorff':'Wetlands','New Exford':'Wetlands','Ballynure':'Wooded',
+  'Zanderij':'Wetlands','Trell I':'Mountains (Cold)','Deia':'Savannahs','Great X':'Savannahs',
+  'Santana':'Mountains','Blumenort':'Grasslands',"Kooken's Pleasure Pit":'Urban',
+  'Hot Springs':'Deserts','Derf':'Hills','Timkovichi':'Grasslands','Biuque':'Wooded',
+  'Roadside':'Grasslands','Clermont':'Urban','Black Earth':'Wooded','Golandrinas':'Hills',
+  'Sargasso':'Wetlands'
+};
+
+// D6 OpFor table per system [roll1..roll6]
+const DIS_HINTERLANDS_OPFOR = {
+  'Zoetermeer':         ["Hell's Horses","Hell's Horses","Hell's Horses","Hell's Horses",'Jade Falcon','Mercenary'],
+  'Baker 3':            ['Jade Falcon','Jade Falcon','Jade Falcon',"Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Leskovik':           ['Jade Falcon','Jade Falcon','Jade Falcon',"Hell's Horses",'Mercenary','Mercenary'],
+  'Dompaire':           ['Jade Falcon','Jade Falcon','Jade Falcon',"Hell's Horses",'Mercenary','Mercenary'],
+  'Devin':              ['Jade Falcon','Jade Falcon','Jade Falcon',"Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Antares':            ['Jade Falcon','Jade Falcon','Mercenary',"Hell's Horses",'Mercenary','Lyran Commonwealth'],
+  'Babaeski':           ['Lyran Commonwealth','Jade Falcon','Jade Falcon','Mercenary','Mercenary',"Hell's Horses"],
+  'Morges':             ['Lyran Commonwealth','Jade Falcon','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'A Place':            ['Lyran Commonwealth','Jade Falcon','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Vulcan':             ['Jade Falcon','Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Parakoila':          ['Lyran Commonwealth','Jade Falcon','Jade Falcon','Mercenary','Mercenary',"Hell's Horses"],
+  'Matteo':             ['Lyran Commonwealth','Jade Falcon','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Bountiful Harvest':  ['Lyran Commonwealth','Jade Falcon','Mercenary','Lyran Commonwealth','Mercenary','Lyran Commonwealth'],
+  'Colmar':             ["Hell's Horses",'Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Koniz':              ['Lyran Commonwealth','Jade Falcon','Jade Falcon','Mercenary','Mercenary',"Hell's Horses"],
+  'Twycross':           ['Jade Falcon','Jade Falcon','Jade Falcon',"Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Waldorff':           ['Jade Falcon','Jade Falcon','Jade Falcon',"Hell's Horses",'Mercenary',"Hell's Horses"],
+  'New Exford':         ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Ballynure':          ['Jade Falcon','Jade Falcon','Mercenary','Lyran Commonwealth','Mercenary','Lyran Commonwealth'],
+  'Zanderij':           ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Trell I':            ["Hell's Horses",'Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Deia':               ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Great X':            ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Santana':            ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Blumenort':          ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  "Kooken's Pleasure Pit":['Jade Falcon','Jade Falcon','Jade Falcon','Lyran Commonwealth','Mercenary','Mercenary'],
+  'Hot Springs':        ['Jade Falcon','Jade Falcon',"Hell's Horses",'Lyran Commonwealth','Mercenary','Mercenary'],
+  'Derf':               ["Hell's Horses",'Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary',"Hell's Horses"],
+  'Timkovichi':         ['Jade Falcon','Jade Falcon','Jade Falcon','Lyran Commonwealth','Mercenary','Mercenary'],
+  'Biuque':             ['Jade Falcon','Jade Falcon','Jade Falcon','Lyran Commonwealth','Mercenary','Mercenary'],
+  'Roadside':           ['Jade Falcon','Jade Falcon',"Hell's Horses",'Lyran Commonwealth','Mercenary','Mercenary'],
+  'Clermont':           ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Black Earth':        ['Jade Falcon','Jade Falcon',"Hell's Horses",'Lyran Commonwealth','Mercenary','Mercenary'],
+  'Golandrinas':        ['Jade Falcon','Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary','Mercenary'],
+  'Sargasso':           ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth']
+};
 // ─────────────────────────────────────────
 function d6() { return Math.floor(Math.random() * 6) + 1; }
 function d6r(n) { let s=0; for(let i=0;i<n;i++) s+=d6(); return s; }
@@ -8434,15 +8623,35 @@ function rollSystem(hall) {
     const idx = roll - 1;
     const sys = DIS_TYBALT_SYSTEMS[idx][d6()-1];
     return { system: sys, jumps: DIS_TYBALT_JUMPS[idx] };
-  } else {
-    // Proserpina: rolls 1-2 → index 0; 3 → 1; 4 → 2; 5 → 3; 6 → 4
+  } else if (hall === 'proserpina') {
     const idx = roll <= 2 ? 0 : roll - 2;
     const sys = DIS_PROSERPINA_SYSTEMS[idx][d6()-1];
     return { system: sys, jumps: DIS_PROSERPINA_JUMPS[idx] };
+  } else if (hall === 'almotacen') {
+    const jumpIdx = roll - 1;
+    const sys = DIS_HINTERLANDS_SYSTEMS[jumpIdx][d6()-1];
+    return { system: sys, jumps: jumpIdx + 1 };
+  } else if (hall === 'outreach') {
+    const jumpRoll = roll;
+    const jumpIdx  = jumpRoll <= 2 ? 0 : jumpRoll <= 4 ? 1 : 2;
+    const sys = DIS_CHAOSMARCH_SYSTEMS[jumpIdx][d6()-1];
+    return { system: sys, jumps: DIS_CHAOSMARCH_JUMPS[jumpIdx] };
+  } else {
+    return { system: '—', jumps: 0 };
   }
 }
 
-function rollFaction(systemName) {
+function rollFaction(systemName, hall) {
+  if (hall === 'almotacen') {
+    const opforTable = DIS_HINTERLANDS_OPFOR[systemName];
+    if (opforTable) return opforTable[d6()-1];
+    return '—';
+  }
+  if (hall === 'outreach') {
+    const opforTable = DIS_CHAOSMARCH_OPFOR[systemName];
+    if (opforTable) return opforTable[d6()-1];
+    return '—';
+  }
   const entry = DIS_SYSTEM_TABLE[systemName];
   if (!entry) return '—';
   const r = d6();
@@ -8614,7 +8823,7 @@ function generateDISContract() {
   const hall = (document.getElementById('dis-hiring-hall')||{}).value || '';
   if (!hall) { toast('Select a Hiring Hall first.'); return; }
 
-  const hallMod = hall === 'proserpina' ? 1 : -1;
+  const hallMod = DIS_HALL_MOD[hall] !== undefined ? DIS_HALL_MOD[hall] : 0;
 
   // 1. Contract Type
   const ctRoll = Math.min(13, Math.max(1, d6r(2) + hallMod));
@@ -8649,9 +8858,11 @@ function generateDISContract() {
   const employer = empMap[empRoll];
 
   // 3. System
-  const sysResult = rollSystem(hall);
-  const terrain   = (DIS_SYSTEM_TABLE[sysResult.system] || {}).terrain || '—';
-  const oppFaction = rollFaction(sysResult.system);
+  const sysResult  = rollSystem(hall);
+  const terrain    = DIS_CHAOSMARCH_TERRAIN[sysResult.system]
+    || DIS_HINTERLANDS_TERRAIN[sysResult.system]
+    || (DIS_SYSTEM_TABLE[sysResult.system] || {}).terrain || '—';
+  const oppFaction = rollFaction(sysResult.system, hall);
 
   // 4. Contract Length
   const lengthMap = {Raid:'3 months',Expedition:'3 months',Garrison:'6 months',Invasion:'6 months'};
@@ -8783,7 +8994,7 @@ function generateDISContract() {
         ${row('Employer', employer)}
         ${row('Target System', sysResult.system + ' (' + sysResult.jumps + ' jump' + (sysResult.jumps>1?'s':'') + ')', 'var(--gold)')}
         ${row('Primary Terrain', terrain)}
-        ${row('Opposing Force', oppFaction)}
+        ${row('OpFor Type', oppFaction)}
         ${row('Contract Length', length)}
         <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5);border-top:1px solid rgba(201,162,39,.25);margin-top:2px">
           <div style="width:140px;flex-shrink:0;padding:5px 10px;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);background:rgba(201,162,39,.04)">Terms</div>
