@@ -2640,8 +2640,9 @@ function recalc() {
   const maintGrossPerMonth = (data.atHiringHall && !data.reducedMaintenance) ? 100 : 500 * scale;
   const supportPct = Math.min(100, Math.max(0, +data.supportPct || 0));
   const effectiveSupportPct = data.supportType === 'battle' ? 100 : supportPct;
-  const maintCoveredPerMonth = Math.round(maintGrossPerMonth * (effectiveSupportPct / 100));
-  const maintNetPerMonth = maintGrossPerMonth - maintCoveredPerMonth;
+  // Support percentage does NOT apply to monthly maintenance
+  const maintCoveredPerMonth = 0;
+  const maintNetPerMonth = maintGrossPerMonth;
   const totalMaint = maintNetPerMonth * length;
   const combatBonusPay = Math.round(basePay * (bonus / 100));
   const totalIncome = (basePay * length) + combatBonusPay;
@@ -2660,14 +2661,7 @@ function recalc() {
   }
   const maintEl = document.getElementById('sum-maint');
   if (maintEl) {
-    if (!maintGrossPerMonth) {
-      maintEl.innerHTML = '— SP';
-    } else if (maintCoveredPerMonth) {
-      const coveredLabel = data.supportType === 'battle' ? 'Battle Support' : `${effectiveSupportPct}% covered`;
-      maintEl.innerHTML = `${fmt(maintNetPerMonth)} SP/mo <span style="font-size:11px;color:var(--green-bright)">(${coveredLabel})</span>`;
-    } else {
-      maintEl.innerHTML = `${fmt(maintNetPerMonth)} SP/mo`;
-    }
+    maintEl.innerHTML = maintGrossPerMonth ? `${fmt(maintNetPerMonth)} SP/mo` : '— SP';
   }
   setText('sum-bonus', `${fmt(combatBonusPay)} SP`);
   setText('sum-basepay', (scale && basePayPct) ? `${fmt(basePay)} SP/mo` : '— SP');
