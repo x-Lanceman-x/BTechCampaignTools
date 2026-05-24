@@ -1755,6 +1755,7 @@
 
     <div id="dis-result" style="display:none"></div>
     <div id="dis-intensity" style="display:none;margin-top:18px"></div>
+    <div id="dis-negotiation" style="display:none;margin-top:18px"></div>
     <div id="dis-accept-wrap" style="display:none;text-align:center;margin:20px 0">
       <button class="btn" onclick="acceptDISContract()"
         style="border-color:var(--green);color:var(--green-bright);font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:3px;text-transform:uppercase;padding:12px 40px">
@@ -8661,24 +8662,42 @@ function rollFaction(systemName, hall) {
   return entry.factions[entry.factions.length-1][1];
 }
 
+// Contract Track Table (1D6 → track type by mission category)
+const DIS_TRACK_TABLE = {
+  Raid:      ['Pushback','Breakthrough','Recon','Strike','Objective Raid','Objective Raid'],
+  Expedition:['Recon','Recon','Pursuit','Flank','Strike','Retreat'],
+  Garrison:  ['Pursuit','Meeting Engagement','Recon','Pushback','Strike','Pursuit'],
+  Invasion:  ['Assault','Breakthrough','Flank','Meeting Engagement','Meeting Engagement','Pushback'],
+  Retainer:  ['Meeting Engagement','Strike','Objective Raid','Objective Raid','Strike','Meeting Engagement']
+};
+
+function rollTrackType(contractType) {
+  // Map contract type to table column
+  const col = contractType.startsWith('Expedition') ? 'Expedition'
+    : contractType.startsWith('Garrison')   ? 'Garrison'
+    : contractType === 'Invasion'            ? 'Invasion'
+    : contractType === 'Retainer'            ? 'Retainer'
+    : 'Raid';
+  const tbl = DIS_TRACK_TABLE[col];
+  return tbl ? tbl[d6()-1] : '—';
+}
+
 function generateDISIntensity(contractType, length) {
   // Number of Tracks
   const tRoll = d6r(2);
   let numTracks;
-  if (contractType === 'Raid' || contractType === 'Expedition') {
+  if (contractType === 'Raid' || contractType.startsWith('Expedition')) {
     numTracks = tRoll <= 8 ? 1 : tRoll <= 11 ? 2 : 3;
-  } else if (contractType === 'Garrison') {
+  } else if (contractType.startsWith('Garrison')) {
     numTracks = tRoll <= 4 ? 0 : tRoll <= 6 ? 1 : tRoll <= 8 ? 2 : tRoll === 9 ? 3 : tRoll === 10 ? 4 : 5;
   } else { // Invasion
     numTracks = tRoll <= 5 ? 2 : tRoll <= 7 ? 3 : tRoll <= 9 ? 4 : tRoll <= 11 ? 5 : 6;
   }
 
-  // Clamp to valid columns
   const months = length === '6 months' ? 6 : 3;
   const maxTracks = months === 3 ? 3 : 6;
   const tracksForTable = Math.min(numTracks, maxTracks);
 
-  // Track Intensity Table
   const TI3 = {
     1: ['0-1-0','0-1-0','0-1-0','0-0-1','0-0-1','1-0-0'],
     2: ['0-1-1','0-1-1','0-1-1','1-0-1','0-0-2','0-2-0'],
@@ -8700,11 +8719,28 @@ function generateDISIntensity(contractType, length) {
     intensityPattern = iTbl[tracksForTable][iRoll - 1];
   }
 
-  // Format pattern as labeled months
-  let patternLabel = '—';
+  // Build per-month schedule with track types
+  let scheduleHtml = '—';
   if (intensityPattern !== '—') {
     const parts = intensityPattern.split('-');
-    patternLabel = parts.map((n, i) => `Month ${i+1}: <strong>${n}</strong> track${n!=='1'?'s':''}`).join('  ·  ');
+    const monthRows = parts.map((n, mi) => {
+      const count = +n;
+      if (count === 0) {
+        return `<div style="padding:6px 12px;border-bottom:1px solid rgba(42,48,64,.4);display:flex;gap:8px;align-items:center">
+          <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);min-width:60px">Month ${mi+1}</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-dim)">No tracks</span>
+        </div>`;
+      }
+      const trackTags = Array.from({length:count}, () => {
+        const tt = rollTrackType(contractType);
+        return `<span style="font-family:'Share Tech Mono',monospace;font-size:11px;padding:2px 8px;border:1px solid var(--border);color:var(--text)">${tt}</span>`;
+      }).join(' ');
+      return `<div style="padding:6px 12px;border-bottom:1px solid rgba(42,48,64,.4);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);min-width:60px">Month ${mi+1}</span>
+        ${trackTags}
+      </div>`;
+    }).join('');
+    scheduleHtml = monthRows;
   }
 
   window._disLastTrackCount = numTracks;
@@ -8719,19 +8755,174 @@ function generateDISIntensity(contractType, length) {
         <div style="font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim)">Contract Intensity</div>
       </div>
       <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
-        <div style="width:160px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Mission Type</div>
+        <div style="width:140px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Mission Type</div>
         <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text)">${contractType} &nbsp;·&nbsp; ${length}</div>
       </div>
       <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
-        <div style="width:160px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Tracks</div>
+        <div style="width:140px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">OpFor Type</div>
+        <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text)">${(window._disGeneratedContract && window._disGeneratedContract.oppFaction) || '—'}</div>
+      </div>
+      <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
+        <div style="width:140px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Primary Terrain</div>
+        <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text)">${(window._disGeneratedContract && window._disGeneratedContract.terrain) || '—'}</div>
+      </div>
+      <div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(42,48,64,.5)">
+        <div style="width:140px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Tracks</div>
         <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)">${numTracks}${numTracks === 0 ? ' <span style="font-size:11px;color:var(--text-dim)">(See opposing contract rules)</span>' : ''}</div>
       </div>
-      <div style="display:flex;align-items:stretch">
-        <div style="width:160px;flex-shrink:0;padding:8px 12px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);background:rgba(255,255,255,.02)">Intensity</div>
-        <div style="flex:1;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim)">${tracksForTable > 0 ? patternLabel : '—'}</div>
+      <div style="border-bottom:1px solid rgba(42,48,64,.5)">
+        <div style="padding:6px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(42,48,64,.3)">
+          <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">Monthly Schedule</span>
+        </div>
+        ${scheduleHtml}
       </div>
     </div>`;
   }
+}
+
+// ─────────────────────────────────────────
+// DIS: CONTRACT NEGOTIATION
+// ─────────────────────────────────────────
+// steps[key] = net change (negative=sacrificed, positive=increased)
+// sacrifice bonus: every 2 steps sacrificed = 1 free increase
+// rep cost = max(0, totalPositive - sacrificeBonus)
+
+const DIS_NEG_TERMS = [
+  { key:'pay',       label:'Base Pay',       stateKey:'payStep',   tableKey:'basePay'  },
+  { key:'support',   label:'Support',        stateKey:'suppStep',  tableKey:'support'  },
+  { key:'transport', label:'Transportation', stateKey:'transStep', tableKey:'transport'},
+  { key:'salvage',   label:'Salvage Rights', stateKey:'salvStep',  tableKey:'salvage'  },
+  { key:'command',   label:'Command Rights', stateKey:'cmdStep',   tableKey:'cmdRights'},
+];
+
+function initDISNegotiation() {
+  window._disNeg = { steps: { pay:0, support:0, transport:0, salvage:0, command:0 } };
+  renderDISNegotiation();
+}
+
+function renderDISNegotiation() {
+  const el = document.getElementById('dis-negotiation');
+  if (!el) return;
+  const c = window._disGeneratedContract;
+  if (!c) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+
+  const neg          = window._disNeg;
+  const scale        = +(data.forceData && data.forceData.scale) || 1;
+  const maxRepUsable = 2 * scale;
+  const maxPerTerm   = scale;
+  const maxSacrifice = 4; // 2 exchanges × 2 steps
+
+  let totalRep = 0;
+  (data.ledger||[]).forEach(r => { totalRep += +r.rep || 0; });
+  const baseRep = Math.max(1, totalRep);
+
+  const steps          = neg.steps;
+  const totalSacrificed = Object.values(steps).reduce((s,v) => s + (v < 0 ? -v : 0), 0);
+  const totalIncreased  = Object.values(steps).reduce((s,v) => s + (v > 0 ?  v : 0), 0);
+  const sacrificeBonus  = Math.floor(totalSacrificed / 2);
+  const repSpent        = Math.max(0, totalIncreased - sacrificeBonus);
+  const repAvailable    = Math.min(baseRep, maxRepUsable);
+
+  const rows = DIS_NEG_TERMS.map(t => {
+    const baseStep  = c[t.stateKey];
+    const delta     = steps[t.key] || 0;
+    const finalStep = Math.max(1, Math.min(17, baseStep + delta));
+    const finalVal  = stepVal(t.tableKey, finalStep);
+
+    const canInc = delta < maxPerTerm && finalStep < 17 && repSpent < repAvailable;
+    const canDec = totalSacrificed < maxSacrifice && finalStep > 1;
+
+    const valColor   = delta > 0 ? 'var(--green-bright)' : delta < 0 ? 'var(--red)' : 'var(--text)';
+    const deltaLabel = delta > 0
+      ? `<span style="color:var(--green-bright);font-size:10px;font-family:\'Share Tech Mono\',monospace">+${delta}</span>`
+      : delta < 0
+      ? `<span style="color:var(--red);font-size:10px;font-family:\'Share Tech Mono\',monospace">${delta}</span>`
+      : '';
+
+    return `<div style="display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(42,48,64,.5);padding:7px 0">
+      <div style="width:130px;font-family:\'Oswald\',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)">${t.label}</div>
+      <div style="flex:1;font-family:\'Share Tech Mono\',monospace;font-size:12px;font-weight:700;color:${valColor}">${finalVal}</div>
+      <div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text-dim);min-width:52px;text-align:center">Step ${finalStep} ${deltaLabel}</div>
+      <button onclick="disNegStep(\'${t.key}\',-1)" title="Sacrifice this step (2 here = +1 free elsewhere)"
+        ${!canDec?'disabled':''} style="background:transparent;border:1px solid ${canDec?'var(--red)':'rgba(204,34,51,.2)'};color:${canDec?'var(--red)':'rgba(204,34,51,.25)'};width:26px;height:26px;cursor:${canDec?'pointer':'default'};font-size:14px;line-height:1">−</button>
+      <button onclick="disNegStep(\'${t.key}\',1)" title="Spend 1 Reputation to increase by 1 step"
+        ${!canInc?'disabled':''} style="background:transparent;border:1px solid ${canInc?'var(--green)':'rgba(42,122,74,.2)'};color:${canInc?'var(--green-bright)':'rgba(42,122,74,.25)'};width:26px;height:26px;cursor:${canInc?'pointer':'default'};font-size:14px;line-height:1">+</button>
+    </div>`;
+  }).join('');
+
+  const repColor = repSpent > repAvailable ? 'var(--red)' : repSpent > 0 ? 'var(--gold)' : 'var(--text-dim)';
+
+  el.innerHTML = `<div style="border:1px solid var(--border);background:var(--panel2)">
+    <div style="padding:10px 14px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)">
+      <div style="font-family:\'Oswald\',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--text-dim)">Negotiate Terms</div>
+    </div>
+    <div style="padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-family:\'Oswald\',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Reputation</span>
+        <span style="font-family:\'Share Tech Mono\',monospace;font-size:16px;font-weight:700;color:var(--gold)">${baseRep}</span>
+        <span style="color:var(--text-dim);font-size:11px">(max ${maxRepUsable} at Scale ${scale})</span>
+        <span style="font-family:\'Oswald\',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-left:8px">Rep Spent</span>
+        <span style="font-family:\'Share Tech Mono\',monospace;font-size:16px;font-weight:700;color:${repColor}">${repSpent} / ${repAvailable}</span>
+        ${sacrificeBonus > 0 ? `<span style="font-family:\'Oswald\',sans-serif;font-size:10px;color:var(--green-bright);letter-spacing:1px">(+${sacrificeBonus} from sacrifice)</span>` : ''}
+      </div>
+      <div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text-dim);margin-bottom:10px;letter-spacing:1px">
+        − = Sacrifice (2 here = 1 free increase, max 2×) &nbsp;|&nbsp; + = Spend 1 Rep &nbsp;|&nbsp; Max ±${maxPerTerm} per term
+      </div>
+      ${rows}
+      <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm" onclick="resetDISNegotiation()" style="color:var(--text-dim);border-color:var(--border)">Reset</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function disNegStep(key, delta) {
+  const neg = window._disNeg;
+  const c   = window._disGeneratedContract;
+  if (!neg || !c) return;
+
+  const scale        = +(data.forceData && data.forceData.scale) || 1;
+  const maxPerTerm   = scale;
+  const maxRepUsable = 2 * scale;
+  const maxSacrifice = 4;
+
+  let totalRep = 0;
+  (data.ledger||[]).forEach(r => { totalRep += +r.rep || 0; });
+  const baseRep = Math.max(1, totalRep);
+
+  const steps     = neg.steps;
+  const current   = steps[key] || 0;
+  const newVal    = current + delta;
+  const termT     = DIS_NEG_TERMS.find(t => t.key === key);
+  const finalStep = c[termT.stateKey] + newVal;
+
+  if (finalStep < 1 || finalStep > 17) return;
+  if (newVal > maxPerTerm)  { toast(`Maximum +${maxPerTerm} steps per term at Scale ${scale}.`); return; }
+
+  if (delta < 0) {
+    const totalSac = Object.values(steps).reduce((s,v) => s + (v < 0 ? -v : 0), 0) + 1;
+    if (totalSac > maxSacrifice) { toast('Maximum 2 sacrifice exchanges (4 steps total).'); return; }
+  }
+
+  if (delta > 0) {
+    const newSteps   = {...steps, [key]: newVal};
+    const totalSac   = Object.values(newSteps).reduce((s,v) => s + (v < 0 ? -v : 0), 0);
+    const totalInc   = Object.values(newSteps).reduce((s,v) => s + (v > 0 ?  v : 0), 0);
+    const newRepSpent = Math.max(0, totalInc - Math.floor(totalSac / 2));
+    if (newRepSpent > Math.min(baseRep, maxRepUsable)) {
+      toast(`Not enough Reputation — max ${Math.min(baseRep, maxRepUsable)} usable at Scale ${scale}.`);
+      return;
+    }
+  }
+
+  steps[key] = newVal;
+  renderDISNegotiation();
+}
+
+function resetDISNegotiation() {
+  window._disNeg = { steps: { pay:0, support:0, transport:0, salvage:0, command:0 } };
+  renderDISNegotiation();
 }
 
 // ─────────────────────────────────────────
@@ -8751,7 +8942,16 @@ function acceptDISContract() {
       pct: (pct || '').replace('%', '').trim()
     };
   }
-  const supp = parseSupport(stepVal('support', c.suppStep));
+  // Apply negotiated adjustments
+  const neg = window._disNeg || { steps: { pay:0, support:0, transport:0, salvage:0, command:0 } };
+  const st  = neg.steps;
+  const finalPayStep   = Math.max(1,Math.min(17, c.payStep   + (st.pay||0)));
+  const finalSuppStep  = Math.max(1,Math.min(17, c.suppStep  + (st.support||0)));
+  const finalTransStep = Math.max(1,Math.min(17, c.transStep + (st.transport||0)));
+  const finalSalvStep  = Math.max(1,Math.min(17, c.salvStep  + (st.salvage||0)));
+  const finalCmdStep   = Math.max(1,Math.min(17, c.cmdStep   + (st.command||0)));
+
+  const supp = parseSupport(stepVal('support', finalSuppStep));
 
   // Build new contract fields
   collectFormValues();
@@ -8770,18 +8970,18 @@ function acceptDISContract() {
     data.ledger = endingRep ? [{month:'1',event:'Carried Rep',cost:'',cover:'',paid:'',rep:String(endingRep)}] : [];
   }
 
-  // Fill contract fields
+  // Fill contract fields with negotiated values
   data.contractName  = c.contactRef;
   data.actionType    = c.contractType + (c.subType ? ' — ' + c.subType : '');
   data.contractLength= c.length.replace(' months','').trim();
   data.employer      = c.employer;
   data.planet        = c.system;
-  data.basePay       = stepVal('basePay', c.payStep).replace('%','');
+  data.basePay       = stepVal('basePay', finalPayStep).replace('%','');
   data.supportType   = supp.type;
   data.supportPct    = supp.pct;
-  data.transportPct  = stepVal('transport', c.transStep).replace('%','');
-  data.salvagePct    = stepVal('salvage', c.salvStep).replace('%','').replace('Exchange','0');
-  data.command       = stepVal('cmdRights', c.cmdStep);
+  data.transportPct  = stepVal('transport', finalTransStep).replace('%','');
+  data.salvagePct    = stepVal('salvage', finalSalvStep).replace('%','').replace('Exchange','0');
+  data.command       = stepVal('cmdRights', finalCmdStep);
   data.contractStatus= 'active';
   // Reset open work rows
   ['repairRows','rearmRows','omniRows','assetRows','salvageRows','healRows','healBARows',
@@ -8814,6 +9014,9 @@ function acceptDISContract() {
     intensityPattern: window._disLastIntensityPattern
   });
   window._disGeneratedContract = null;
+  window._disNeg = null;
+  const negEl = document.getElementById('dis-negotiation');
+  if (negEl) negEl.style.display = 'none';
   document.getElementById('dis-accept-wrap').style.display = 'none';
   const exportWrap = document.getElementById('dis-export-wrap');
   if (exportWrap) exportWrap.style.display = 'block';
@@ -8980,6 +9183,9 @@ function generateDISContract() {
   const result = document.getElementById('dis-result');
   document.getElementById('dis-intensity').style.display = 'none';
   document.getElementById('dis-accept-wrap').style.display = 'none';
+  const negEl2 = document.getElementById('dis-negotiation');
+  if (negEl2) negEl2.style.display = 'none';
+  window._disNeg = null;
 
   result.style.display = 'block';
   result.innerHTML = `
@@ -9038,6 +9244,9 @@ function generateDISContract() {
     oppPayStep, oppSuppStep, oppTransStep, oppSalvStep, oppCmdStep,
     contactRef, oppContactRef
   };
+
+  // Init negotiation panel
+  initDISNegotiation();
 
   // Show Accept button — intensity revealed after acceptance
   const acceptWrap = document.getElementById('dis-accept-wrap');
