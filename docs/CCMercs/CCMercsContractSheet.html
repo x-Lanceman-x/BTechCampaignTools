@@ -8719,12 +8719,16 @@ function generateDISIntensity(contractType, length) {
     intensityPattern = iTbl[tracksForTable][iRoll - 1];
   }
 
-  // Build per-month schedule with track types
+  // Build per-month schedule, capping total to numTracks
   let scheduleHtml = '—';
   if (intensityPattern !== '—') {
     const parts = intensityPattern.split('-');
+    let remaining = numTracks;
     const monthRows = parts.map((n, mi) => {
-      const count = +n;
+      const rawCount = +n;
+      const count = Math.min(rawCount, remaining);
+      remaining = Math.max(0, remaining - count);
+
       if (count === 0) {
         return `<div style="padding:6px 12px;border-bottom:1px solid rgba(42,48,64,.4);display:flex;gap:8px;align-items:center">
           <span style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);min-width:60px">Month ${mi+1}</span>

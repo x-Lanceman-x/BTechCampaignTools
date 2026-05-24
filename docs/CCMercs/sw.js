@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bt-ccmercsv-33'; // bump this
+const CACHE_NAME = 'bt-ccmercsv-34'; // bump this
 
 self.addEventListener('install', event => {
   self.skipWaiting(); // no pre-caching, let fetch handler build cache naturally
