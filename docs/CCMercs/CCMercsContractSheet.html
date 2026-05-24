@@ -2131,7 +2131,7 @@ let data = {
   dropShipHired: false, dropShipUpgrades:[], dropShipImage:'',
   noBsp: false, handicapOption: false, verboseMode: false,
   atHiringHall: false, hiringHallRating: '', reducedMaintenance: false,
-  regularMilitary: false, deployTrackScale: '',
+  regularMilitary: false, deployTrackScale: '', contractIntensityHtml: '',
   clanTechMult: 1.5
 };
 
@@ -2605,6 +2605,17 @@ function renderAll() {
   if (reducedEl) reducedEl.checked = !!data.reducedMaintenance;
   const clanMultEl = document.getElementById('clan-tech-mult');
   if (clanMultEl) clanMultEl.value = data.clanTechMult !== undefined ? data.clanTechMult : 1.5;
+  // Restore contract intensity panel
+  const intensitySection = document.getElementById('contract-intensity-section');
+  const intensityPanel   = document.getElementById('contract-intensity-panel');
+  if (intensitySection && intensityPanel) {
+    if (data.contractIntensityHtml) {
+      intensityPanel.innerHTML = data.contractIntensityHtml;
+      intensitySection.style.display = 'block';
+    } else {
+      intensitySection.style.display = 'none';
+    }
+  }
   recalc();
 }
 
@@ -4636,6 +4647,7 @@ function newContract() {
   data.employer = '';
   data.planet = '';
   data.deployTrackScale = '';
+  data.contractIntensityHtml = '';
   data.ledger = endingRep !== 0
     ? [{month:'1', event:'Carried Rep', cost:'', cover:'', paid:'', rep: String(endingRep)}]
     : [];
@@ -8998,11 +9010,11 @@ function acceptDISContract() {
     const intensitySection = document.getElementById('contract-intensity-section');
     const intensityPanel   = document.getElementById('contract-intensity-panel');
     if (intensitySection && intensityPanel) {
-      // Re-use the stored intensity HTML from the DIS pane
       const disIntensityEl = document.getElementById('dis-intensity');
       if (disIntensityEl && disIntensityEl.innerHTML) {
         intensityPanel.innerHTML = disIntensityEl.innerHTML;
         intensitySection.style.display = 'block';
+        data.contractIntensityHtml = disIntensityEl.innerHTML;
       }
     }
   } catch(e) { console.error('Contract intensity copy error:', e); }
