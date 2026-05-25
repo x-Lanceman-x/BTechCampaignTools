@@ -948,6 +948,7 @@
     <button class="btn btn-sm" onclick="addLedgerRow()" style="margin-left:auto">+ Add Entry</button>
     <button class="btn btn-sm" onclick="payMonthlyMaintenance()" style="border-color:var(--red);color:var(--red)" title="Add a Monthly Maintenance cost entry from contract values">Pay Monthly Maintenance</button>
     <button class="btn btn-sm" onclick="payTravel()" style="border-color:#6ab0e8;color:#6ab0e8" title="Add a Travel cost entry from contract values">Pay Travel</button>
+    <button class="btn btn-sm" onclick="startNewMonth()" style="border-color:var(--gold);color:var(--gold)" title="Advance to the next month and add a divider entry">⟳ Start New Month</button>
   </div>
 
   <div class="warchest-display" style="margin-bottom:16px">
@@ -1272,6 +1273,7 @@
   <!-- Heal Wounds -->
   <div class="panel">
     <div class="ref-title">&#10084; Heal Wounds (30 SP per wound)</div>
+    <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:8px;font-style:italic">Add one line per wound.</div>
     <div style="display:grid;grid-template-columns:2fr 80px 120px;gap:8px;margin-bottom:6px">
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Pilot</div>
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Wounds</div>
@@ -2132,6 +2134,7 @@ let data = {
   noBsp: false, handicapOption: false, verboseMode: false,
   atHiringHall: false, hiringHallRating: '', reducedMaintenance: false,
   regularMilitary: false, deployTrackScale: '', contractIntensityHtml: '',
+  currentMonth: 1,
   clanTechMult: 1.5
 };
 
@@ -2762,8 +2765,21 @@ function updateBonusHighlight() {
 // ─────────────────────────────────────────
 // LEDGER
 // ─────────────────────────────────────────
+function getCurrentMonth() {
+  if (!data.currentMonth) data.currentMonth = 1;
+  return data.currentMonth;
+}
+
+function startNewMonth() {
+  data.currentMonth = (data.currentMonth || 1) + 1;
+  const m = data.currentMonth;
+  data.ledger.push({ month: String(m), event: '— START OF MONTH ' + m + ' —', cost:'', cover:'', paid:'', rep:'' });
+  save();
+  renderLedger();
+}
+
 function addLedgerRow() {
-  data.ledger.push({month:'', event:'', cost:'', cover:'', paid:'', rep:''});
+  data.ledger.push({month: String(getCurrentMonth()), event:'', cost:'', cover:'', paid:'', rep:''});
   renderLedger(); save();
 }
 
@@ -2784,7 +2800,7 @@ function payMonthlyMaintenance() {
   const basePay = Math.round(500 * scale * ((+data.basePay || 0) / 100));
   const dropShipSurcharge = data.dropShipHired ? 100 : 0;
   data.ledger.push({
-    month: '',
+    month: String(getCurrentMonth()),
     event: 'Monthly Maintenance' + (dropShipSurcharge ? ' (incl. DropShip)' : ''),
     cost:  String(maintGross + dropShipSurcharge),
     cover: '',
@@ -2826,7 +2842,7 @@ function payTravel() {
   const overage       = Math.max(0, travelCovered - reducedGross);
 
   data.ledger.push({
-    month: '',
+    month: String(getCurrentMonth()),
     event: 'Travel' + dropShipNote,
     cost:  String(reducedGross),
     cover: travelCovered ? String(travelCovered) : '',
@@ -3366,15 +3382,15 @@ function sendSalvageToLedger() {
       const units = (data.salvageRows||[]).filter(r => r.unit).map(r => r.unit).join(', ');
       const prefix = units ? `Salvage (${units})` : 'Salvage';
       if (rounded >= 0) {
-        data.ledger.push({month:'', event: prefix, cost:'', cover:'', paid: String(rounded), rep:''});
+        data.ledger.push({month: String(getCurrentMonth()), event: prefix, cost:'', cover:'', paid: String(rounded), rep:''});
       } else {
-        data.ledger.push({month:'', event: `${prefix} — net cost`, cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+        data.ledger.push({month: String(getCurrentMonth()), event: `${prefix} — net cost`, cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
       }
     } else {
       if (rounded >= 0) {
-        data.ledger.push({month:'', event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
+        data.ledger.push({month: String(getCurrentMonth()), event:'Salvage', cost:'', cover:'', paid: String(rounded), rep:''});
       } else {
-        data.ledger.push({month:'', event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
+        data.ledger.push({month: String(getCurrentMonth()), event:'Salvage (net cost)', cost: String(Math.abs(rounded)), cover:'', paid:'', rep:''});
       }
     }
   } else if (hasClaimed) {
@@ -3382,7 +3398,7 @@ function sendSalvageToLedger() {
     const label = claimedNames
       ? `Unit Salvaged — Fully Covered By Contract (${claimedNames})`
       : 'Unit Salvaged — Fully Covered By Contract';
-    data.ledger.push({month:'', event: label, cost:'', cover:'', paid:'', rep:''});
+    data.ledger.push({month: String(getCurrentMonth()), event: label, cost:'', cover:'', paid:'', rep:''});
   }
   // Add claimed units to first open formation slots on Force Record
   const claimedUnits = (data.salvageRows||[]).filter(r => r.claim && r.unit && r.unit.trim());
@@ -3918,7 +3934,7 @@ function sendMedicalToLedger() {
 
   data.healRows = [];
   data.healBARows = [];
-  if (totalMedical) data.ledger.push({month:'', event: medEventLabel, cost: String(totalMedical), cover:'', paid:'', rep:''});
+  if (totalMedical) data.ledger.push({month: String(getCurrentMonth()), event: medEventLabel, cost: String(totalMedical), cover:'', paid:'', rep:''});
   renderLedger();
   renderHealRows();
   renderHealBARows();
@@ -4045,7 +4061,7 @@ function sendSimTrainingToLedger() {
 
   data.simTrainingRows = [];
   if (total) {
-    data.ledger.push({ month:'', event: simLabel, cost: String(total), cover:'', paid:'', rep:'' });
+    data.ledger.push({ month: String(getCurrentMonth()), event: simLabel, cost: String(total), cover:'', paid:'', rep:'' });
   }
   renderLedger();
   renderSimTrainingRows();
@@ -4139,7 +4155,7 @@ function sendBFLToLedger() {
     bflEventLabel = 'Battlefield Loss Compensation';
   }
   data.bflRows = [];
-  data.ledger.push({month:'', event: bflEventLabel, cost:'', cover:'', paid: String(total), rep:''});
+  data.ledger.push({month: String(getCurrentMonth()), event: bflEventLabel, cost:'', cover:'', paid: String(total), rep:''});
   renderLedger();
   renderBFLRows();
   save();
@@ -4252,7 +4268,7 @@ function sendPersonnelToLedger() {
   } else {
     personnelEventLabel = 'Personnel & Training';
   }
-  if (total) data.ledger.push({month:'', event: personnelEventLabel, cost:String(total), cover:'', paid:'', rep:''});
+  if (total) data.ledger.push({month: String(getCurrentMonth()), event: personnelEventLabel, cost:String(total), cover:'', paid:'', rep:''});
   renderLedger();
   renderHireRows();
   renderHireNamelessRows();
@@ -4341,15 +4357,15 @@ function sendAssetToLedger() {
     }).filter(Boolean);
     const verboseLabel = verboseParts.join('; ') || (net > 0 ? 'Unit Sales' : 'Unit Purchases');
     if (net > 0) {
-      data.ledger.push({month:'', event: verboseLabel, cost:'', cover:'', paid: String(Math.round(net)), rep:''});
+      data.ledger.push({month: String(getCurrentMonth()), event: verboseLabel, cost:'', cover:'', paid: String(Math.round(net)), rep:''});
     } else {
-      data.ledger.push({month:'', event: verboseLabel, cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
+      data.ledger.push({month: String(getCurrentMonth()), event: verboseLabel, cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
     }
   } else {
     if (net > 0) {
-      data.ledger.push({month:'', event:'Unit Sales', cost:'', cover:'', paid: String(Math.round(net)), rep:''});
+      data.ledger.push({month: String(getCurrentMonth()), event:'Unit Sales', cost:'', cover:'', paid: String(Math.round(net)), rep:''});
     } else {
-      data.ledger.push({month:'', event:'Unit Purchases', cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
+      data.ledger.push({month: String(getCurrentMonth()), event:'Unit Purchases', cost: String(Math.round(Math.abs(net))), cover:'', paid:'', rep:''});
     }
   }
   data.assetRows = [];
@@ -4467,7 +4483,7 @@ function sendRepairRearmToLedger() {
   data.repairRows = [];
   data.rearmRows  = [];
   data.omniRows   = [];
-  data.ledger.push({month:'', event: eventLabel, cost: String(Math.round(total)), cover:'', paid:'', rep:''});
+  data.ledger.push({month: String(getCurrentMonth()), event: eventLabel, cost: String(Math.round(total)), cover:'', paid:'', rep:''});
   renderLedger();
   renderRepairRows();
   renderRearmRows();
@@ -4648,6 +4664,7 @@ function newContract() {
   data.planet = '';
   data.deployTrackScale = '';
   data.contractIntensityHtml = '';
+  data.currentMonth = 1;
   data.ledger = endingRep !== 0
     ? [{month:'1', event:'Carried Rep', cost:'', cover:'', paid:'', rep: String(endingRep)}]
     : [];
@@ -5730,7 +5747,7 @@ function completeDeployment() {
 
   // Add ledger entry (net of pilot pay)
   if (!data.ledger) data.ledger = [];
-  data.ledger.push({ month:'', event, cost:'', cover:'', paid: netPaid ? String(netPaid) : '', rep:'' });
+  data.ledger.push({ month: String(getCurrentMonth()), event, cost:'', cover:'', paid: netPaid ? String(netPaid) : '', rep:'' });
 
   // Distribute pilot pay among deployed non-temporary Named Pilots
   // BA Commanders get a half-share; remainder goes to non-BA pilots or back to ledger
@@ -5767,7 +5784,7 @@ function completeDeployment() {
           data.pilotCards[idx].totalSP = (+data.pilotCards[idx].totalSP || 0) + baShare;
         });
         if (refund > 0) {
-          data.ledger.push({ month:'', event:`${event} \u2014 Pilot Pay Refund (BA only)`, cost:'', cover:'', paid: String(refund), rep:'' });
+          data.ledger.push({ month: String(getCurrentMonth()), event:`${event} \u2014 Pilot Pay Refund (BA only)`, cost:'', cover:'', paid: String(refund), rep:'' });
         }
       } else {
         // Mixed — BA gets half-share, non-BA split the remainder
@@ -7437,7 +7454,7 @@ function hireTemporaryPilot(i) {
 
   // Write to ledger
   const event = `Hire Named Pilot — ${name}`;
-  data.ledger.push({ month:'', event, cost: String(cost), cover:'', paid:'', rep:'' });
+  data.ledger.push({ month: String(getCurrentMonth()), event, cost: String(cost), cover:'', paid:'', rep:'' });
 
   // Mark as permanent and clear legacy flag
   pc.temporary        = false;
@@ -8290,7 +8307,7 @@ function purchaseDropShipUpgrade(id) {
   const usedTons = data.dropShipUpgrades.reduce((s, i) => { const x=DS_UPGRADES.find(d=>d.id===i); return s+(x?x.tons:0); }, 0);
   if (usedTons + u.tons > 600) { toast(`Not enough tonnage — need ${u.tons} tons but only ${600-usedTons} available.`); return; }
   data.dropShipUpgrades.push(id);
-  data.ledger.push({ month:'', event:`DropShip Upgrade: ${u.name}`, cost:String(u.cost), cover:'', paid:'', rep:'' });
+  data.ledger.push({ month: String(getCurrentMonth()), event:`DropShip Upgrade: ${u.name}`, cost:String(u.cost), cover:'', paid:'', rep:'' });
   renderLedger();
   renderDropShip();
   save();
@@ -8314,7 +8331,7 @@ function hireDropShip() {
   if (data.dropShipHired) { toast('A DropShip is already under contract.'); return; }
   if (!confirm('Hire a DropShip for 1,000 SP?\n\nThis will deduct 1,000 SP from the Warchest and add a Monthly Maintenance surcharge of 100 SP.')) return;
   data.dropShipHired = true;
-  data.ledger.push({ month:'', event:'Hired DropShip', cost:'1000', cover:'', paid:'', rep:'' });
+  data.ledger.push({ month: String(getCurrentMonth()), event:'Hired DropShip', cost:'1000', cover:'', paid:'', rep:'' });
   renderLedger();
   renderDropShip();
   save();
