@@ -8416,7 +8416,8 @@ const DIS_REGION_HALLS = {
     { value: 'tybalt',     label: 'Tybalt (−1 to roll)' }
   ],
   hinterlands: [
-    { value: 'almotacen', label: 'Almotacen' }
+    { value: 'almotacen',  label: 'Almotacen' },
+    { value: 'kandersteg', label: 'Kandersteg' }
   ],
   chaos_march: [
     { value: 'outreach', label: 'Outreach' }
@@ -8427,6 +8428,7 @@ const DIS_HALL_MOD = {
   proserpina:  1,
   tybalt:     -1,
   almotacen:   0,
+  kandersteg:  0,
   outreach:    0
 };
 
@@ -8481,16 +8483,80 @@ const DIS_CHAOSMARCH_OPFOR = {
   'Tsitsang':     ['Liao','Liao','Liao','Mercenary','Mercenary','Mercenary']
 };
 
-// ─── HINTERLANDS SYSTEM TABLE ───
-// Groups by 1D6 jump distance, then 1D6 for specific system (6 per group; 3-jump padded)
+// Fix Almotacen 3-jump group to include Romulus (replacing padded Waldorff duplicate)
 const DIS_HINTERLANDS_SYSTEMS = [
-  ['Zoetermeer','Baker 3','Leskovik','Dompaire','Devin','Antares'],              // 1 jump
-  ['Babaeski','Morges','A Place','Vulcan','Parakoila','Matteo'],                  // 2 jumps
-  ['Bountiful Harvest','Colmar','Koniz','Twycross','Waldorff','Waldorff'],        // 3 jumps (5 systems, pad)
-  ['New Exford','Ballynure','Zanderij','Trell I','Deia','Great X'],               // 4 jumps
-  ['Santana','Blumenort',"Kooken's Pleasure Pit",'Hot Springs','Derf','Timkovichi'], // 5 jumps
-  ['Biuque','Roadside','Clermont','Black Earth','Golandrinas','Sargasso']         // 6 jumps
+  ['Zoetermeer','Baker 3','Leskovik','Dompaire','Devin','Antares'],
+  ['Babaeski','Morges','A Place','Vulcan','Parakoila','Matteo'],
+  ['Bountiful Harvest','Colmar','Koniz','Twycross','Waldorff','Romulus'],
+  ['New Exford','Ballynure','Zanderij','Trell I','Deia','Great X'],
+  ['Santana','Blumenort',"Kooken's Pleasure Pit",'Hot Springs','Derf','Timkovichi'],
+  ['Biuque','Roadside','Clermont','Black Earth','Golandrinas','Sargasso']
 ];
+
+// ─── KANDERSTEG SYSTEM TABLE ───
+// Uses 2D6 for jump band, then 1D6 (and sometimes a second 1D6) for the specific system
+// Bands with many systems use an intermediate subgroup roll
+function rollKanderstegSystem() {
+  const roll2d6 = d6r(2);
+  const r1 = d6(), r2 = d6();
+
+  if (roll2d6 === 2) {
+    return { system: 'New Exford', jumps: 1 };
+  }
+  if (roll2d6 === 3) {
+    // 2 jumps: Bountiful Harvest, Koniz, Ballynure
+    const sys = r1 <= 2 ? 'Bountiful Harvest' : r1 <= 4 ? 'Koniz' : 'Ballynure';
+    return { system: sys, jumps: 2 };
+  }
+  if (roll2d6 <= 5) {
+    // 3 jumps: Morges, A Place
+    return { system: r1 <= 3 ? 'Morges' : 'A Place', jumps: 3 };
+  }
+  if (roll2d6 <= 7) {
+    // 4 jumps: 7 systems → 2 subgroups
+    // Subgroup A (1–3): Baker 3, Dompaire, Antares
+    // Subgroup B (4–6): Babaeski, Matteo, Colmar, Zanderij
+    if (r1 <= 3) {
+      const sys = r2 <= 2 ? 'Baker 3' : r2 <= 4 ? 'Dompaire' : 'Antares';
+      return { system: sys, jumps: 4 };
+    } else {
+      const sys = r2 <= 2 ? 'Babaeski' : r2 <= 4 ? 'Matteo' : r2 === 5 ? 'Colmar' : 'Zanderij';
+      return { system: sys, jumps: 4 };
+    }
+  }
+  if (roll2d6 <= 9) {
+    // 5 jumps: 9 systems → 3 subgroups of 3
+    // Sub 1–2: Zoetermeer, Leskovik, Devin
+    // Sub 3–4: Vulcan, Parakoila, Deia
+    // Sub 5–6: Great X, Santana, Timkovichi
+    let trio;
+    if (r1 <= 2)      trio = ['Zoetermeer','Leskovik','Devin'];
+    else if (r1 <= 4) trio = ['Vulcan','Parakoila','Deia'];
+    else              trio = ['Great X','Santana','Timkovichi'];
+    const sys = r2 <= 2 ? trio[0] : r2 <= 4 ? trio[1] : trio[2];
+    return { system: sys, jumps: 5 };
+  }
+  if (roll2d6 === 10) {
+    // 6 jumps: Twycross, Waldorff, Blumenort, Kooken's Pleasure Pit, Biuque, Sargasso
+    const opts = ['Twycross','Waldorff','Blumenort',"Kooken's Pleasure Pit",'Biuque','Sargasso'];
+    return { system: opts[r1 - 1], jumps: 6 };
+  }
+  if (roll2d6 === 11) {
+    // 7 jumps: Trell I, Hot Springs, Romulus
+    const sys = r1 <= 2 ? 'Trell I' : r1 <= 4 ? 'Hot Springs' : 'Romulus';
+    return { system: sys, jumps: 7 };
+  }
+  // roll2d6 === 12
+  // 8 jumps: 5 systems → 2 subgroups
+  // Sub 1–3: Derf, Roadside, Clermont
+  // Sub 4–6: Black Earth, Golandrinas
+  if (r1 <= 3) {
+    const sys = r2 <= 2 ? 'Derf' : r2 <= 4 ? 'Roadside' : 'Clermont';
+    return { system: sys, jumps: 8 };
+  } else {
+    return { system: r2 <= 3 ? 'Black Earth' : 'Golandrinas', jumps: 8 };
+  }
+}
 
 const DIS_HINTERLANDS_TERRAIN = {
   'Zoetermeer':'Deserts','Baker 3':'Wooded (Hot)','Leskovik':'Deserts','Dompaire':'Urban',
@@ -8502,7 +8568,8 @@ const DIS_HINTERLANDS_TERRAIN = {
   'Santana':'Mountains','Blumenort':'Grasslands',"Kooken's Pleasure Pit":'Urban',
   'Hot Springs':'Deserts','Derf':'Hills','Timkovichi':'Grasslands','Biuque':'Wooded',
   'Roadside':'Grasslands','Clermont':'Urban','Black Earth':'Wooded','Golandrinas':'Hills',
-  'Sargasso':'Wetlands'
+  'Sargasso':'Wetlands',
+  'Romulus':'Deserts'
 };
 
 // D6 OpFor table per system [roll1..roll6]
@@ -8541,7 +8608,8 @@ const DIS_HINTERLANDS_OPFOR = {
   'Clermont':           ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
   'Black Earth':        ['Jade Falcon','Jade Falcon',"Hell's Horses",'Lyran Commonwealth','Mercenary','Mercenary'],
   'Golandrinas':        ['Jade Falcon','Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary','Mercenary'],
-  'Sargasso':           ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth']
+  'Sargasso':           ['Lyran Commonwealth','Lyran Commonwealth','Jade Falcon','Mercenary','Mercenary','Lyran Commonwealth'],
+  'Romulus':            ["Hell's Horses",'Jade Falcon',"Hell's Horses","Hell's Horses",'Mercenary',"Hell's Horses"]
 };
 // ─────────────────────────────────────────
 function d6() { return Math.floor(Math.random() * 6) + 1; }
@@ -8655,6 +8723,8 @@ function rollSystem(hall) {
     const jumpIdx = roll - 1;
     const sys = DIS_HINTERLANDS_SYSTEMS[jumpIdx][d6()-1];
     return { system: sys, jumps: jumpIdx + 1 };
+  } else if (hall === 'kandersteg') {
+    return rollKanderstegSystem();
   } else if (hall === 'outreach') {
     const jumpRoll = roll;
     const jumpIdx  = jumpRoll <= 2 ? 0 : jumpRoll <= 4 ? 1 : 2;
@@ -8666,7 +8736,7 @@ function rollSystem(hall) {
 }
 
 function rollFaction(systemName, hall) {
-  if (hall === 'almotacen') {
+  if (hall === 'almotacen' || hall === 'kandersteg') {
     const opforTable = DIS_HINTERLANDS_OPFOR[systemName];
     if (opforTable) return opforTable[d6()-1];
     return '—';
