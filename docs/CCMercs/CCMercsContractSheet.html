@@ -1871,7 +1871,8 @@
     Sync your data to a private GitHub Gist so it's accessible across browsers and devices.
     Requires a GitHub <strong style="color:var(--text)">Personal Access Token</strong> with <code style="background:rgba(255,255,255,.06);padding:1px 5px;font-family:'Share Tech Mono',monospace">gist</code> scope.<br>
     Generate one at <strong style="color:var(--gold)">github.com → Settings → Developer settings → Personal access tokens</strong>
-    (fine-grained: enable <em>Gists</em> read+write; or classic: enable <em>gist</em> scope).
+    (fine-grained: enable <em>Gists</em> read+write; or classic: enable <em>gist</em> scope).<br>
+    <span style="color:var(--red);font-size:11px">If you see "Bad credentials": your token may have expired, or was created without the Gist scope. Generate a new one — fine-grained tokens expire by default.</span>
   </div>
   <div class="grid-2" style="gap:16px;margin-bottom:12px">
     <div class="field">
@@ -4560,8 +4561,8 @@ function updateSupportTotals() {
   (data.healRows||[]).forEach(() => { healGross += 30; }); // 30 SP per row (1 wound each)
   const healNet = Math.ceil(healGross * (1 - supportDiscount));
   setText('heal-total', `${fmt(healNet)} SP`);
-  updateMedicalGrandTotal();
   setBadge('heal-support-badge', supportActive, supportLabel);
+  renderHealBARows(); // re-render BA rows so per-row costs reflect new support %
 
   // repair, rearm & omni section total (repair+rearm discounted, omni not)
   const repairRearmGross = Math.ceil(repairGross + rearmGross + omniTotal);
@@ -9453,7 +9454,7 @@ function gistStatus(msg, type) {
 }
 
 async function gistSave() {
-  const token = localStorage.getItem('btGistToken') || '';
+  const token = (localStorage.getItem('btGistToken') || '').trim();
   if (!token) { gistStatus('⚠ Enter a Personal Access Token first.', 'err'); return; }
   gistStatus('Saving…', 'loading');
   save();
@@ -9489,13 +9490,13 @@ async function gistSave() {
     if (gistId) {
       res  = await fetch(`https://api.github.com/gists/${gistId}`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
     } else {
       res  = await fetch('https://api.github.com/gists', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
     }
@@ -9513,18 +9514,23 @@ async function gistSave() {
 }
 
 async function gistLoad() {
-  const token  = localStorage.getItem('btGistToken') || '';
-  const gistId = localStorage.getItem('btGistId')    || '';
+  const token  = (localStorage.getItem('btGistToken') || '').trim();
+  // Strip full URL if user pasted it — extract just the ID (last path segment)
+  const rawId  = (localStorage.getItem('btGistId') || '').trim();
+  const gistId = rawId.split('/').pop();
   if (!token)  { gistStatus('⚠ Enter a Personal Access Token first.', 'err'); return; }
   if (!gistId) { gistStatus('⚠ No Gist ID saved — save to Gist first.', 'err'); return; }
   if (!confirm('Load data from GitHub Gist? This will overwrite your current local data.')) return;
   gistStatus('Loading…', 'loading');
   try {
     const res  = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `token ${token}` }
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.message || res.status);
+    if (!res.ok) {
+      const hint = res.status === 401 ? ' — Check your Personal Access Token has the "gist" scope.' : '';
+      throw new Error((json.message || res.status) + hint);
+    }
     const file = json.files['btmercs-data.json'];
     if (!file) throw new Error('btmercs-data.json not found in Gist.');
     const rawContent = file.truncated
