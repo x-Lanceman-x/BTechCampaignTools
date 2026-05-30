@@ -1302,7 +1302,10 @@
     <button class="btn btn-sm" onclick="addHealBARow()" style="margin-top:8px">+ Add Entry</button>
     <div class="balance-bar" style="margin-top:14px">
       <span class="balance-bar-label">Total BA Medical Cost</span>
-      <span class="balance-bar-val" id="heal-ba-total">0 SP</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="heal-ba-support-badge" style="display:none;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-bright);border:1px solid var(--green-bright);padding:2px 7px;opacity:0.85"></span>
+        <span class="balance-bar-val" id="heal-ba-total">0 SP</span>
+      </div>
     </div>
   </div>
 
@@ -3812,6 +3815,17 @@ function renderHealBARows() {
   }).join('');
 
   if (totalEl) totalEl.textContent = `${fmt(grandTotal)} SP`;
+  const baBadgeEl = document.getElementById('heal-ba-support-badge');
+  if (baBadgeEl) {
+    const supportActive = effectiveSupportPct > 0;
+    const supportLabel  = data.supportType === 'battle' ? 'Battle Support (100% covered)' : `${effectiveSupportPct}% covered by employer`;
+    if (supportActive && grandTotal !== Math.ceil((data.healBARows||[]).reduce((s,r)=>(s+(+r.troopers||0)*10),0))) {
+      baBadgeEl.textContent = supportLabel;
+      baBadgeEl.style.display = '';
+    } else {
+      baBadgeEl.style.display = 'none';
+    }
+  }
   updateMedicalGrandTotal();
 }
 
