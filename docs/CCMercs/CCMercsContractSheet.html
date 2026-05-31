@@ -1007,12 +1007,7 @@
   <!-- Repair Calculator -->
   <div class="panel panel-gold">
     <div class="ref-title">&#9881; Repair Costs</div>
-    <div style="display:grid;grid-template-columns:2fr 1fr 80px 160px;gap:8px;margin-bottom:6px">
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit / Description</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Type</div>
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
-    </div>
+    <div id="repair-header"></div>
     <div id="repair-rows"></div>
     <button class="btn btn-sm" onclick="addRepairRow()" style="margin-top:8px">+ Add Unit</button>
     <div id="mech-bay-warn" style="display:none;margin-top:8px;padding:8px 12px;border:1px solid var(--red);background:rgba(204,34,51,.08);color:var(--red);font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px"></div>
@@ -2928,7 +2923,7 @@ const REPAIR_TYPES = [
 ];
 
 function addRepairRow() {
-  data.repairRows.push({unit:'', tons:'', type:'armor'});
+  data.repairRows.push({unit:'', tons:'', type:'armor', exempt:false});
   renderRepairRows(); save();
 }
 function removeRepairRow(i) { data.repairRows.splice(i,1); renderRepairRows(); save(); }
@@ -2936,6 +2931,18 @@ function updateRepairRow(i, field, val) { data.repairRows[i][field]=val; renderR
 
 function renderRepairRows() {
   const cont = document.getElementById('repair-rows');
+  const headerEl = document.getElementById('repair-header');
+  const hasMechBayHdr = (data.dropShipUpgrades||[]).some(id => id === 'mech_bay_standard' || id === 'mech_bay_deluxe');
+  if (headerEl) {
+    headerEl.innerHTML = `<div style="display:grid;grid-template-columns:2fr 1fr 80px ${hasMechBayHdr?'110px ':''} 90px 160px;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600">Unit / Description</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Tons</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Type</div>
+      ${hasMechBayHdr?`<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Mech Bay</div>`:''}
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:center">Exempt</div>
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-weight:600;text-align:right">Cost (SP)</div>
+    </div>`;
+  }
   if (!data.repairRows.length) {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
     updateSupportTotals(); return;
@@ -2975,7 +2982,7 @@ function renderRepairRows() {
           return `<option value="${esc(u.unit)}" ${r.unit===u.unit?'selected':''}>${esc(u.unit)}${statusTag}</option>`;
         }).join('')
       : `<option value="${esc(r.unit)}">${esc(r.unit)||'No Force units'}</option>`;
-    return `<div style="display:grid;grid-template-columns:2fr 1fr 80px ${hasMechBay?'110px ':''} 160px;gap:8px;align-items:center;margin-bottom:6px">
+    return `<div style="display:grid;grid-template-columns:2fr 1fr 80px ${hasMechBay?'110px ':''} 90px 160px;gap:8px;align-items:center;margin-bottom:6px">
       <select onchange="selectRepairUnit(${i},this.value)" style="background:var(--darker);border:1px solid var(--border);color:var(--text);padding:6px;font-family:'Share Tech Mono',monospace;font-size:12px;width:100%">
         ${unitOptions}
       </select>
@@ -2984,6 +2991,10 @@ function renderRepairRows() {
         ${REPAIR_TYPES.map(t=>`<option value="${t.key}" ${r.type===t.key?'selected':''}>${t.label}</option>`).join('')}
       </select>
       ${hasMechBay ? `<div>${mechBayCell}</div>` : ''}
+      <label title="Use this for repairing units exempt from contract support such as salvaged units or units damaged on another contract." style="display:flex;align-items:center;gap:5px;cursor:pointer;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:${r.exempt?'var(--gold)':'var(--text-dim)'};justify-content:center">
+        <input type="checkbox" ${r.exempt?'checked':''} onchange="updateRepairRow(${i},'exempt',this.checked)" style="accent-color:var(--gold);cursor:pointer">
+        Exempt
+      </label>
       <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-wrap:nowrap">
         ${techBadge}${halfBadge}${mechBayBadge}
         <span style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;font-weight:700;white-space:nowrap">${fmt(cost)} SP</span>
@@ -4432,11 +4443,17 @@ function sendRepairRearmToLedger() {
     return;
   }
 
-  let repairTotal = 0;
+  const HALF_COST_TYPES_L = ['Combat Vehicle','Support Vehicle','Battle Armor'];
+  const hasMechBayL = (data.dropShipUpgrades||[]).some(id => id === 'mech_bay_standard' || id === 'mech_bay_deluxe');
+  let repairTotal = 0, repairExemptTotal = 0;
   (data.repairRows||[]).forEach(r => {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
     const techMult = (r.techBase === 'Clan' || r.techBase === 'Mixed') ? (data.clanTechMult !== undefined ? data.clanTechMult : 1.5) : 1;
-    repairTotal += (+r.tons||0) * mt.mult * techMult;
+    const unitTypeMult = HALF_COST_TYPES_L.includes(r.unitType) ? 0.5 : 1;
+    const mechBayMult  = (hasMechBayL && r.inMechBay === true) ? 0.8 : 1;
+    const rowTotal = (+r.tons||0) * mt.mult * techMult * unitTypeMult * mechBayMult;
+    if (r.exempt) repairExemptTotal += rowTotal;
+    else repairTotal += rowTotal;
   });
   let rearmTotal = 0;
   const rearmLedgerClassic = (data.gameMode || 'classic') === 'classic';
@@ -4447,8 +4464,8 @@ function sendRepairRearmToLedger() {
   });
   let omniTotal = 0;
   (data.omniRows||[]).forEach(r => { omniTotal += (+r.tons||0) / 4; });
-  // apply support discount + hall discount to repair & rearm, hall discount to omni
-  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
+  // support discount + hall to non-exempt repair & rearm; hall only to exempt repair & omni
+  const total = Math.ceil(repairTotal*(1-supportDiscount)*(1-hallRepairDiscount) + repairExemptTotal*(1-hallRepairDiscount) + rearmTotal*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
   const hasRows = (data.repairRows||[]).length || (data.rearmRows||[]).length || (data.omniRows||[]).length;
   if (!hasRows) { toast('No repair/rearm costs to send.'); return; }
 
@@ -4537,15 +4554,19 @@ function updateSupportTotals() {
   // repair
   const HALF_COST_TYPES = ['Combat Vehicle','Support Vehicle','Battle Armor'];
   const hasMechBay = (data.dropShipUpgrades||[]).some(id => id === 'mech_bay_standard' || id === 'mech_bay_deluxe');
-  let repairGross = 0;
+  let repairGross = 0, repairExemptGross = 0;
   (data.repairRows||[]).forEach(r => {
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
     const techMult     = (r.techBase === 'Clan' || r.techBase === 'Mixed') ? (data.clanTechMult !== undefined ? data.clanTechMult : 1.5) : 1;
     const unitTypeMult = HALF_COST_TYPES.includes(r.unitType) ? 0.5 : 1;
     const mechBayMult  = (hasMechBay && r.inMechBay === true) ? 0.8 : 1;
-    repairGross += (+r.tons||0) * mt.mult * techMult * unitTypeMult * mechBayMult;
+    const rowGross = (+r.tons||0) * mt.mult * techMult * unitTypeMult * mechBayMult;
+    if (r.exempt) repairExemptGross += rowGross;
+    else repairGross += rowGross;
   });
-  const repairNet = Math.ceil(repairGross * (1 - supportDiscount) * (1 - hallRepairDiscount));
+  // Support discount only applies to non-exempt repairs; hall discount applies to both
+  const repairNet = Math.ceil(repairGross * (1 - supportDiscount) * (1 - hallRepairDiscount))
+                  + Math.ceil(repairExemptGross * (1 - hallRepairDiscount));
   setText('repair-total', `${fmt(repairNet)} SP`);
   setBadge('repair-support-badge', supportActive, supportLabel);
   setBadge('repair-hall-badge', hallRepairDiscount > 0, hallBadgeText);
@@ -4579,8 +4600,8 @@ function updateSupportTotals() {
   renderHealBARows(); // re-render BA rows so per-row costs reflect new support %
 
   // repair, rearm & omni section total (repair+rearm discounted, omni not)
-  const repairRearmGross = Math.ceil(repairGross + rearmGross + omniTotal);
-  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
+  const repairRearmGross = Math.ceil(repairGross + repairExemptGross + rearmGross + omniTotal);
+  const repairRearmNet = Math.ceil(repairGross*(1-supportDiscount)*(1-hallRepairDiscount) + repairExemptGross*(1-hallRepairDiscount) + rearmGross*(1-supportDiscount)*(1-hallRepairDiscount) + omniTotal*(1-hallRepairDiscount));
   setText('support-repair-rearm-total', `${fmt(repairRearmNet)} SP`);
   // show strikethrough gross and label when discount applies
   const grossLineEl = document.getElementById('repair-rearm-gross-line');
