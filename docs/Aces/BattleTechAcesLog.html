@@ -1229,9 +1229,17 @@ function importData(input) {
   reader.onload = e => {
     try {
       const imported = JSON.parse(e.target.result);
-      data = {...data, ...imported};
+      // Handle both new format (activeData/savedForces) and legacy (bare object)
+      if (imported.activeData && imported.savedForces !== undefined) {
+        data = { ...data, ...imported.activeData };
+        saveForces(imported.savedForces);
+        setActiveForceId(imported.activeForceId || null);
+      } else {
+        data = { ...data, ...imported };
+      }
       localStorage.setItem('btAcesData', JSON.stringify(data));
       renderAll();
+      renderForcesPage();
       toast('Data imported successfully!');
     } catch(err) {
       toast('Import failed — invalid JSON file.');
