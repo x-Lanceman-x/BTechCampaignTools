@@ -8663,7 +8663,9 @@ function stepVal(table, step) {
   const s = Math.max(1, Math.min(17, step));
   if (table === 'basePay') return (DIS_STEPS.basePay[s] || 50) + '%';
   if (table === 'cmdRights') {
+    // Search downward first; if nothing found, snap upward toward 7
     for (let i = s; i >= 1; i--) if (DIS_STEPS.cmdRights[i]) return DIS_STEPS.cmdRights[i];
+    for (let i = s + 1; i <= 17; i++) if (DIS_STEPS.cmdRights[i]) return DIS_STEPS.cmdRights[i];
     return '—';
   }
   if (table === 'salvage') {
@@ -8677,8 +8679,9 @@ function stepVal(table, step) {
     return 'None';
   }
   if (table === 'transport') {
-    if (s < 5) return '0%';
-    for (let i = s; i >= 5; i--) if (DIS_STEPS.transport[i]) return DIS_STEPS.transport[i];
+    // Search downward first; if below minimum, snap upward toward 7
+    for (let i = s; i >= 1; i--) if (DIS_STEPS.transport[i]) return DIS_STEPS.transport[i];
+    for (let i = s + 1; i <= 17; i++) if (DIS_STEPS.transport[i]) return DIS_STEPS.transport[i];
     return '0%';
   }
   return '—';
