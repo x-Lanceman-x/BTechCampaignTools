@@ -5978,8 +5978,11 @@ function renderDeployment() {
       } else if (!totalBsp) {
         bspEl.textContent = '—'; bspEl.style.color = 'var(--text-dim)';
       } else if (!classic) {
-        bspEl.textContent = fmt(totalBsp);
-        bspEl.style.color = 'var(--gold)';
+        // Alpha Strike — base + bonus from unused PV (1 BSP per 3 PV under scale limit), capped at base
+        const unusedPvEmpty = Math.max(0, trackBvAvail - 0);
+        const bonusBspEmpty = Math.min(Math.floor(unusedPvEmpty / 3), totalBsp);
+        bspEl.textContent = fmt(totalBsp + bonusBspEmpty);
+        bspEl.style.color = bonusBspEmpty > 0 ? 'var(--green-bright)' : 'var(--gold)';
       } else {
         bspEl.textContent = fmt(totalBsp * 2);
         bspEl.style.color = 'var(--green-bright)';
@@ -6010,7 +6013,7 @@ function renderDeployment() {
 
   if (totalEl) totalEl.textContent = fmt(totalBv);
 
-  // Deployable BSP: Classic gets bonus from unused BV; Alpha Strike gets base only
+  // Deployable BSP: both modes get bonus from unused BV/PV under scale limit
   if (bspEl) {
     if (noBsp) {
       bspEl.textContent = 'N/A';
@@ -6019,9 +6022,12 @@ function renderDeployment() {
       bspEl.textContent = '—';
       bspEl.style.color = 'var(--text-dim)';
     } else if (!classic) {
-      // Alpha Strike — no bonus BSP
-      bspEl.textContent = fmt(totalBsp);
-      bspEl.style.color = 'var(--gold)';
+      // Alpha Strike — base + bonus from unused PV (1 BSP per 3 PV under scale limit), capped at base
+      const unusedPv = Math.max(0, trackBvAvail - totalBv);
+      const bonusBsp = Math.min(Math.floor(unusedPv / 3), totalBsp);
+      const deployableBsp = totalBsp + bonusBsp;
+      bspEl.textContent = fmt(deployableBsp);
+      bspEl.style.color = bonusBsp > 0 ? 'var(--green-bright)' : 'var(--gold)';
     } else {
       // Classic — base + bonus from unused BV (1 BSP per 20 unused BV), capped at base
       const unusedBv = Math.max(0, trackBvAvail - totalBv);
