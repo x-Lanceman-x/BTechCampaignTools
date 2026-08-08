@@ -1386,6 +1386,9 @@
       <div style="width:1px;height:20px;background:var(--border-gold)"></div>
       <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)">Warchest</span>
       <span style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--gold)" id="force-warchest-display">0 SP</span>
+      <div style="width:1px;height:20px;background:var(--border-gold)"></div>
+      <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)" title="Total BV (or Total PV x40) of all units, including Mothballed and Barracks, + SP in Warchest + SP earned by Named Pilots">Mercenary Rating</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;color:var(--gold)" id="force-merc-rating-display">0</span>
     </div>
   </div>
 
@@ -5076,6 +5079,36 @@ function updateForceCalc() {
     wEl.textContent = `${fmt(balance)} SP`;
     wEl.style.color = balance >= 0 ? 'var(--gold)' : 'var(--red)';
   }
+  updateMercRating();
+}
+
+// Mercenary Rating = Total BV of ALL units incl. Mothballed & Barracks (Classic)
+//                     OR Total PV of ALL units incl. Mothballed & Barracks x 40 (Alpha Strike)
+//                     + SP in Warchest + SP earned by Named Pilots
+function updateMercRating() {
+  const classic = (data.gameMode || 'classic') === 'classic';
+  const formationBV = ((data.forceData && data.forceData.formations) || [])
+    .reduce((s, f) => s + f.rows.reduce((rs, r) => rs + (+r.bv || 0), 0), 0);
+  const barracksPV = !classic ? (data.barracksRows || []).reduce((s, r) => s + (+r.pv || 0), 0) : 0;
+  const mothballedBV = ((data.forceData && data.forceData.mothballedRows) || [])
+    .reduce((s, r) => s + (+r.bv || 0), 0);
+  const totalBV = formationBV + barracksPV + mothballedBV;
+
+  let warchest = +data.startWarchest || 0;
+  (data.ledger || []).forEach(row => {
+    warchest += (+row.paid || 0) + (+row.cover || 0) - (+row.cost || 0);
+  });
+
+  const namedPilotSP = (data.pilotCards || [])
+    .filter(p => !p.temporary)
+    .reduce((s, p) => s + (+p.totalSP || 0), 0);
+
+  // Classic (BV) uses the raw BV total; Alpha Strike (PV) multiplies by 40
+  const forceScore = classic ? totalBV : (totalBV * 40);
+  const rating = forceScore + warchest + namedPilotSP;
+
+  const el = document.getElementById('force-merc-rating-display');
+  if (el) el.textContent = fmt(rating);
 }
 
 function renderForce() {
@@ -5182,6 +5215,7 @@ function updateFormationField(fi, ri, field, val) {
       const fBV = data.forceData.formations[fi].rows.reduce((s,r)=>s+(+r.bv||0),0);
       formHeader.textContent = fBV > 0 ? `(${fmt(fBV)} ${classic?'BV':'PV'})` : '';
     }
+    updateMercRating();
   }
   if (field === 'omni') {
     renderFormations();
@@ -5523,6 +5557,7 @@ function removeMothballedRow(i) {
 function updateMothballedField(i, field, val) {
   if (!data.forceData.mothballedRows[i]) return;
   data.forceData.mothballedRows[i][field] = val;
+  if (field === 'bv') updateMercRating();
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
 
@@ -5614,6 +5649,7 @@ function renderMothballed() {
     <div style="margin-top:4px;font-size:11px;color:var(--text-dim);letter-spacing:1px;line-height:1.7;font-style:italic">
       Contract Unit Limit is 3 times the Contract Scale. Units are selected prior to Contract starting, all others should be mothballed.
     </div>`;
+  updateMercRating();
 }
 
 function dragBarracksPanelOver(event) {
@@ -7338,6 +7374,7 @@ function updateBarracksField(i, field, val) {
         totalValue.style.color = over ? 'var(--red)' : 'var(--green-bright)';
       }
     }
+    updateMercRating();
   }
   localStorage.setItem('btMercContract', JSON.stringify(data));
 }
@@ -7365,6 +7402,7 @@ function renderBarracks() {
   if (!data.barracksRows.length) {
     cont.innerHTML = '';
     if (empty) empty.style.display = 'block';
+    updateMercRating();
     return;
   }
   if (empty) empty.style.display = 'none';
@@ -7473,6 +7511,7 @@ function renderBarracks() {
       totalValue.style.color = over ? 'var(--red)' : 'var(--green-bright)';
     }
   }
+  updateMercRating();
 }
 
 function hireTemporaryPilot(i) {
@@ -8072,6 +8111,7 @@ function renderPilotCards() {
     </div>`;
   }).join('');
   renderPilotRoster();
+  updateMercRating();
 }
 
 // ─────────────────────────────────────────
