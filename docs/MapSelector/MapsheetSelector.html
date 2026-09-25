@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mapsheet Selector</title>
+<style>
+  :root{
+    --bg:#12161a;
+    --panel:#1a2027;
+    --panel-2:#20272f;
+    --line:#323d47;
+    --text:#e7e5dd;
+    --dim:#8b96a1;
+    --accent:#c98a3a;
+    --accent-dim:#7a5a2c;
+    --die:#3a4855;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 48px;
+  }
+  .wrap{width:100%;max-width:640px;}
+  header{margin-bottom:24px;}
+  h1{
+    font-family:"Segoe UI",system-ui,sans-serif;
+    font-size:1.5rem;
+    font-weight:700;
+    letter-spacing:0.03em;
+    margin:0 0 4px;
+    color:var(--text);
+  }
+  .sub{color:var(--dim);font-size:0.9rem;}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px;
+    margin-bottom:16px;
+  }
+
+  .controls{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;}
+  .field label{display:block;font-size:0.78rem;color:var(--dim);margin-bottom:6px;letter-spacing:0.02em;}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel-2);}
+  .stepper button{
+    background:none;border:none;color:var(--text);width:36px;height:38px;
+    font-size:1.1rem;cursor:pointer;
+  }
+  .stepper button:hover{background:var(--line);}
+  .stepper input{
+    width:48px;text-align:center;background:none;border:none;color:var(--text);
+    font-size:1rem;font-variant-numeric:tabular-nums;
+  }
+  .stepper input:focus{outline:none;}
+
+  .roll-btn{
+    background:var(--accent);
+    color:#1a1206;
+    border:none;
+    border-radius:4px;
+    padding:10px 22px;
+    font-size:0.95rem;
+    font-weight:700;
+    letter-spacing:0.03em;
+    cursor:pointer;
+    transition:transform 0.08s ease, background 0.15s ease;
+  }
+  .roll-btn:hover{background:#dc9a48;}
+  .roll-btn:active{transform:scale(0.97);}
+  .roll-btn:disabled{opacity:0.5;cursor:default;transform:none;}
+
+  .results{min-height:4px;}
+  .terrain-row{
+    display:flex;align-items:center;gap:14px;
+    padding-bottom:16px;margin-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .dice-pair{display:flex;gap:6px;flex-shrink:0;}
+  .die{
+    width:38px;height:38px;border-radius:6px;
+    background:var(--die);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;
+    color:var(--text);
+  }
+  .terrain-info{flex:1;}
+  .terrain-info .label{font-size:0.72rem;color:var(--dim);letter-spacing:0.04em;margin-bottom:2px;}
+  .terrain-info .value{font-size:1.15rem;font-weight:700;color:var(--accent);}
+  .terrain-info .value .roll-total{color:var(--dim);font-weight:400;font-size:0.85rem;margin-left:6px;}
+
+  .map-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .map-list li{
+    display:flex;align-items:center;gap:12px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:10px 12px;
+  }
+  .map-list .die{width:32px;height:32px;font-size:0.95rem;}
+  .map-idx{color:var(--dim);font-size:0.78rem;width:20px;flex-shrink:0;}
+  .map-name{flex:1;font-size:0.95rem;}
+  .map-src{color:var(--dim);font-size:0.82rem;font-style:italic;flex-shrink:0;}
+
+  .empty{color:var(--dim);font-size:0.9rem;padding:8px 0;}
+
+  footer{color:var(--dim);font-size:0.78rem;text-align:center;margin-top:8px;}
+
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f2efe9; --panel:#ffffff; --panel-2:#f5f2eb; --line:#ddd6c7;
+      --text:#2a2620; --dim:#7a7364; --accent:#b8722a; --die:#e6e0d2;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mapsheet Selector</h1>
+    <div class="sub">Roll for terrain, then draw your mapsheets.</div>
+  </header>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="field">
+        <label for="count">Number of maps</label>
+        <div class="stepper">
+          <button type="button" id="dec" aria-label="Decrease">–</button>
+          <input type="text" id="count" value="4" inputmode="numeric">
+          <button type="button" id="inc" aria-label="Increase">+</button>
+        </div>
+      </div>
+      <button class="roll-btn" id="rollBtn">Roll Maps</button>
+    </div>
+  </div>
+
+  <div class="panel results" id="results">
+    <div class="empty">Set a map count and roll to generate a terrain and mapsheet set.</div>
+  </div>
+
+  <footer>2D6 on the primary terrain table, then 1D6 per mapsheet on that terrain's table.</footer>
+</div>
+
+<script>
+const PRIMARY = {
+  2:{terrain:"Desert", table:4},
+  3:{terrain:"Wetlands", table:5},
+  4:{terrain:"Light Industrial", table:7},
+  5:{terrain:"Hills", table:2},
+  6:{terrain:"Wooded", table:6},
+  7:{terrain:"Grasslands", table:1},
+  8:{terrain:"Savannah", table:9},
+  9:{terrain:"Urban", table:10},
+  10:{terrain:"Mountains", table:3},
+  11:{terrain:"Urban", table:10},
+  12:{terrain:"Alien", table:8}
+};
+
+const TABLES = {
+  1:{name:"Grasslands", sheets:{
+    1:"Grassland #1 (BB)", 2:"Grassland #2 (AGOAC)", 3:"Grassland #3 (AGOAC)",
+    4:"Woodland (MP: Grasslands)", 5:"Open Terrain #2 (MP: Grasslands)", 6:"Open Terrain #3 (MP: Grasslands)"
+  }},
+  2:{name:"Hills", sheets:{
+    1:"Hilltops #1 (CI)", 2:"Foothills #2 (MP: Grasslands)", 3:"Rolling Hills #1 (MP: Grasslands)",
+    4:"Rolling Hills #2 (CI)", 5:"Rolling Hills #3 (MP: Grasslands)", 6:"Rolling Hills #4 (MP: Grasslands)"
+  }},
+  3:{name:"Mountains", sheets:{
+    1:"Foothills #1 (MP: Grasslands)", 2:"Foothills #2 (MP: Grasslands)", 3:"Washout #1 (MP: Deserts)",
+    4:"Washout #2 (MP: Deserts)", 5:"Mines #1 (MP: Deserts)", 6:"Mines #2 (MP: Deserts)"
+  }},
+  4:{name:"Desert", sheets:{
+    1:"Badlands #1 (MP: Deserts)", 2:"Badlands #2 (MP: Deserts)", 3:"Desert #2 (AGOAC)",
+    4:"Sand Drifts #1 (MP: Deserts)", 5:"Barren Lands #1 (CI)", 6:"Barren Lands #2 (CI)"
+  }},
+  5:{name:"Wetlands", sheets:{
+    1:"Streams (MP: Grasslands)", 2:"Wide River (MP: Savannah)", 3:"Lakes (MP: Grasslands)",
+    4:"Grassland #2 (AGOAC)", 5:"Lake Area (Mercenaries)", 6:"River Valley Map (Mercenaries)"
+  }},
+  6:{name:"Wooded", sheets:{
+    1:"Woodland (Mercenaries)", 2:"Scattered Woods (Mercenaries)", 3:"Grassland #3 (AGOAC)",
+    4:"Rolling Hills #2 (CI)", 5:"Desert #3 (AGOAC)", 6:"Rolling Hills #1 (MP: Grasslands)"
+  }},
+  7:{name:"Light Urban", sheets:{
+    1:"River CommCenter (MP: Grasslands)", 2:"Park District (MP: City)", 3:"Central Park (MP: City)",
+    4:"AeroBase #1 (MP: Deserts)", 5:"AeroBase #2 (MP: Deserts)", 6:"Roundabout (MP: City)"
+  }},
+  8:{name:"Alien", sheets:{
+    1:"Fungal Crevasse (MP: Alien Worlds)", 2:"Caustic Valley (MP: Alien Worlds)", 3:"Crystalline Canyon (MP: Alien Worlds)",
+    4:"Lunar Base (MP: Alien Worlds)", 5:"Crystalline Canyon (MP: Alien Worlds)", 6:"Caustic Valley (MP: Alien Worlds)"
+  }, note:"Double-sized maps"},
+  9:{name:"Savannah", sheets:{
+    1:"River Delta / Drainage Basin #1 (MP: Savannah)", 2:"River Delta / Drainage Basin #2 (MP: Savannah)",
+    3:"Large Lakes #1 (MP: Savannah)", 4:"Large Lakes #2 (MP: Savannah)", 5:"BattleTech (MP: Savannah)", 6:"City Ruins (MP: Savannah)"
+  }},
+  10:{name:"Urban", sheets:{
+    1:"Corporate Campus (MP: City)", 2:"Family Quarters (MP: City)", 3:"HPG Heliport (MP: City)",
+    4:"Business District (MP: City)", 5:"Shopping District (MP: City)", 6:"HPG Offices (MP: City)"
+  }}
+};
+
+const countInput = document.getElementById('count');
+const results = document.getElementById('results');
+const rollBtn = document.getElementById('rollBtn');
+
+function clampCount(v){
+  let n = parseInt(v, 10);
+  if(isNaN(n)) n = 1;
+  return Math.min(30, Math.max(1, n));
+}
+
+document.getElementById('inc').addEventListener('click', () => {
+  countInput.value = clampCount(parseInt(countInput.value,10) + 1);
+});
+document.getElementById('dec').addEventListener('click', () => {
+  countInput.value = clampCount(parseInt(countInput.value,10) - 1);
+});
+countInput.addEventListener('change', () => {
+  countInput.value = clampCount(countInput.value);
+});
+
+function d6(){ return 1 + Math.floor(Math.random()*6); }
+
+function rollMaps(){
+  const count = clampCount(countInput.value);
+  countInput.value = count;
+
+  const d1 = d6(), d2 = d6();
+  const total = d1 + d2;
+  const primary = PRIMARY[total];
+  const table = TABLES[primary.table];
+
+  const mapRolls = [];
+  for(let i=0;i<count;i++){
+    const r = d6();
+    mapRolls.push({roll:r, name: table.sheets[r]});
+  }
+
+  results.innerHTML = '';
+
+  const terrainRow = document.createElement('div');
+  terrainRow.className = 'terrain-row';
+  terrainRow.innerHTML = `
+    <div class="dice-pair">
+      <div class="die">${d1}</div>
+      <div class="die">${d2}</div>
+    </div>
+    <div class="terrain-info">
+      <div class="label">PRIMARY TERRAIN &mdash; TABLE ${primary.table}: ${table.name.toUpperCase()}${table.note ? ' &middot; ' + table.note : ''}</div>
+      <div class="value">${primary.terrain}<span class="roll-total">(2D6 = ${total})</span></div>
+    </div>
+  `;
+  results.appendChild(terrainRow);
+
+  const list = document.createElement('ul');
+  list.className = 'map-list';
+  mapRolls.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="die">${m.roll}</div>
+      <div class="map-idx">#${i+1}</div>
+      <div class="map-name">${m.name}</div>
+    `;
+    list.appendChild(li);
+  });
+  results.appendChild(list);
+}
+
+rollBtn.addEventListener('click', rollMaps);
+</script>
+</body>
+</html>
