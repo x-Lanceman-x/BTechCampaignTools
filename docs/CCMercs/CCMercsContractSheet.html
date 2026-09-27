@@ -2950,7 +2950,7 @@ function renderRepairRows() {
     cont.innerHTML = `<div style="color:var(--text-dim);font-size:13px;padding:8px 0;letter-spacing:1px">No units added.</div>`;
     updateSupportTotals(); return;
   }
-  const forceUnits = getForceUnits();
+  const forceUnits = getForceUnits().filter(u => u.unitStatus !== 'unavailable');
   cont.innerHTML = data.repairRows.map((r,i) => {
     const tons = +r.tons||0;
     const mt = REPAIR_TYPES.find(t=>t.key===r.type)||REPAIR_TYPES[0];
@@ -5464,17 +5464,18 @@ function renderFormations() {
           </div>
           <div style="padding:2px 2px;display:flex;align-items:center">
             ${(()=>{
-              const UNIT_STATUS_COLORS = {'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000'};
+              const UNIT_STATUS_COLORS = {'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000','unavailable':'var(--text-dim)'};
               const statusVal = r.unitStatus||'';
               const statusColor = UNIT_STATUS_COLORS[statusVal]||'var(--text-dim)';
               const statusOpts = [
                 {key:'',label:'— Status —'},
                 {key:'operational',label:'Operational'},
-                ...REPAIR_TYPES.map(t=>({key:t.key,label:t.label}))
+                ...REPAIR_TYPES.map(t=>({key:t.key,label:t.label})),
+                {key:'unavailable',label:'Unavailable'}
               ];
               return `<select
                 onchange="updateFormationField(${fi},${ri},'unitStatus',this.value)"
-                oninput="this.style.color=({'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000'}[this.value]||'var(--text-dim)')"
+                oninput="this.style.color=({'':'var(--text-dim)','operational':'var(--green-bright)','armor':'var(--gold)','struct':'#e8a030','crippled':'var(--red)','destroyed':'#880000','unavailable':'var(--text-dim)'}[this.value]||'var(--text-dim)')"
                 style="width:100%;background:transparent;border:none;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;padding:4px 2px;color:${statusColor};cursor:pointer;text-transform:uppercase">
                 ${statusOpts.map(o=>`<option value="${o.key}" ${statusVal===o.key?'selected':''} style="background:var(--panel);color:${UNIT_STATUS_COLORS[o.key]||'var(--text)'}">${o.label}</option>`).join('')}
               </select>`;
@@ -5500,6 +5501,8 @@ function renderFormations() {
           <div style="display:flex;align-items:center;justify-content:center">
             ${r.unitStatus === 'destroyed'
               ? `<span title="Destroyed units cannot be deployed" style="width:20px;height:20px;border:2px solid #440000;background:rgba(136,0,0,.2);display:flex;align-items:center;justify-content:center;cursor:not-allowed;opacity:0.5">✕</span>`
+              : r.unitStatus === 'unavailable'
+              ? `<span title="Unavailable units cannot be deployed" style="width:20px;height:20px;border:2px solid var(--border);background:rgba(122,132,153,.15);display:flex;align-items:center;justify-content:center;cursor:not-allowed;opacity:0.5">✕</span>`
               : `<label style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0">
               <input type="checkbox" ${r.deploy?'checked':''} onchange="toggleDeployUnit(${fi},${ri},this.checked)"
                 style="display:none">
@@ -5767,6 +5770,11 @@ function toggleDeployUnit(fi, ri, checked) {
     renderFormations();
     return;
   }
+  if (checked && row.unitStatus === 'unavailable') {
+    toast('Unavailable units cannot be deployed.');
+    renderFormations();
+    return;
+  }
   row.deploy = checked;
   renderFormations();
   renderDeployment();
@@ -5776,7 +5784,7 @@ function toggleDeployUnit(fi, ri, checked) {
 function deployFormation(fi, checked) {
   data.forceData.formations[fi].rows.forEach(r => {
     if (r.unit && r.unit.trim()) {
-      if (checked && r.unitStatus === 'destroyed') return; // skip destroyed
+      if (checked && (r.unitStatus === 'destroyed' || r.unitStatus === 'unavailable')) return; // skip destroyed/unavailable
       r.deploy = checked;
     }
   });
